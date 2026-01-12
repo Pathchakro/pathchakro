@@ -33,7 +33,7 @@ export interface ITour {
 const TourSchema = new Schema<ITour>(
     {
         organizer: {
-            type: Schema.Types.ObjectId,
+            type: Schema.Types.ObjectId as any,
             ref: 'User',
             required: true,
             index: true,
@@ -76,7 +76,7 @@ const TourSchema = new Schema<ITour>(
         participants: [
             {
                 user: {
-                    type: Schema.Types.ObjectId,
+                    type: Schema.Types.ObjectId as any,
                     ref: 'User',
                 },
                 status: {
@@ -115,7 +115,7 @@ const TourSchema = new Schema<ITour>(
             default: 'public',
         },
         team: {
-            type: Schema.Types.ObjectId,
+            type: Schema.Types.ObjectId as any,
             ref: 'Team',
         },
         status: {

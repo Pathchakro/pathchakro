@@ -18,19 +18,19 @@ export interface IOrder {
 const OrderSchema = new Schema<IOrder>(
     {
         buyer: {
-            type: Schema.Types.ObjectId,
+            type: Schema.Types.ObjectId as any,
             ref: 'User',
             required: true,
             index: true,
         },
         seller: {
-            type: Schema.Types.ObjectId,
+            type: Schema.Types.ObjectId as any,
             ref: 'User',
             required: true,
             index: true,
         },
         product: {
-            type: Schema.Types.ObjectId,
+            type: Schema.Types.ObjectId as any,
             ref: 'Product',
             required: true,
         },

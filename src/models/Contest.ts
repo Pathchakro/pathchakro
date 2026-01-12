@@ -108,7 +108,7 @@ const ContestSchema = new Schema<IContest>(
         submissions: [
             {
                 user: {
-                    type: Schema.Types.ObjectId,
+                    type: Schema.Types.ObjectId as any,
                     ref: 'User',
                     required: true,
                 },
@@ -133,7 +133,7 @@ const ContestSchema = new Schema<IContest>(
                     default: 0,
                 },
                 voters: [{
-                    type: Schema.Types.ObjectId,
+                    type: Schema.Types.ObjectId as any,
                     ref: 'User',
                 }],
             },
@@ -141,7 +141,7 @@ const ContestSchema = new Schema<IContest>(
         winners: {
             first: {
                 user: {
-                    type: Schema.Types.ObjectId,
+                    type: Schema.Types.ObjectId as any,
                     ref: 'User',
                 },
                 submission: Number,
@@ -149,7 +149,7 @@ const ContestSchema = new Schema<IContest>(
             },
             second: {
                 user: {
-                    type: Schema.Types.ObjectId,
+                    type: Schema.Types.ObjectId as any,
                     ref: 'User',
                 },
                 submission: Number,
@@ -157,7 +157,7 @@ const ContestSchema = new Schema<IContest>(
             },
             third: {
                 user: {
-                    type: Schema.Types.ObjectId,
+                    type: Schema.Types.ObjectId as any,
                     ref: 'User',
                 },
                 submission: Number,

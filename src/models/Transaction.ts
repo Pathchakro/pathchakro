@@ -31,12 +31,12 @@ const TransactionSchema = new Schema<ITransaction>(
             index: true,
         },
         buyer: {
-            type: Schema.Types.ObjectId,
+            type: Schema.Types.ObjectId as any,
             ref: 'User',
             index: true,
         },
         seller: {
-            type: Schema.Types.ObjectId,
+            type: Schema.Types.ObjectId as any,
             ref: 'User',
             index: true,
         },

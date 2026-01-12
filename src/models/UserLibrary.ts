@@ -16,13 +16,13 @@ export interface IUserLibrary {
 const UserLibrarySchema = new Schema<IUserLibrary>(
     {
         user: {
-            type: Schema.Types.ObjectId,
+            type: Schema.Types.ObjectId as any,
             ref: 'User',
             required: true,
             index: true,
         },
         book: {
-            type: Schema.Types.ObjectId,
+            type: Schema.Types.ObjectId as any,
             ref: 'Book',
             required: true,
             index: true,

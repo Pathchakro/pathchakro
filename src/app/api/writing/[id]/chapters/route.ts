@@ -3,10 +3,50 @@ import { auth } from '@/auth';
 import dbConnect from '@/lib/mongodb';
 import WritingProject from '@/models/WritingProject';
 
+export async function GET(
+    request: NextRequest,
+    props: { params: Promise<{ id: string }> }
+) {
+    const params = await props.params;
+    try {
+        const session = await auth();
+
+        if (!session?.user?.id) {
+            return NextResponse.json(
+                { error: 'Unauthorized' },
+                { status: 401 }
+            );
+        }
+
+        await dbConnect();
+
+        const project = await WritingProject.findOne({
+            _id: params.id,
+            author: session.user.id,
+        }).select('-chapters.content'); // Exclude chapter content for list view
+
+        if (!project) {
+            return NextResponse.json(
+                { error: 'Project not found' },
+                { status: 404 }
+            );
+        }
+
+        return NextResponse.json(project);
+    } catch (error: any) {
+        console.error('Error fetching project:', error);
+        return NextResponse.json(
+            { error: 'Failed to fetch project' },
+            { status: 500 }
+        );
+    }
+}
+
 export async function POST(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    props: { params: Promise<{ id: string }> }
 ) {
+    const params = await props.params;
     try {
         const session = await auth();
 
@@ -73,8 +113,9 @@ export async function POST(
 
 export async function PUT(
     request: NextRequest,
-    { params }: { params: { id: string; chapterId: string } }
+    props: { params: Promise<{ id: string }> }
 ) {
+    const params = await props.params;
     try {
         const session = await auth();
 
@@ -85,7 +126,14 @@ export async function PUT(
             );
         }
 
-        const { title, content, status } = await request.json();
+        const { chapterId, title, content, status } = await request.json();
+
+        if (!chapterId) {
+            return NextResponse.json(
+                { error: 'Chapter ID is required' },
+                { status: 400 }
+            );
+        }
 
         await dbConnect();
 
@@ -101,7 +149,7 @@ export async function PUT(
             );
         }
 
-        const chapter = project.chapters.id(params.chapterId);
+        const chapter = project.chapters.id(chapterId);
 
         if (!chapter) {
             return NextResponse.json(

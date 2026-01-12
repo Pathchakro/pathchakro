@@ -67,11 +67,11 @@ const UserSchema = new Schema<IUser>(
             default: 'Beginner',
         },
         followers: [{
-            type: Schema.Types.ObjectId,
+            type: Schema.Types.ObjectId as any,
             ref: 'User',
         }],
         following: [{
-            type: Schema.Types.ObjectId,
+            type: Schema.Types.ObjectId as any,
             ref: 'User',
         }],
         isEmailVerified: {

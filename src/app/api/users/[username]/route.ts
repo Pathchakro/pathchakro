@@ -71,8 +71,8 @@ export async function GET(
             stats: {
                 posts: postsCount,
                 reviews: reviewsCount,
-                followers: user.followers.length,
-                following: user.following.length,
+                followers: user.followers?.length || 0,
+                following: user.following?.length || 0,
             },
         });
     } catch (error: any) {

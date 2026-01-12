@@ -2,10 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import BookPDF from '@/models/BookPDF';
 
-export async function PUT(
+export async function GET(
     request: NextRequest,
-    { params }: { params: { pdfId: string } }
+    props: { params: Promise<{ pdfId: string }> }
 ) {
+    const params = await props.params;
     try {
         await dbConnect();
 

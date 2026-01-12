@@ -2,18 +2,33 @@ export interface IUser {
     _id: string;
     name: string;
     email: string;
+    isEmailVerified?: boolean;
     password?: string;
     image?: string;
     coverImage?: string;
     // Personal
-    title?: string;
+    // Personal
     bio?: string;
+
+    // Existing fields
+    profileType: 'Student' | 'Tutor' | 'Regular';
+    university?: string; // Legacy? Keep for compatibility
+    thana?: string; // Legacy? 
+    bloodGroup?: string;
+    willingToDonateBlood?: boolean;
+    lastDateOfDonateBlood?: Date;
+    bookPreferences?: string[];
+    rank?: number;
+    rankTier?: 'Beginner' | 'Reader' | 'Critic' | 'Scholar' | 'Master';
+    followers?: string[] | IUser[];
+    following?: string[] | IUser[];
+    role?: 'user' | 'admin';
+    title?: string;
     location?: string;
     website?: string;
     dateOfBirth?: Date;
     phone?: string;
-
-    // Academic (Detailed)
+    whatsappNumber?: string;
     academic?: {
         currentEducation?: string;
         institution?: string;
@@ -22,28 +37,21 @@ export interface IUser {
         graduationYear?: number;
         gpa?: number;
     };
-
-    // Career
     career?: {
         currentPosition?: string;
         company?: string;
         industry?: string;
         yearsOfExperience?: number;
         skills?: string[];
+        cvLink?: string;
     };
-
-    // Social
     social?: {
         linkedin?: string;
         github?: string;
         twitter?: string;
     };
-
-    // Interests & Languages
     interests?: string[];
     languages?: string[];
-
-    // Address
     address?: {
         present?: {
             division?: string;
@@ -62,21 +70,12 @@ export interface IUser {
             district?: string;
         };
     };
-
-    // Verification
     verification?: {
-        isVerified: boolean;
-        documentUrl?: string;
-        status: 'pending' | 'approved' | 'rejected' | 'none';
+        isVerified?: boolean;
+        documentUrls?: string[];
+        status?: 'pending' | 'approved' | 'rejected' | 'none';
         submittedAt?: Date;
     };
-
-    // Existing fields
-    profileType: 'Student' | 'Tutor' | 'Regular';
-    university?: string; // Legacy? Keep for compatibility
-    thana?: string; // Legacy? 
-    bloodGroup?: string;
-    bookPreferences?: string[];
     createdAt: Date;
     updatedAt: Date;
 }
@@ -87,7 +86,9 @@ export interface IPost {
     content: string;
     type: 'text' | 'photo' | 'video' | 'review' | 'quiz' | 'assignment' | 'poll';
     media?: string[];
+    videoUrl?: string;
     privacy: 'public' | 'friends' | 'team';
+    team?: string | ITeam;
     likes: string[];
     comments: string[];
     shares: number;
@@ -130,6 +131,8 @@ export interface ITeam {
     name: string;
     description: string;
     type: 'University' | 'Thana' | 'Special';
+    university?: string;
+    location?: string;
     category: string;
     privacy: 'public' | 'private';
     coverImage?: string;
@@ -139,6 +142,10 @@ export interface ITeam {
         user: string | IUser;
         role: 'leader' | 'deputy' | 'member';
         joinedAt: Date;
+    }>;
+    joinRequests?: Array<{
+        user: string | IUser;
+        requestedAt: Date;
     }>;
     createdAt: Date;
     updatedAt: Date;

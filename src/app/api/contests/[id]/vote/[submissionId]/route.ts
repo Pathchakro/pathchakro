@@ -5,8 +5,9 @@ import Contest from '@/models/Contest';
 
 export async function POST(
     request: NextRequest,
-    { params }: { params: { id: string; submissionId: string } }
+    props: { params: Promise<{ id: string; submissionId: string }> }
 ) {
+    const params = await props.params;
     try {
         const session = await auth();
 

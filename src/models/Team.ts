@@ -17,6 +17,14 @@ const TeamSchema = new Schema<ITeam>(
             enum: ['University', 'Thana', 'Special'],
             required: true,
         },
+        university: {
+            type: String,
+            default: '',
+        },
+        location: {
+            type: String,
+            default: '',
+        },
         category: {
             type: String,
             default: 'General',
@@ -35,13 +43,13 @@ const TeamSchema = new Schema<ITeam>(
             default: '',
         },
         leader: {
-            type: Schema.Types.ObjectId,
+            type: Schema.Types.ObjectId as any,
             ref: 'User',
             required: true,
         },
         members: [{
             user: {
-                type: Schema.Types.ObjectId,
+                type: Schema.Types.ObjectId as any,
                 ref: 'User',
             },
             role: {
@@ -50,6 +58,16 @@ const TeamSchema = new Schema<ITeam>(
                 default: 'member',
             },
             joinedAt: {
+                type: Date,
+                default: Date.now,
+            },
+        }],
+        joinRequests: [{
+            user: {
+                type: Schema.Types.ObjectId as any,
+                ref: 'User',
+            },
+            requestedAt: {
                 type: Date,
                 default: Date.now,
             },

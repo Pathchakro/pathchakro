@@ -32,7 +32,7 @@ export interface IWritingProject {
 const WritingProjectSchema = new Schema<IWritingProject>(
     {
         author: {
-            type: Schema.Types.ObjectId,
+            type: Schema.Types.ObjectId as any,
             ref: 'User',
             required: true,
             index: true,

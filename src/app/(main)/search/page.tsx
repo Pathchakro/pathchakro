@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Search, Users, FileText, BookOpen, Users2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
@@ -15,7 +15,7 @@ interface SearchResults {
     teams?: any[];
 }
 
-export default function SearchPage() {
+function SearchContent() {
     const searchParams = useSearchParams();
     const initialQuery = searchParams.get('q') || '';
 
@@ -112,13 +112,13 @@ export default function SearchPage() {
                                 key={tab.id}
                                 onClick={() => handleTabChange(tab.id)}
                                 className={`flex items-center gap-2 px-4 py-3 font-medium text-sm whitespace-nowrap transition-colors border-b-2 ${activeTab === tab.id
-                                        ? 'text-primary border-primary'
-                                        : 'text-muted-foreground border-transparent hover:text-foreground'
+                                    ? 'text-primary border-primary'
+                                    : 'text-muted-foreground border-transparent hover:text-foreground'
                                     }`}
                             >
                                 <tab.icon className="h-4 w-4" />
                                 <span>{tab.label}</span>
-                                {tab.id !== 'all' && tab.count > 0 && (
+                                {tab.id !== 'all' && (tab.count || 0) > 0 && (
                                     <span className="text-xs bg-muted px-2 py-0.5 rounded-full">
                                         {tab.count}
                                     </span>
@@ -265,5 +265,13 @@ export default function SearchPage() {
                 </div>
             )}
         </div>
+    );
+}
+
+export default function SearchPage() {
+    return (
+        <Suspense fallback={<div className="flex justify-center p-8">Loading search...</div>}>
+            <SearchContent />
+        </Suspense>
     );
 }

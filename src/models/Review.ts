@@ -4,12 +4,12 @@ import { IReview } from '@/types';
 const ReviewSchema = new Schema<IReview>(
     {
         book: {
-            type: Schema.Types.ObjectId,
+            type: Schema.Types.ObjectId as any,
             ref: 'Book',
             required: true,
         },
         user: {
-            type: Schema.Types.ObjectId,
+            type: Schema.Types.ObjectId as any,
             ref: 'User',
             required: true,
         },

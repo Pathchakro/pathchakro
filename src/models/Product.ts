@@ -21,7 +21,7 @@ export interface IProduct {
 const ProductSchema = new Schema<IProduct>(
     {
         seller: {
-            type: Schema.Types.ObjectId,
+            type: Schema.Types.ObjectId as any,
             ref: 'User',
             required: true,
             index: true,

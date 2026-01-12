@@ -56,13 +56,13 @@ export interface IEvent {
 const EventSchema = new Schema<IEvent>(
     {
         organizer: {
-            type: Schema.Types.ObjectId,
+            type: Schema.Types.ObjectId as any,
             ref: 'User',
             required: true,
             index: true,
         },
         team: {
-            type: Schema.Types.ObjectId,
+            type: Schema.Types.ObjectId as any,
             ref: 'Team',
             index: true,
         },
@@ -103,35 +103,35 @@ const EventSchema = new Schema<IEvent>(
         roles: {
             host: {
                 user: {
-                    type: Schema.Types.ObjectId,
+                    type: Schema.Types.ObjectId as any,
                     ref: 'User',
                 },
                 assignedAt: Date,
             },
             anchor: {
                 user: {
-                    type: Schema.Types.ObjectId,
+                    type: Schema.Types.ObjectId as any,
                     ref: 'User',
                 },
                 assignedAt: Date,
             },
             summarizer: {
                 user: {
-                    type: Schema.Types.ObjectId,
+                    type: Schema.Types.ObjectId as any,
                     ref: 'User',
                 },
                 assignedAt: Date,
             },
             opener: {
                 user: {
-                    type: Schema.Types.ObjectId,
+                    type: Schema.Types.ObjectId as any,
                     ref: 'User',
                 },
                 assignedAt: Date,
             },
             closer: {
                 user: {
-                    type: Schema.Types.ObjectId,
+                    type: Schema.Types.ObjectId as any,
                     ref: 'User',
                 },
                 assignedAt: Date,
@@ -139,7 +139,7 @@ const EventSchema = new Schema<IEvent>(
             lecturers: [
                 {
                     user: {
-                        type: Schema.Types.ObjectId,
+                        type: Schema.Types.ObjectId as any,
                         ref: 'User',
                         required: true,
                     },
@@ -167,7 +167,7 @@ const EventSchema = new Schema<IEvent>(
         listeners: [
             {
                 user: {
-                    type: Schema.Types.ObjectId,
+                    type: Schema.Types.ObjectId as any,
                     ref: 'User',
                 },
                 joinedAt: {

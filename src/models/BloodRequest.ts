@@ -19,7 +19,7 @@ export interface IBloodRequest {
 const BloodRequestSchema = new Schema<IBloodRequest>(
     {
         requester: {
-            type: Schema.Types.ObjectId,
+            type: Schema.Types.ObjectId as any,
             ref: 'User',
             required: true,
             index: true,

@@ -24,7 +24,7 @@ const GroupSchema = new Schema<IGroup>(
         },
         members: [
             {
-                type: Schema.Types.ObjectId,
+                type: Schema.Types.ObjectId as any,
                 ref: 'User',
             },
         ],

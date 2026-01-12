@@ -4,12 +4,12 @@ import { IComment } from '@/types';
 const CommentSchema = new Schema<IComment>(
     {
         post: {
-            type: Schema.Types.ObjectId,
+            type: Schema.Types.ObjectId as any,
             ref: 'Post',
             required: true,
         },
         author: {
-            type: Schema.Types.ObjectId,
+            type: Schema.Types.ObjectId as any,
             ref: 'User',
             required: true,
         },
@@ -18,11 +18,11 @@ const CommentSchema = new Schema<IComment>(
             required: [true, 'Comment content is required'],
         },
         replies: [{
-            type: Schema.Types.ObjectId,
+            type: Schema.Types.ObjectId as any,
             ref: 'Comment',
         }],
         likes: [{
-            type: Schema.Types.ObjectId,
+            type: Schema.Types.ObjectId as any,
             ref: 'User',
         }],
     },

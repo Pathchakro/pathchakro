@@ -1,4 +1,4 @@
-import { Schema, model, models } from 'mongoose';
+import mongoose, { Schema, model, models } from 'mongoose';
 
 export interface IAssignment {
     _id: string;
@@ -25,13 +25,13 @@ export interface IAssignment {
 const AssignmentSchema = new Schema<IAssignment>(
     {
         teacher: {
-            type: Schema.Types.ObjectId,
+            type: mongoose.Schema.Types.ObjectId as any,
             ref: 'User',
             required: true,
             index: true,
         },
         team: {
-            type: Schema.Types.ObjectId,
+            type: mongoose.Schema.Types.ObjectId as any,
             ref: 'Team',
             index: true,
         },
@@ -65,7 +65,7 @@ const AssignmentSchema = new Schema<IAssignment>(
         submissions: [
             {
                 student: {
-                    type: Schema.Types.ObjectId,
+                    type: mongoose.Schema.Types.ObjectId as any,
                     ref: 'User',
                     required: true,
                 },

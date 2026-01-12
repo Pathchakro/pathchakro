@@ -3,10 +3,52 @@ import { auth } from '@/auth';
 import dbConnect from '@/lib/mongodb';
 import UserLibrary from '@/models/UserLibrary';
 
+export async function GET(
+    request: NextRequest,
+    props: { params: Promise<{ id: string }> }
+) {
+    const params = await props.params;
+    try {
+        const session = await auth();
+
+        if (!session?.user?.id) {
+            return NextResponse.json(
+                { error: 'Unauthorized' },
+                { status: 401 }
+            );
+        }
+
+        await dbConnect();
+
+        const libraryItem = await UserLibrary.findOne({
+            _id: params.id,
+            user: session.user.id,
+        }).populate('book'); // Assuming you want to populate the book details
+
+        if (!libraryItem) {
+            return NextResponse.json(
+                { error: 'Library item not found' },
+                { status: 404 }
+            );
+        }
+
+        return NextResponse.json({
+            library: libraryItem,
+        });
+    } catch (error: any) {
+        console.error('Error fetching library item:', error);
+        return NextResponse.json(
+            { error: 'Failed to fetch library item' },
+            { status: 500 }
+        );
+    }
+}
+
 export async function PUT(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    props: { params: Promise<{ id: string }> }
 ) {
+    const params = await props.params;
     try {
         const session = await auth();
 
@@ -70,8 +112,9 @@ export async function PUT(
 
 export async function DELETE(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    props: { params: Promise<{ id: string }> }
 ) {
+    const params = await props.params;
     try {
         const session = await auth();
 

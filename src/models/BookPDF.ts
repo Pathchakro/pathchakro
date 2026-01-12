@@ -15,13 +15,13 @@ export interface IBookPDF {
 const BookPDFSchema = new Schema<IBookPDF>(
     {
         book: {
-            type: Schema.Types.ObjectId,
+            type: Schema.Types.ObjectId as any,
             ref: 'Book',
             required: true,
             index: true,
         },
         uploadedBy: {
-            type: Schema.Types.ObjectId,
+            type: Schema.Types.ObjectId as any,
             ref: 'User',
             required: true,
         },

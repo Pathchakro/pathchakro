@@ -17,13 +17,13 @@ export interface INotification {
 const NotificationSchema = new Schema<INotification>(
     {
         recipient: {
-            type: Schema.Types.ObjectId,
+            type: Schema.Types.ObjectId as any,
             ref: 'User',
             required: true,
             index: true,
         },
         sender: {
-            type: Schema.Types.ObjectId,
+            type: Schema.Types.ObjectId as any,
             ref: 'User',
             required: true,
         },
@@ -33,19 +33,19 @@ const NotificationSchema = new Schema<INotification>(
             required: true,
         },
         post: {
-            type: Schema.Types.ObjectId,
+            type: Schema.Types.ObjectId as any,
             ref: 'Post',
         },
         comment: {
-            type: Schema.Types.ObjectId,
+            type: Schema.Types.ObjectId as any,
             ref: 'Comment',
         },
         team: {
-            type: Schema.Types.ObjectId,
+            type: Schema.Types.ObjectId as any,
             ref: 'Team',
         },
         review: {
-            type: Schema.Types.ObjectId,
+            type: Schema.Types.ObjectId as any,
             ref: 'Review',
         },
         message: {

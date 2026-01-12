@@ -18,7 +18,7 @@ export interface IBloodDonor {
 const BloodDonorSchema = new Schema<IBloodDonor>(
     {
         user: {
-            type: Schema.Types.ObjectId,
+            type: Schema.Types.ObjectId as any,
             ref: 'User',
             required: true,
             unique: true,

@@ -3,10 +3,11 @@ import { auth } from '@/auth';
 import dbConnect from '@/lib/mongodb';
 import Notification from '@/models/Notification';
 
-export async function PUT(
+export async function POST(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    props: { params: Promise<{ id: string }> }
 ) {
+    const params = await props.params;
     try {
         const session = await auth();
 

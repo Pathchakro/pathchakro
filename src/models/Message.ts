@@ -12,13 +12,13 @@ export interface IMessage {
 const MessageSchema = new Schema<IMessage>(
     {
         sender: {
-            type: Schema.Types.ObjectId,
+            type: Schema.Types.ObjectId as any,
             ref: 'User',
             required: true,
             index: true,
         },
         recipient: {
-            type: Schema.Types.ObjectId,
+            type: Schema.Types.ObjectId as any,
             ref: 'User',
             required: true,
             index: true,

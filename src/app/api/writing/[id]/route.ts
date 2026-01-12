@@ -5,8 +5,9 @@ import WritingProject from '@/models/WritingProject';
 
 export async function GET(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    props: { params: Promise<{ id: string }> }
 ) {
+    const params = await props.params;
     try {
         const session = await auth();
 
@@ -41,10 +42,50 @@ export async function GET(
     }
 }
 
+export async function DELETE(
+    request: NextRequest,
+    props: { params: Promise<{ id: string }> }
+) {
+    const params = await props.params;
+    try {
+        const session = await auth();
+
+        if (!session?.user?.id) {
+            return NextResponse.json(
+                { error: 'Unauthorized' },
+                { status: 401 }
+            );
+        }
+
+        await dbConnect();
+
+        const result = await WritingProject.deleteOne({
+            _id: params.id,
+            author: session.user.id,
+        });
+
+        if (result.deletedCount === 0) {
+            return NextResponse.json(
+                { error: 'Project not found or unauthorized' },
+                { status: 404 }
+            );
+        }
+
+        return NextResponse.json({ message: 'Project deleted successfully' });
+    } catch (error: any) {
+        console.error('Error deleting project:', error);
+        return NextResponse.json(
+            { error: 'Failed to delete project' },
+            { status: 500 }
+        );
+    }
+}
+
 export async function PUT(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    props: { params: Promise<{ id: string }> }
 ) {
+    const params = await props.params;
     try {
         const session = await auth();
 

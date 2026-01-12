@@ -5,8 +5,9 @@ import Team from '@/models/Team';
 
 export async function PUT(
     request: NextRequest,
-    { params }: { params: { id: string; userId: string } }
+    props: { params: Promise<{ id: string; userId: string }> }
 ) {
+    const params = await props.params;
     try {
         const session = await auth();
 
@@ -45,11 +46,11 @@ export async function PUT(
             );
         }
 
-        const memberIndex = team.members.findIndex(
-            (m: any) => m.user.toString() === params.userId && m.status === 'pending'
+        const requestIndex = team.joinRequests?.findIndex(
+            (r: any) => r.user.toString() === params.userId
         );
 
-        if (memberIndex === -1) {
+        if (requestIndex === undefined || requestIndex === -1) {
             return NextResponse.json(
                 { error: 'Join request not found' },
                 { status: 404 }
@@ -57,7 +58,18 @@ export async function PUT(
         }
 
         if (action === 'approve') {
-            team.members[memberIndex].status = 'approved';
+            // Add to members
+            team.members.push({
+                user: params.userId,
+                role: 'member',
+                joinedAt: new Date(),
+            });
+
+            // Remove from requests
+            if (team.joinRequests) {
+                team.joinRequests.splice(requestIndex, 1);
+            }
+
             await team.save();
 
             return NextResponse.json({
@@ -66,7 +78,9 @@ export async function PUT(
             });
         } else {
             // Reject - remove the request
-            team.members.splice(memberIndex, 1);
+            if (team.joinRequests) {
+                team.joinRequests.splice(requestIndex, 1);
+            }
             await team.save();
 
             return NextResponse.json({

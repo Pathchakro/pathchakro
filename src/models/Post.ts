@@ -4,7 +4,7 @@ import { IPost } from '@/types';
 const PostSchema = new Schema<IPost>(
     {
         author: {
-            type: Schema.Types.ObjectId,
+            type: Schema.Types.ObjectId as any,
             ref: 'User',
             required: true,
         },
@@ -29,11 +29,11 @@ const PostSchema = new Schema<IPost>(
             default: 'public',
         },
         likes: [{
-            type: Schema.Types.ObjectId,
+            type: Schema.Types.ObjectId as any,
             ref: 'User',
         }],
         comments: [{
-            type: Schema.Types.ObjectId,
+            type: Schema.Types.ObjectId as any,
             ref: 'Comment',
         }],
         shares: {
