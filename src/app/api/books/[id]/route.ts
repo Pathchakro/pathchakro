@@ -43,3 +43,36 @@ export async function GET(
         );
     }
 }
+
+export async function PATCH(
+    request: NextRequest,
+    props: { params: Promise<{ id: string }> }
+) {
+    const params = await props.params;
+
+    try {
+        const body = await request.json();
+        await dbConnect();
+
+        const book = await Book.findByIdAndUpdate(
+            params.id,
+            { $set: body },
+            { new: true }
+        );
+
+        if (!book) {
+            return NextResponse.json(
+                { error: 'Book not found' },
+                { status: 404 }
+            );
+        }
+
+        return NextResponse.json({ book, message: 'Book updated successfully' });
+    } catch (error: any) {
+        console.error('Error updating book:', error);
+        return NextResponse.json(
+            { error: 'Failed to update book' },
+            { status: 500 }
+        );
+    }
+}

@@ -60,8 +60,85 @@ export function BookCard({
     onRemoveFromLibrary,
     showRemoveOption = false
 }: BookCardProps) {
+    const [isUploading, setIsUploading] = useState(false);
+    const [pdfUrl, setPdfUrl] = useState(book.pdfUrl);
+
+    useEffect(() => {
+        setPdfUrl(book.pdfUrl);
+    }, [book.pdfUrl]);
+
+    const handleUploadClick = () => {
+        const fileInput = document.getElementById(`pdf-upload-${book._id}`) as HTMLInputElement;
+        if (fileInput) {
+            fileInput.click();
+        }
+    };
+
+    const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        if (file.type !== 'application/pdf') {
+            alert('Please select a PDF file');
+            return;
+        }
+
+        setIsUploading(true);
+        try {
+            // 1. Upload to Cloudinary
+            const formData = new FormData();
+            formData.append('file', file);
+
+            const uploadRes = await fetch('/api/upload/pdf', {
+                method: 'POST',
+                body: formData,
+            });
+
+            if (!uploadRes.ok) {
+                const error = await uploadRes.json();
+                throw new Error(error.error || 'Failed to upload PDF');
+            }
+
+            const uploadData = await uploadRes.json();
+            const newPdfUrl = uploadData.url;
+
+            // 2. Update Book record
+            const updateRes = await fetch(`/api/books/${book._id}`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ pdfUrl: newPdfUrl }),
+            });
+
+            if (!updateRes.ok) {
+                throw new Error('Failed to update book record');
+            }
+
+            setPdfUrl(newPdfUrl);
+            // Optionally notify parent or refresh, but local state update handles the UI
+
+        } catch (error) {
+            console.error('Upload failed:', error);
+            alert('Failed to upload PDF. Please try again.');
+        } finally {
+            setIsUploading(false);
+            // Reset input
+            e.target.value = '';
+        }
+    };
+
     return (
         <div className="bg-card border rounded-lg overflow-hidden hover:shadow-lg transition-shadow flex flex-col md:flex-row group w-full">
+            {/* Hidden File Input for Upload */}
+            <input
+                type="file"
+                id={`pdf-upload-${book._id}`}
+                className="hidden"
+                accept="application/pdf"
+                onChange={handleFileChange}
+            />
+
             {/* Book Cover */}
             <div className="relative w-full md:w-48 h-64 md:h-auto shrink-0 bg-muted">
                 <BookCover src={book.coverImage} alt={book.title} />
@@ -77,9 +154,17 @@ export function BookCard({
                                     {book.title}
                                 </Link>
                             </h3>
-                            <p className="text-muted-foreground font-medium">
-                                {book.author}
-                            </p>
+                            {book.author ? (
+                                <p className="text-muted-foreground font-medium">
+                                    {book.author}
+                                </p>
+                            ) : (
+                                <Link href={`/books/${book.slug}/edit`}>
+                                    <p className="text-primary/80 font-medium hover:underline flex items-center gap-1 cursor-pointer text-sm">
+                                        <Edit className="h-3 w-3" /> Add Author
+                                    </p>
+                                </Link>
+                            )}
                         </div>
                         {/* Rating Display - Always Show */}
                         <div className={`flex items-center gap-1 px-2 py-1 rounded-md border ${book.totalReviews > 0 ? 'bg-yellow-50 border-yellow-100' : 'bg-gray-50 border-gray-100'}`}>
@@ -100,14 +185,22 @@ export function BookCard({
 
                     {/* Categories */}
                     <div className="flex flex-wrap gap-2 mb-4">
-                        {book.category.map((cat, idx) => (
-                            <span
-                                key={idx}
-                                className="text-xs px-2.5 py-0.5 bg-secondary text-secondary-foreground rounded-full font-medium"
-                            >
-                                {cat}
-                            </span>
-                        ))}
+                        {book.category && book.category.length > 0 ? (
+                            book.category.map((cat, idx) => (
+                                <span
+                                    key={idx}
+                                    className="text-xs px-2.5 py-0.5 bg-secondary text-secondary-foreground rounded-full font-medium"
+                                >
+                                    {cat}
+                                </span>
+                            ))
+                        ) : (
+                            <Link href={`/books/${book.slug}/edit`}>
+                                <span className="text-xs px-2.5 py-0.5 border border-dashed border-primary/50 text-primary/80 rounded-full font-medium hover:bg-primary/5 cursor-pointer flex items-center gap-1">
+                                    <Edit className="h-3 w-3" /> Add Category
+                                </span>
+                            </Link>
+                        )}
                     </div>
 
                     {book.description && (
@@ -119,15 +212,25 @@ export function BookCard({
 
                 {/* Action Buttons */}
                 <div className="flex flex-wrap gap-2 mt-auto pt-4 border-t">
-                    {book.pdfUrl ? (
-                        <Link href={book.pdfUrl} target="_blank" rel="noopener noreferrer">
+                    {pdfUrl ? (
+                        <Link href={pdfUrl} target="_blank" rel="noopener noreferrer">
                             <Button variant="ghost" size="icon" title="Download PDF">
                                 <Download className="h-5 w-5 text-gray-500 hover:text-primary" />
                             </Button>
                         </Link>
                     ) : (
-                        <Button variant="ghost" size="icon" title="Upload PDF">
-                            <Upload className="h-5 w-5 text-gray-400 hover:text-primary" />
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            title={isUploading ? "Uploading..." : "Upload PDF"}
+                            onClick={handleUploadClick}
+                            disabled={isUploading}
+                        >
+                            {isUploading ? (
+                                <div className="h-5 w-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                            ) : (
+                                <Upload className="h-5 w-5 text-gray-400 hover:text-primary" />
+                            )}
                         </Button>
                     )}
 
