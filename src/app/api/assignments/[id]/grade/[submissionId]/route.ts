@@ -5,8 +5,9 @@ import Assignment from '@/models/Assignment';
 
 export async function PUT(
     request: NextRequest,
-    { params }: { params: { id: string; submissionId: string } }
+    props: { params: Promise<{ id: string; submissionId: string }> }
 ) {
+    const params = await props.params;
     try {
         const session = await auth();
 
