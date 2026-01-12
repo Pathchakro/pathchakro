@@ -52,6 +52,10 @@ const BookSchema = new Schema<IBook>(
             default: 1,
             min: 0,
         },
+        addedBy: {
+            type: mongoose.Schema.Types.ObjectId as any,
+            ref: 'User',
+        },
     },
     {
         timestamps: true,

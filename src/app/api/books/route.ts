@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import Book from '@/models/Book';
+import { auth } from '@/auth';
 import { slugify } from '@/lib/utils';
 
 export async function GET(request: NextRequest) {
@@ -66,6 +67,9 @@ export async function POST(request: NextRequest) {
         let book = await Book.findOne(duplicateCheckQuery);
 
         if (!book) {
+            const session = await auth(); // Need to import auth
+            const userId = session?.user?.id;
+
             const baseSlug = slugify(author ? `${title} ${author}` : title);
             // Check if slug exists
             const existingBookWithSlug = await Book.findOne({ slug: baseSlug });
@@ -81,6 +85,7 @@ export async function POST(request: NextRequest) {
                 coverImage: coverImage || '',
                 averageRating: 0,
                 totalReviews: 0,
+                addedBy: userId,
             });
         }
 

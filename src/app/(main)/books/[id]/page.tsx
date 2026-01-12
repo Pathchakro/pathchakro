@@ -7,12 +7,13 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Star, ArrowLeft, Video, Download, Upload, ShoppingCart, FileText, Plus, Library } from 'lucide-react';
+import { Trash2, Star, ArrowLeft, Video, Download, Upload, ShoppingCart, FileText, Plus, Library } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 import { YouTubeEmbed } from '@/components/media/YouTubeEmbed';
 import { isValidYouTubeUrl } from '@/lib/youtube';
 import Link from 'next/link';
 import Image from 'next/image';
+import { useSession } from 'next-auth/react';
 
 interface Book {
     _id: string;
@@ -25,6 +26,7 @@ interface Book {
     description?: string;
     averageRating: number;
     totalReviews: number;
+    addedBy?: string;
 }
 
 interface Review {
@@ -58,6 +60,7 @@ interface PDF {
 }
 
 export default function BookDetailPage() {
+    const { data: session } = useSession();
     const params = useParams();
     const bookId = params.id as string;
 
@@ -236,6 +239,30 @@ export default function BookDetailPage() {
         }
     };
 
+    const handleDelete = async () => {
+        if (!confirm('Are you sure you want to delete this book? This action cannot be undone.')) {
+            return;
+        }
+
+        try {
+            const res = await fetch(`/api/books/${bookId}`, {
+                method: 'DELETE',
+            });
+
+            if (!res.ok) {
+                const error = await res.json();
+                throw new Error(error.error || 'Failed to delete book');
+            }
+
+            alert('Book deleted successfully');
+            window.location.href = '/books'; // Redirect to books list
+
+        } catch (error: any) {
+            console.error('Delete failed:', error);
+            alert(error.message || 'Failed to delete book');
+        }
+    };
+
     if (loading) {
         return (
             <div className="max-w-7xl mx-auto p-4">
@@ -292,6 +319,22 @@ export default function BookDetailPage() {
                                 <ShoppingCart className="h-4 w-4 mr-2" />
                                 Buy This Book
                             </Button>
+
+                            {/* Delete Button - Only for Owner or Admin */}
+                            {session?.user && book && (
+                                ((book.addedBy && book.addedBy.toString() === session.user.id) ||
+                                    session.user.role === 'admin' ||
+                                    (session.user as any).role === 'super-admin') && (
+                                    <Button
+                                        onClick={handleDelete}
+                                        className="w-full bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 border border-red-200"
+                                        variant="outline"
+                                    >
+                                        <Trash2 className="h-4 w-4 mr-2" />
+                                        Delete Book
+                                    </Button>
+                                )
+                            )}
                         </div>
                     </div>
                 </div>
@@ -308,8 +351,8 @@ export default function BookDetailPage() {
                                         <Star
                                             key={star}
                                             className={`h-5 w-5 ${star <= Math.round(book.averageRating)
-                                                    ? 'fill-yellow-400 text-yellow-400'
-                                                    : 'text-gray-300'
+                                                ? 'fill-yellow-400 text-yellow-400'
+                                                : 'text-gray-300'
                                                 }`}
                                         />
                                     ))}

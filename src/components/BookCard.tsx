@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { useSession } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
 import { Star, Download, Upload, Library, Edit, PenLine, Heart, Trash2, BookOpen, CheckCircle, Box } from 'lucide-react';
 
@@ -19,6 +20,7 @@ export interface BookItem {
     description?: string;
     pdfUrl?: string;
     copies?: number;
+    addedBy?: string;
 }
 
 interface BookCardProps {
@@ -60,6 +62,7 @@ export function BookCard({
     onRemoveFromLibrary,
     showRemoveOption = false
 }: BookCardProps) {
+    const { data: session } = useSession();
     const [isUploading, setIsUploading] = useState(false);
     const [pdfUrl, setPdfUrl] = useState(book.pdfUrl);
 
@@ -128,6 +131,31 @@ export function BookCard({
         }
     };
 
+    const handleDelete = async () => {
+        if (!confirm('Are you sure you want to delete this book? This action cannot be undone.')) {
+            return;
+        }
+
+        try {
+            const res = await fetch(`/api/books/${book._id}`, {
+                method: 'DELETE',
+            });
+
+            if (!res.ok) {
+                const error = await res.json();
+                throw new Error(error.error || 'Failed to delete book');
+            }
+
+            alert('Book deleted successfully');
+            // Ideally call a parent callback to refresh list, currently just reloading
+            window.location.reload();
+
+        } catch (error: any) {
+            console.error('Delete failed:', error);
+            alert(error.message || 'Failed to delete book');
+        }
+    };
+
     return (
         <div className="bg-card border rounded-lg overflow-hidden hover:shadow-lg transition-shadow flex flex-col md:flex-row group w-full">
             {/* Hidden File Input for Upload */}
@@ -150,7 +178,7 @@ export function BookCard({
                     <div className="flex justify-between items-start mb-2">
                         <div>
                             <h3 className="text-xl font-bold mb-1 text-card-foreground">
-                                <Link href={`/books/${book.slug}`} className="hover:underline">
+                                <Link href={`/books/${book.slug || book._id}`} className="hover:underline">
                                     {book.title}
                                 </Link>
                             </h3>
@@ -159,7 +187,7 @@ export function BookCard({
                                     {book.author}
                                 </p>
                             ) : (
-                                <Link href={`/books/${book.slug}/edit`}>
+                                <Link href={`/books/${book.slug || book._id}/edit`}>
                                     <p className="text-primary/80 font-medium hover:underline flex items-center gap-1 cursor-pointer text-sm">
                                         <Edit className="h-3 w-3" /> Add Author
                                     </p>
@@ -195,7 +223,7 @@ export function BookCard({
                                 </span>
                             ))
                         ) : (
-                            <Link href={`/books/${book.slug}/edit`}>
+                            <Link href={`/books/${book.slug || book._id}/edit`}>
                                 <span className="text-xs px-2.5 py-0.5 border border-dashed border-primary/50 text-primary/80 rounded-full font-medium hover:bg-primary/5 cursor-pointer flex items-center gap-1">
                                     <Edit className="h-3 w-3" /> Add Category
                                 </span>
@@ -234,6 +262,23 @@ export function BookCard({
                         </Button>
                     )}
 
+                    {/* Delete Button - Only for Owner or Admin */}
+                    {session?.user && (
+                        ((book.addedBy && book.addedBy.toString() === session.user.id) ||
+                            session.user.role === 'admin' ||
+                            (session.user as any).role === 'super-admin') && (
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                title="Delete Book"
+                                onClick={handleDelete}
+                                className="text-gray-400 hover:text-red-600 hover:bg-red-50"
+                            >
+                                <Trash2 className="h-5 w-5" />
+                            </Button>
+                        )
+                    )}
+
                     {showRemoveOption || isOwned ? (
                         onRemoveFromLibrary && (
                             <Button
@@ -258,13 +303,13 @@ export function BookCard({
                         </Button>
                     )}
 
-                    <Link href={`/books/${book.slug}/edit`}>
+                    <Link href={`/books/${book.slug || book._id}/edit`}>
                         <Button variant="ghost" size="icon" title="Edit Book">
                             <Edit className="h-5 w-5 text-gray-500 hover:text-primary" />
                         </Button>
                     </Link>
 
-                    <Link href={`/books/${book.slug}`}>
+                    <Link href={`/books/${book.slug || book._id}`}>
                         <Button variant="ghost" size="icon" title="Write Review">
                             <PenLine className="h-5 w-5 text-gray-500 hover:text-primary" />
                         </Button>
