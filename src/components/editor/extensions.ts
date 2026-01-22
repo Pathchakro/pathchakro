@@ -7,7 +7,6 @@ import {
     GlobalDragHandle,
     HighlightExtension,
     HorizontalRule,
-
     Mathematics,
     Placeholder,
     StarterKit,
@@ -23,6 +22,7 @@ import {
     Youtube,
 } from "novel";
 
+import { Markdown } from "tiptap-markdown";
 import { cx } from "class-variance-authority";
 import { common, createLowlight } from "lowlight";
 
@@ -156,6 +156,11 @@ const mathematics = Mathematics.configure({
 
 const characterCount = CharacterCount.configure();
 
+const markdownExtension = Markdown.configure({
+    html: false,
+    transformCopiedText: true,
+});
+
 
 
 export const defaultExtensions = [
@@ -174,6 +179,7 @@ export const defaultExtensions = [
     mathematics,
     characterCount,
     TiptapUnderline,
+    markdownExtension,
 
     HighlightExtension,
     TextStyle,
