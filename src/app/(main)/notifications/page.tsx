@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useSession } from 'next-auth/react';
 import { Bell } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Select } from '@/components/ui/select';
@@ -23,15 +24,19 @@ interface Notification {
 }
 
 export default function NotificationsPage() {
+    const { status } = useSession();
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [filter, setFilter] = useState('all');
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        fetchNotifications();
-    }, [filter]);
+        if (status === 'authenticated') {
+            fetchNotifications();
+        }
+    }, [filter, status]);
 
     const fetchNotifications = async () => {
+        if (status !== 'authenticated') return;
         setLoading(true);
         try {
             const params = filter === 'unread' ? '?unreadOnly=true' : '';

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useSession } from 'next-auth/react';
 import { Bell } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { formatDate } from '@/lib/utils';
@@ -23,19 +24,23 @@ interface Notification {
 }
 
 export function NotificationDropdown() {
+    const { status } = useSession();
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [unreadCount, setUnreadCount] = useState(0);
     const [isOpen, setIsOpen] = useState(false);
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
-        fetchNotifications();
-        // Poll for new notifications every 30 seconds
-        const interval = setInterval(fetchNotifications, 30000);
-        return () => clearInterval(interval);
-    }, []);
+        if (status === 'authenticated') {
+            fetchNotifications();
+            // Poll for new notifications every 30 seconds
+            const interval = setInterval(fetchNotifications, 30000);
+            return () => clearInterval(interval);
+        }
+    }, [status]);
 
     const fetchNotifications = async () => {
+        if (status !== 'authenticated') return;
         try {
             const response = await fetch('/api/notifications?limit=10');
             const data = await response.json();

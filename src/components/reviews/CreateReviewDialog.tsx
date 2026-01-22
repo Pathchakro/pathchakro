@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Star } from 'lucide-react';
+import NovelEditor from '@/components/editor/NovelEditor';
 
 interface CreateReviewDialogProps {
     open: boolean;
@@ -81,7 +82,7 @@ export function CreateReviewDialog({ open, onOpenChange }: CreateReviewDialogPro
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+            <DialogContent className="sm:max-w-4xl max-h-[80vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle>Write a Book Review</DialogTitle>
                 </DialogHeader>
@@ -123,8 +124,8 @@ export function CreateReviewDialog({ open, onOpenChange }: CreateReviewDialogPro
                                 >
                                     <Star
                                         className={`h-8 w-8 ${star <= (hoveredRating || rating)
-                                                ? 'fill-yellow-400 text-yellow-400'
-                                                : 'text-gray-300'
+                                            ? 'fill-yellow-400 text-yellow-400'
+                                            : 'text-gray-300'
                                             }`}
                                     />
                                 </button>
@@ -139,17 +140,10 @@ export function CreateReviewDialog({ open, onOpenChange }: CreateReviewDialogPro
 
                     <div className="space-y-2">
                         <Label htmlFor="content">Your Review *</Label>
-                        <Textarea
-                            id="content"
-                            value={content}
-                            onChange={(e) => setContent(e.target.value)}
-                            placeholder="Share your thoughts about this book... What did you like? What could be better?"
-                            rows={6}
-                            required
+                        <NovelEditor
+                            initialValue={content ? JSON.parse(content) : undefined}
+                            onChange={(val) => setContent(val)}
                         />
-                        <p className="text-xs text-muted-foreground">
-                            {content.length}/500 characters
-                        </p>
                     </div>
 
                     <div className="space-y-2">

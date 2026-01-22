@@ -51,7 +51,7 @@ export function Navbar() {
 
                     {/* Actions */}
                     <div className="flex items-center gap-2">
-                        <NotificationDropdown />
+                        {session && <NotificationDropdown />}
                         <Button variant="ghost" size="icon">
                             <MessageCircle className="h-5 w-5" />
                         </Button>

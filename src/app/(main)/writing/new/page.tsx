@@ -14,11 +14,13 @@ import { z } from 'zod';
 import Link from 'next/link';
 import { ImageUploader } from '@/components/uploads/ImageUploader';
 import { BOOK_CATEGORIES } from '@/lib/constants';
+import NovelEditor from '@/components/editor/NovelEditor';
 
 const projectSchema = z.object({
     title: z.string().min(1, 'Title is required'),
     coverImage: z.string().optional(),
     introduction: z.string().optional(),
+    chapterName: z.string().optional(),
     description: z.string().optional(),
     visibility: z.enum(['private', 'public']),
     category: z.array(z.string())
@@ -156,13 +158,20 @@ export default function NewWritingProjectPage() {
                         </div>
 
                         <div className="space-y-2">
-                            <Label htmlFor="description">Description</Label>
-                            <Textarea
-                                id="description"
-                                placeholder="Describe what your book is about..."
-                                rows={3}
-                                {...register('description')}
+                            <Label htmlFor="chapterName">Chapter Name</Label>
+                            <Input
+                                id="chapterName"
+                                placeholder="Enter chapter name (optional)"
+                                {...register('chapterName')}
                                 disabled={isLoading}
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="description">Description</Label>
+                            <NovelEditor
+                                initialValue={watch('description') && watch('description') !== '' ? JSON.parse(watch('description') as string) : undefined}
+                                onChange={(val) => setValue('description', val)}
                             />
                         </div>
 

@@ -4,12 +4,13 @@ import { useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
+import NovelEditor from '@/components/editor/NovelEditor';
 import { Select } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Image, Video, X } from 'lucide-react';
 import { isValidYouTubeUrl } from '@/lib/youtube';
+import { BOOK_CATEGORIES } from '@/lib/constants';
 
 interface CreatePostDialogProps {
     open: boolean;
@@ -68,7 +69,7 @@ export function CreatePostDialog({ open, onOpenChange }: CreatePostDialogProps) 
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[600px]">
+            <DialogContent className="sm:max-w-4xl max-h-[80vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle>Create Post</DialogTitle>
                 </DialogHeader>
@@ -95,19 +96,18 @@ export function CreatePostDialog({ open, onOpenChange }: CreatePostDialogProps) 
                                 onChange={(e) => setPrivacy(e.target.value)}
                                 className="mt-1 text-xs h-7"
                             >
-                                <option value="public">Public</option>
-                                <option value="friends">Friends</option>
-                                <option value="team">Team Only</option>
+                                {BOOK_CATEGORIES.map((category) => (
+                                    <option key={category} value={category}>
+                                        {category}
+                                    </option>
+                                ))}
                             </Select>
                         </div>
                     </div>
 
-                    <Textarea
-                        placeholder="What's on your mind?"
-                        value={content}
-                        onChange={(e) => setContent(e.target.value)}
-                        rows={6}
-                        className="resize-none border-0 focus-visible:ring-0 text-base"
+                    <NovelEditor
+                        initialValue={content ? JSON.parse(content) : undefined}
+                        onChange={(val) => setContent(val)}
                     />
 
                     {showVideoInput && (
