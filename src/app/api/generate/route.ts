@@ -23,11 +23,10 @@ export async function POST(req: NextRequest) {
             model: openai("openai/gpt-4o-mini"),
             prompt: prompt,
             temperature: 0.7,
-            maxTokens: 500,
         });
 
         // Return the stream
-        return response.toDataStreamResponse();
+        return response.toTextStreamResponse();
     } catch (error) {
         console.error("AI Generation Error:", error);
         return NextResponse.json(
