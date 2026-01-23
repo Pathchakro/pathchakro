@@ -13,6 +13,11 @@ export interface ITransaction {
     sellerEarnings: number;
     status: 'pending' | 'completed' | 'refunded' | 'cancelled';
     paymentMethod?: string;
+    proofOfPayment?: string;
+    transactionId?: string;
+    mobileNumber?: string;
+    accountNumber?: string;
+    donorName?: string;
     createdAt: Date;
 }
 
@@ -68,6 +73,11 @@ const TransactionSchema = new Schema<ITransaction>(
             index: true,
         },
         paymentMethod: String,
+        proofOfPayment: String,
+        transactionId: String,
+        mobileNumber: String,
+        accountNumber: String,
+        donorName: String,
     },
     {
         timestamps: true,

@@ -73,6 +73,27 @@ export function LeftSidebar() {
                 </nav>
             </div>
 
+            {/* Admin Links */}
+            {session?.user?.role === 'admin' && (
+                <div className="bg-card rounded-lg p-4 mb-4 shadow-sm border border-red-100 dark:border-red-900/20">
+                    <h3 className="font-semibold mb-3 text-sm text-red-600 dark:text-red-400">Admin Controls</h3>
+                    <nav className="space-y-1">
+                        <Link
+                            href="/admin/dashboard"
+                            className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-muted transition-colors"
+                        >
+                            <span className="text-sm">Dashboard</span>
+                        </Link>
+                        <Link
+                            href="/admin/fund"
+                            className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-muted transition-colors"
+                        >
+                            <span className="text-sm">Fund Management</span>
+                        </Link>
+                    </nav>
+                </div>
+            )}
+
 
         </aside>
     );
