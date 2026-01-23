@@ -51,7 +51,28 @@ export async function POST(request: NextRequest) {
         }
 
         const body = await request.json();
-        const { content, type, privacy, media } = body;
+        const { content, type, privacy, media, title, category } = body;
+
+        if (!title) {
+            return NextResponse.json(
+                { error: 'Title is required' },
+                { status: 400 }
+            );
+        }
+
+        if (!category) {
+            return NextResponse.json(
+                { error: 'Category is required' },
+                { status: 400 }
+            );
+        }
+
+        if (media && media.length > 5) {
+            return NextResponse.json(
+                { error: 'Maximum 5 images allowed' },
+                { status: 400 }
+            );
+        }
 
         if (!content) {
             return NextResponse.json(
@@ -62,11 +83,20 @@ export async function POST(request: NextRequest) {
 
         await dbConnect();
 
+        // Generate slug
+        const slug = title
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/(^-|-$)+/g, '') + '-' + Date.now();
+
         const post = await Post.create({
             author: session.user.id,
+            title,
+            slug,
+            category,
             content,
             type: type || 'text',
-            privacy: privacy || 'public',
+            privacy: 'public', // Force public as requested
             media: media || [],
             likes: [],
             comments: [],

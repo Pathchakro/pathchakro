@@ -83,9 +83,12 @@ export interface IUser {
 export interface IPost {
     _id: string;
     author: string | IUser;
+    title: string;
+    slug: string;
     content: string;
     type: 'text' | 'photo' | 'video' | 'review' | 'quiz' | 'assignment' | 'poll';
     media?: string[];
+    category: string;
     videoUrl?: string;
     privacy: 'public' | 'friends' | 'team';
     team?: string | ITeam;

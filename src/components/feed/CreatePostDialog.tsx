@@ -1,16 +1,15 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import NovelEditor from '@/components/editor/NovelEditor';
 import { Select } from '@/components/ui/select';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Image, Video, X } from 'lucide-react';
-import { isValidYouTubeUrl } from '@/lib/youtube';
+import { Image as ImageIcon, X, Loader2 } from 'lucide-react';
 import { BOOK_CATEGORIES } from '@/lib/constants';
+import { toast } from 'sonner';
 
 interface CreatePostDialogProps {
     open: boolean;
@@ -19,21 +18,67 @@ interface CreatePostDialogProps {
 
 export function CreatePostDialog({ open, onOpenChange }: CreatePostDialogProps) {
     const { data: session } = useSession();
+    const [title, setTitle] = useState('');
     const [content, setContent] = useState('');
-    const [videoUrl, setVideoUrl] = useState('');
-    const [privacy, setPrivacy] = useState('public');
+    const [mediaUrls, setMediaUrls] = useState<string[]>([]);
+    const [category, setCategory] = useState(BOOK_CATEGORIES[0]);
     const [isLoading, setIsLoading] = useState(false);
-    const [showVideoInput, setShowVideoInput] = useState(false);
+    const [isUploading, setIsUploading] = useState(false);
+
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        if (mediaUrls.length >= 5) {
+            toast.error("Maximum 5 posts allowed");
+            return;
+        }
+
+        // Check file size (e.g. 5MB)
+        if (file.size > 5 * 1024 * 1024) {
+            toast.error("File size too large (max 5MB)");
+            return;
+        }
+
+        setIsUploading(true);
+        try {
+            const response = await fetch('/api/upload', {
+                method: 'POST',
+                body: file
+            });
+            const data = await response.json();
+
+            if (data.url) {
+                setMediaUrls(prev => [...prev, data.url]);
+                toast.success("Image uploaded!");
+            } else {
+                toast.error("Upload failed");
+            }
+        } catch (error) {
+            console.error("Upload error:", error);
+            toast.error("Something went wrong");
+        } finally {
+            setIsUploading(false);
+            // Reset input
+            if (fileInputRef.current) fileInputRef.current.value = '';
+        }
+    };
+
+    const removeImage = (indexToRemove: number) => {
+        setMediaUrls(prev => prev.filter((_, index) => index !== indexToRemove));
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        if (!content.trim()) return;
-
-        if (videoUrl && !isValidYouTubeUrl(videoUrl)) {
-            alert('Please enter a valid YouTube URL');
+        if (!title.trim()) {
+            toast.error("Title is required");
             return;
         }
+
+        if (!content.trim() && mediaUrls.length === 0) return;
 
         setIsLoading(true);
 
@@ -44,24 +89,30 @@ export function CreatePostDialog({ open, onOpenChange }: CreatePostDialogProps) 
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
+                    title,
                     content,
-                    type: videoUrl ? 'video' : 'text',
-                    privacy,
-                    videoUrl: videoUrl || undefined,
+                    category,
+                    type: mediaUrls.length > 0 ? 'photo' : 'text',
+                    privacy: 'public',
+                    media: mediaUrls,
                 }),
             });
 
             if (response.ok) {
+                setTitle('');
                 setContent('');
-                setVideoUrl('');
-                setPrivacy('public');
-                setShowVideoInput(false);
+                setMediaUrls([]);
+                setCategory(BOOK_CATEGORIES[0]);
                 onOpenChange(false);
+                toast.success("Post created!");
                 // Trigger feed refresh
                 window.location.reload();
+            } else {
+                toast.error("Failed to create post");
             }
         } catch (error) {
             console.error('Error creating post:', error);
+            toast.error("Error creating post");
         } finally {
             setIsLoading(false);
         }
@@ -92,17 +143,29 @@ export function CreatePostDialog({ open, onOpenChange }: CreatePostDialogProps) 
                         <div className="flex-1">
                             <p className="font-semibold">{session?.user?.name || 'User Name'}</p>
                             <Select
-                                value={privacy}
-                                onChange={(e) => setPrivacy(e.target.value)}
-                                className="mt-1 text-xs h-7"
+                                value={category}
+                                onChange={(e) => setCategory(e.target.value)}
+                                className="mt-1 text-xs h-7 w-fit bg-transparent border-none p-0 focus:ring-0 text-muted-foreground font-normal"
                             >
-                                {BOOK_CATEGORIES.map((category) => (
-                                    <option key={category} value={category}>
-                                        {category}
+                                {BOOK_CATEGORIES.map((cat) => (
+                                    <option key={cat} value={cat}>
+                                        {cat}
                                     </option>
                                 ))}
                             </Select>
                         </div>
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label htmlFor="title">Title</Label>
+                        <input
+                            id="title"
+                            type="text"
+                            value={title}
+                            onChange={(e) => setTitle(e.target.value)}
+                            placeholder="Post Title"
+                            className="w-full rounded-md border border-input px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                        />
                     </div>
 
                     <NovelEditor
@@ -110,50 +173,53 @@ export function CreatePostDialog({ open, onOpenChange }: CreatePostDialogProps) 
                         onChange={(val) => setContent(val)}
                     />
 
-                    {showVideoInput && (
-                        <div className="space-y-2">
-                            <div className="flex items-center justify-between">
-                                <Label htmlFor="videoUrl">YouTube Video URL</Label>
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        setShowVideoInput(false);
-                                        setVideoUrl('');
-                                    }}
-                                    className="text-xs text-muted-foreground hover:text-foreground"
-                                >
-                                    <X className="h-4 w-4" />
-                                </button>
-                            </div>
-                            <Input
-                                id="videoUrl"
-                                value={videoUrl}
-                                onChange={(e) => setVideoUrl(e.target.value)}
-                                placeholder="https://www.youtube.com/watch?v=..."
-                            />
-                            {videoUrl && !isValidYouTubeUrl(videoUrl) && (
-                                <p className="text-xs text-red-500">Please enter a valid YouTube URL</p>
-                            )}
+                    {/* Image Preview */}
+                    {mediaUrls.length > 0 && (
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                            {mediaUrls.map((url, index) => (
+                                <div key={index} className="relative rounded-lg overflow-hidden border bg-muted/50 aspect-video group">
+                                    <img src={url} alt={`Preview ${index + 1}`} className="w-full h-full object-cover" />
+                                    <button
+                                        type="button"
+                                        onClick={() => removeImage(index)}
+                                        className="absolute top-1 right-1 p-1 bg-black/50 rounded-full text-white hover:bg-black/70 opacity-0 group-hover:opacity-100 transition-opacity"
+                                    >
+                                        <X className="h-3 w-3" />
+                                    </button>
+                                    {index === 0 && (
+                                        <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-[10px] px-2 py-0.5 text-center">
+                                            Thumbnail
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    )}
+
+                    {isUploading && (
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <Loader2 className="h-4 w-4 animate-spin" /> Uploading image...
                         </div>
                     )}
 
                     <div className="border rounded-lg p-3">
                         <p className="text-sm font-medium mb-2">Add to your post</p>
                         <div className="flex gap-2">
+                            <input
+                                type="file"
+                                ref={fileInputRef}
+                                hidden
+                                accept="image/*"
+                                onChange={handleImageUpload}
+                            />
                             <button
                                 type="button"
-                                className="flex items-center gap-1 px-3 py-2 rounded-lg hover:bg-muted transition-colors"
+                                onClick={() => fileInputRef.current?.click()}
+                                disabled={isUploading || mediaUrls.length >= 5}
+                                className="flex items-center gap-1 px-3 py-2 rounded-lg hover:bg-muted transition-colors disabled:opacity-50"
                             >
-                                <Image className="h-5 w-5 text-green-500" />
-                                <span className="text-sm">Photo</span>
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => setShowVideoInput(!showVideoInput)}
-                                className={`flex items-center gap-1 px-3 py-2 rounded-lg hover:bg-muted transition-colors ${showVideoInput ? 'bg-muted' : ''}`}
-                            >
-                                <Video className="h-5 w-5 text-red-500" />
-                                <span className="text-sm">Video</span>
+                                <ImageIcon className="h-5 w-5 text-green-500" />
+                                <span className="text-sm">Photo {mediaUrls.length}/5</span>
                             </button>
                         </div>
                     </div>
@@ -161,7 +227,7 @@ export function CreatePostDialog({ open, onOpenChange }: CreatePostDialogProps) 
                     <Button
                         type="submit"
                         className="w-full"
-                        disabled={!content.trim() || isLoading}
+                        disabled={(!content.trim() && mediaUrls.length === 0) || !title.trim() || isLoading || isUploading}
                     >
                         {isLoading ? 'Posting...' : 'Post'}
                     </Button>

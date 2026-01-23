@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Bell, MessageCircle, Search, BookOpen, PlusCircle, User, Settings, LogOut } from 'lucide-react';
 import { NotificationDropdown } from '@/components/notifications/NotificationDropdown';
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 
@@ -15,6 +15,20 @@ export function Navbar() {
     const { data: session } = useSession();
     const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
+    const dropdownRef = useRef<HTMLDivElement>(null);
+
+    // Close on click outside
+    useEffect(() => {
+        function handleClickOutside(event: MouseEvent) {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+                setIsUserMenuOpen(false);
+            }
+        }
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, []);
 
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault();
@@ -61,7 +75,7 @@ export function Navbar() {
                         </Button>
 
                         {/* User Menu */}
-                        <div className="relative">
+                        <div className="relative" ref={dropdownRef}>
                             <button
                                 onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                                 className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 overflow-hidden flex items-center justify-center text-white font-medium"
@@ -78,17 +92,34 @@ export function Navbar() {
                             </button>
 
                             {isUserMenuOpen && (
-                                <div className="absolute right-0 mt-2 w-48 bg-card border rounded-lg shadow-lg py-2">
-                                    <Link href="/profile/me" className="flex items-center gap-2 px-4 py-2 hover:bg-muted">
+                                <div className="absolute right-0 mt-2 w-56 bg-card border rounded-lg shadow-lg py-2 z-50">
+                                    {session?.user?.role === 'admin' && (
+                                        <>
+                                            <div className="px-4 py-1">
+                                                <h4 className="text-xs font-semibold text-red-500 uppercase tracking-wider">Admin Controls</h4>
+                                            </div>
+                                            <Link href="/admin/dashboard" className="flex items-center gap-2 px-4 py-2 hover:bg-muted" onClick={() => setIsUserMenuOpen(false)}>
+                                                <BookOpen className="h-4 w-4" />
+                                                <span className="text-sm">Dashboard</span>
+                                            </Link>
+                                            <Link href="/admin/fund" className="flex items-center gap-2 px-4 py-2 hover:bg-muted" onClick={() => setIsUserMenuOpen(false)}>
+                                                <Settings className="h-4 w-4" />
+                                                <span className="text-sm">Fund Management</span>
+                                            </Link>
+                                            <hr className="my-2" />
+                                        </>
+                                    )}
+
+                                    <Link href="/profile/me" className="flex items-center gap-2 px-4 py-2 hover:bg-muted" onClick={() => setIsUserMenuOpen(false)}>
                                         <User className="h-4 w-4" />
                                         <span className="text-sm">My Profile</span>
                                     </Link>
-                                    <Link href="/settings" className="flex items-center gap-2 px-4 py-2 hover:bg-muted">
+                                    <Link href="/settings" className="flex items-center gap-2 px-4 py-2 hover:bg-muted" onClick={() => setIsUserMenuOpen(false)}>
                                         <Settings className="h-4 w-4" />
                                         <span className="text-sm">Settings</span>
                                     </Link>
                                     <hr className="my-2" />
-                                    <button className="flex items-center gap-2 px-4 py-2 hover:bg-muted w-full text-left text-red-500">
+                                    <button className="flex items-center gap-2 px-4 py-2 hover:bg-muted w-full text-left text-red-500" onClick={() => setIsUserMenuOpen(false)}>
                                         <LogOut className="h-4 w-4" />
                                         <span className="text-sm">Logout</span>
                                     </button>
