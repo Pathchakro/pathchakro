@@ -5,7 +5,15 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useSession } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
-import { Star, Download, Upload, Library, Edit, PenLine, Heart, Trash2, BookOpen, CheckCircle, Box } from 'lucide-react';
+import { Star, Download, Upload, Library, Edit, PenLine, Heart, Trash2, BookOpen, CheckCircle, Box, MoreVertical } from 'lucide-react';
+import Swal from 'sweetalert2';
+import { toast } from 'sonner';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export interface BookItem {
     _id: string;
@@ -20,7 +28,11 @@ export interface BookItem {
     description?: string;
     pdfUrl?: string;
     copies?: number;
-    addedBy?: string;
+    addedBy?: {
+        _id: string;
+        name: string;
+        image?: string;
+    } | string;
 }
 
 interface BookCardProps {
@@ -65,10 +77,47 @@ export function BookCard({
     const { data: session } = useSession();
     const [isUploading, setIsUploading] = useState(false);
     const [pdfUrl, setPdfUrl] = useState(book.pdfUrl);
+    const [currentStatus, setCurrentStatus] = useState(status);
+    const [isLibraryOwned, setIsLibraryOwned] = useState(isOwned);
+    const [localCopies, setLocalCopies] = useState(book.copies || 0);
+
+    useEffect(() => {
+        setCurrentStatus(status);
+    }, [status]);
+
+    useEffect(() => {
+        setIsLibraryOwned(isOwned);
+    }, [isOwned]);
+
+    useEffect(() => {
+        setLocalCopies(book.copies || 0);
+    }, [book.copies]);
+
+    const handleStatusUpdate = (newStatus: string) => {
+        setCurrentStatus(newStatus);
+        onUpdateStatus(book._id, newStatus);
+    };
+
+    const handleToggleLibrary = (action: 'add' | 'remove') => {
+        if (action === 'add') {
+            setIsLibraryOwned(true);
+            setLocalCopies(prev => prev + 1);
+            onAddToLibrary(book._id);
+        } else {
+            setIsLibraryOwned(false);
+            setLocalCopies(prev => Math.max(0, prev - 1));
+            // Check if onRemoveFromLibrary exists, otherwise it might be handled by parent differently
+            if (onRemoveFromLibrary) {
+                onRemoveFromLibrary(book._id);
+            }
+        }
+    };
 
     useEffect(() => {
         setPdfUrl(book.pdfUrl);
     }, [book.pdfUrl]);
+
+
 
     const handleUploadClick = () => {
         const fileInput = document.getElementById(`pdf-upload-${book._id}`) as HTMLInputElement;
@@ -132,9 +181,17 @@ export function BookCard({
     };
 
     const handleDelete = async () => {
-        if (!confirm('Are you sure you want to delete this book? This action cannot be undone.')) {
-            return;
-        }
+        const result = await Swal.fire({
+            title: 'Are you sure?',
+            text: "You won't be able to revert this!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Yes, delete it!'
+        });
+
+        if (!result.isConfirmed) return;
 
         try {
             const res = await fetch(`/api/books/${book._id}`, {
@@ -146,13 +203,13 @@ export function BookCard({
                 throw new Error(error.error || 'Failed to delete book');
             }
 
-            alert('Book deleted successfully');
+            toast.success('Book deleted successfully');
             // Ideally call a parent callback to refresh list, currently just reloading
             window.location.reload();
 
         } catch (error: any) {
             console.error('Delete failed:', error);
-            alert(error.message || 'Failed to delete book');
+            toast.error(error.message || 'Failed to delete book');
         }
     };
 
@@ -175,6 +232,74 @@ export function BookCard({
             {/* Book Info */}
             <div className="flex-1 p-6 flex flex-col justify-between">
                 <div>
+                    {/* User Info & Menu Header */}
+                    <div className="flex justify-between items-start mb-4">
+                        <div className="flex items-center gap-2">
+                            {book.addedBy && typeof book.addedBy !== 'string' && (
+                                <Link href={`/profile/${book.addedBy._id}`} className="flex items-center gap-2 group/user">
+                                    <div className="h-8 w-8 rounded-full overflow-hidden border border-border">
+                                        {book.addedBy.image ? (
+                                            <Image
+                                                src={book.addedBy.image}
+                                                alt={book.addedBy.name}
+                                                width={32}
+                                                height={32}
+                                                className="h-full w-full object-cover"
+                                            />
+                                        ) : (
+                                            <div className="h-full w-full bg-primary/10 flex items-center justify-center text-primary text-xs font-medium">
+                                                {book.addedBy.name?.[0]}
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className="flex flex-col">
+                                        <span className="text-sm font-medium text-foreground group-hover/user:underline">
+                                            {book.addedBy.name}
+                                        </span>
+                                        <span className="text-xs text-muted-foreground">
+                                            Added this book
+                                        </span>
+                                    </div>
+                                </Link>
+                            )}
+                        </div>
+
+                        {/* 3-Dot Menu for Owner/Admin */}
+                        {(
+                            (session?.user && (
+                                (book.addedBy && (typeof book.addedBy === 'string' ? book.addedBy === session.user.id : book.addedBy._id === session.user.id)) ||
+                                session.user.role === 'admin' ||
+                                (session.user as any).role === 'super-admin'
+                            ))
+                        ) && (
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button variant="ghost" size="icon" className="h-8 w-8 -mr-2 text-muted-foreground hover:text-foreground">
+                                            <MoreVertical className="h-4 w-4" />
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                        <DropdownMenuItem asChild>
+                                            <Link href={`/books/${book.slug || book._id}/edit`} className="flex w-full items-center cursor-pointer">
+                                                <Edit className="mr-2 h-4 w-4" />
+                                                <span>Edit</span>
+                                            </Link>
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem
+                                            className="text-red-600 focus:text-red-600 cursor-pointer"
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                handleDelete();
+                                            }}
+                                        >
+                                            <Trash2 className="mr-2 h-4 w-4" />
+                                            <span>Delete</span>
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                            )}
+                    </div>
+
                     <div className="flex justify-between items-start mb-2">
                         <div>
                             <h3 className="text-xl font-bold mb-1 text-card-foreground">
@@ -208,7 +333,7 @@ export function BookCard({
 
                     <div className="flex items-center gap-2 mb-2 text-sm text-muted-foreground">
                         <Box className="h-4 w-4" />
-                        <span>Available: {book.copies || 0}</span>
+                        <span>Available: {localCopies}</span>
                     </div>
 
                     {/* Categories */}
@@ -262,52 +387,64 @@ export function BookCard({
                         </Button>
                     )}
 
-                    {/* Delete Button - Only for Owner or Admin */}
-                    {session?.user && (
-                        ((book.addedBy && book.addedBy.toString() === session.user.id) ||
-                            session.user.role === 'admin' ||
-                            (session.user as any).role === 'super-admin') && (
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                title="Delete Book"
-                                onClick={handleDelete}
-                                className="text-gray-400 hover:text-red-600 hover:bg-red-50"
-                            >
-                                <Trash2 className="h-5 w-5" />
-                            </Button>
-                        )
-                    )}
 
-                    {showRemoveOption || isOwned ? (
-                        onRemoveFromLibrary && (
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                title="Remove from Library"
-                                onClick={() => onRemoveFromLibrary(book._id)}
-                                className="text-destructive hover:bg-destructive/10"
-                            >
-                                <Trash2 className="h-5 w-5" />
-                            </Button>
-                        )
+
+                    {/* Library Add/Remove Button with Optimistic UI */}
+                    {showRemoveOption || isLibraryOwned ? (
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            title="Remove from Library"
+                            onClick={() => handleToggleLibrary('remove')}
+                            className="text-primary hover:bg-primary/10"
+                        >
+                            <Library className="h-5 w-5 fill-current" />
+                        </Button>
                     ) : (
                         <Button
                             variant="ghost"
                             size="icon"
                             title="Add to Library"
-                            onClick={() => onAddToLibrary(book._id)}
+                            onClick={() => handleToggleLibrary('add')}
                             className="text-gray-500 hover:text-primary"
                         >
                             <Library className="h-5 w-5" />
                         </Button>
                     )}
 
-                    <Link href={`/books/${book.slug || book._id}/edit`}>
-                        <Button variant="ghost" size="icon" title="Edit Book">
-                            <Edit className="h-5 w-5 text-gray-500 hover:text-primary" />
-                        </Button>
-                    </Link>
+                    {/* 3-Dot Menu for Owner/Admin */}
+                    {(
+                        (session?.user && (
+                            (book.addedBy && book.addedBy.toString() === session.user.id) ||
+                            session.user.role === 'admin' ||
+                            (session.user as any).role === 'super-admin'
+                        ))
+                    ) && (
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+
+                                    {/* Delete logic moved to top menu */}
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                    <DropdownMenuItem asChild>
+                                        <Link href={`/books/${book.slug || book._id}/edit`} className="flex w-full items-center cursor-pointer">
+                                            <Edit className="mr-2 h-4 w-4" />
+                                            <span>Edit</span>
+                                        </Link>
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                        className="text-red-600 focus:text-red-600 cursor-pointer"
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            handleDelete();
+                                        }}
+                                    >
+                                        <Trash2 className="mr-2 h-4 w-4" />
+                                        <span>Delete</span>
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        )}
 
                     <Link href={`/books/${book.slug || book._id}`}>
                         <Button variant="ghost" size="icon" title="Write Review">
@@ -319,31 +456,31 @@ export function BookCard({
                         <Button
                             variant="ghost"
                             size="icon"
-                            title={status === 'want-to-read' ? "On Wishlist" : "Wish to Read"}
-                            onClick={() => onUpdateStatus(book._id, 'want-to-read')}
-                            className={status === 'want-to-read' ? "text-red-500 hover:bg-red-50" : "text-gray-400 hover:text-red-500 hover:bg-red-50"}
+                            title={currentStatus === 'want-to-read' ? "Remove from Wishlist" : "Wish to Read"}
+                            onClick={() => handleStatusUpdate(currentStatus === 'want-to-read' ? '' : 'want-to-read')}
+                            className={currentStatus === 'want-to-read' ? "text-red-500 hover:bg-red-50" : "text-gray-400 hover:text-red-500 hover:bg-red-50"}
                         >
-                            <Heart className={`h-5 w-5 ${status === 'want-to-read' ? "fill-current" : ""}`} />
+                            <Heart className={`h-5 w-5 ${currentStatus === 'want-to-read' ? "fill-current" : ""}`} />
                         </Button>
 
                         <Button
                             variant="ghost"
                             size="icon"
-                            title={status === 'reading' ? "Currently Reading" : "Mark as Reading"}
-                            onClick={() => onUpdateStatus(book._id, 'reading')}
-                            className={status === 'reading' ? "text-blue-500 hover:bg-blue-50" : "text-gray-400 hover:text-blue-500 hover:bg-blue-50"}
+                            title={currentStatus === 'reading' ? "Remove from Reading" : "Mark as Reading"}
+                            onClick={() => handleStatusUpdate(currentStatus === 'reading' ? '' : 'reading')}
+                            className={currentStatus === 'reading' ? "text-blue-500 hover:bg-blue-50" : "text-gray-400 hover:text-blue-500 hover:bg-blue-50"}
                         >
-                            <BookOpen className={`h-5 w-5 ${status === 'reading' ? "fill-current" : ""}`} />
+                            <BookOpen className={`h-5 w-5 ${currentStatus === 'reading' ? "fill-current" : ""}`} />
                         </Button>
 
                         <Button
                             variant="ghost"
                             size="icon"
-                            title={status === 'completed' ? "Completed" : "Mark as Completed"}
-                            onClick={() => onUpdateStatus(book._id, 'completed')}
-                            className={status === 'completed' ? "text-green-500 hover:bg-green-50" : "text-gray-400 hover:text-green-500 hover:bg-green-50"}
+                            title={currentStatus === 'completed' ? "Remove from Completed" : "Mark as Completed"}
+                            onClick={() => handleStatusUpdate(currentStatus === 'completed' ? '' : 'completed')}
+                            className={currentStatus === 'completed' ? "text-green-500 hover:bg-green-50" : "text-gray-400 hover:text-green-500 hover:bg-green-50"}
                         >
-                            <CheckCircle className={`h-5 w-5 ${status === 'completed' ? "fill-current" : ""}`} />
+                            <CheckCircle className={`h-5 w-5 ${currentStatus === 'completed' ? "fill-current" : ""}`} />
                         </Button>
                     </div>
                 </div>

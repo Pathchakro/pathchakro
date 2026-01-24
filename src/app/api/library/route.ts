@@ -35,7 +35,11 @@ export async function GET(request: NextRequest) {
         const library = await UserLibrary.find(filter)
             .populate({
                 path: 'book',
-                select: 'title author category coverImage publisher averageRating totalReviews slug description pdfUrl',
+                select: 'title author category coverImage publisher averageRating totalReviews slug description pdfUrl addedBy copies',
+                populate: {
+                    path: 'addedBy',
+                    select: 'name image _id'
+                }
             })
             .sort({ addedAt: -1 })
             .lean();
@@ -92,7 +96,7 @@ export async function POST(request: NextRequest) {
             $setOnInsert: { addedAt: new Date() }
         };
 
-        if (status) updateData.status = status;
+        if (status !== undefined) updateData.status = status;
         if (isOwned !== undefined) updateData.isOwned = isOwned;
 
         // Handle reading dates logic if status changes
@@ -102,11 +106,32 @@ export async function POST(request: NextRequest) {
             updateData.completedReading = new Date();
         }
 
+        // Check previous state for availability update
+        const existingItem = await UserLibrary.findOne({ user: session.user.id, book: bookId });
+        const wasOwned = existingItem?.isOwned || false;
+
         const libraryItem = await UserLibrary.findOneAndUpdate(
             { user: session.user.id, book: bookId },
             updateData,
             { new: true, upsert: true, setDefaultsOnInsert: true }
         ).populate('book', 'title author category coverImage slug');
+
+        // Logic for updating Book copies
+        // 1. New item added as owned
+        if (!existingItem && isOwned === true) {
+            const Book = (await import('@/models/Book')).default;
+            await Book.findByIdAndUpdate(bookId, { $inc: { copies: 1 } });
+        }
+        // 2. Existing item changed to owned
+        else if (existingItem && !wasOwned && isOwned === true) {
+            const Book = (await import('@/models/Book')).default;
+            await Book.findByIdAndUpdate(bookId, { $inc: { copies: 1 } });
+        }
+        // 3. Existing item changed to NOT owned
+        else if (existingItem && wasOwned && isOwned === false) {
+            const Book = (await import('@/models/Book')).default;
+            await Book.findByIdAndUpdate(bookId, { $inc: { copies: -1 } });
+        }
 
         return NextResponse.json(
             { library: libraryItem, message: 'Library updated successfully' },

@@ -1,13 +1,14 @@
 'use client';
 
 import Link from 'next/link';
-import { Home, Library, GraduationCap, ShoppingCart, Heart, DollarSign, Plane, PenTool, Calendar, Users } from 'lucide-react';
+import { Home, Library, GraduationCap, ShoppingCart, Heart, DollarSign, Plane, PenTool, Calendar, Users, BarChart2 } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 
 const QUICK_LINKS = [
     { icon: Home, label: 'News Feed', href: '/' },
     { icon: Library, label: 'Posts', href: '/posts' },
     { icon: Library, label: 'My Library', href: '/library' },
+    { icon: BarChart2, label: 'Reading Status', href: '/reading-status' },
     { icon: PenTool, label: 'My Writings', href: '/writing' },
     { icon: Calendar, label: 'Pathchakro Events', href: '/events' },
     { icon: GraduationCap, label: 'Courses', href: '/courses' },

@@ -14,6 +14,7 @@ import { isValidYouTubeUrl } from '@/lib/youtube';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useSession } from 'next-auth/react';
+import { toast } from 'sonner';
 
 interface Book {
     _id: string;
@@ -137,12 +138,14 @@ export default function BookDetailPage() {
 
     const handleSubmitReview = async () => {
         if (!reviewContent.trim()) {
-            alert('Please write a review');
-            return;
+            if (!reviewContent.trim()) {
+                toast.error('Please write a review');
+                return;
+            }
         }
 
         if (videoUrl && !isValidYouTubeUrl(videoUrl)) {
-            alert('Please enter a valid YouTube URL');
+            toast.error('Please enter a valid YouTube URL');
             return;
         }
 
@@ -160,7 +163,7 @@ export default function BookDetailPage() {
             });
 
             if (response.ok) {
-                alert('Review posted successfully!');
+                toast.success('Review posted successfully!');
                 setReviewContent('');
                 setVideoUrl('');
                 setRating(5);
@@ -169,7 +172,7 @@ export default function BookDetailPage() {
                 if (book?._id) fetchReviews(book._id);
             } else {
                 const data = await response.json();
-                alert(data.error);
+                toast.error(data.error);
             }
         } catch (error) {
             console.error('Error submitting review:', error);
@@ -180,7 +183,7 @@ export default function BookDetailPage() {
 
     const handleUploadPDF = async () => {
         if (!pdfFileName || !pdfFileUrl) {
-            alert('Please provide file name and URL');
+            toast.error('Please provide file name and URL');
             return;
         }
 
@@ -199,14 +202,14 @@ export default function BookDetailPage() {
 
             const data = await response.json();
             if (response.ok) {
-                alert(data.message);
+                toast.success(data.message);
                 setPdfFileName('');
                 setPdfFileUrl('');
                 setPdfDescription('');
                 setShowPDFUpload(false);
                 if (book?._id) fetchPDFs(book._id);
             } else {
-                alert(data.error);
+                toast.error(data.error);
             }
         } catch (error) {
             console.error('Error uploading PDF:', error);
@@ -235,9 +238,9 @@ export default function BookDetailPage() {
 
             const data = await response.json();
             if (response.ok) {
-                alert(data.message);
+                toast.success(data.message);
             } else {
-                alert(data.error);
+                toast.error(data.error);
             }
         } catch (error) {
             console.error('Error adding to library:', error);
@@ -260,12 +263,12 @@ export default function BookDetailPage() {
                 throw new Error(error.error || 'Failed to delete book');
             }
 
-            alert('Book deleted successfully');
+            toast.success('Book deleted successfully');
             window.location.href = '/books'; // Redirect to books list
 
         } catch (error: any) {
             console.error('Delete failed:', error);
-            alert(error.message || 'Failed to delete book');
+            toast.error(error.message || 'Failed to delete book');
         }
     };
 

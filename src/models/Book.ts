@@ -49,7 +49,7 @@ const BookSchema = new Schema<IBook>(
         },
         copies: {
             type: Number,
-            default: 1,
+            default: 0,
             min: 0,
         },
         addedBy: {

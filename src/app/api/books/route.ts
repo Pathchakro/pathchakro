@@ -28,6 +28,7 @@ export async function GET(request: NextRequest) {
 
         const books = await Book.find(filter)
             .sort({ averageRating: -1, totalReviews: -1 })
+            .populate('addedBy', 'name image _id')
             .limit(20)
             .lean();
 

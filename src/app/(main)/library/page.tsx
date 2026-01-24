@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
@@ -51,7 +52,9 @@ export default function MyLibraryPage() {
             const data = await response.json();
 
             if (data.library) {
-                setLibrary(data.library);
+                // Filter out orphaned items immediately so counts are accurate
+                const validItems = data.library.filter((item: LibraryItem) => item.book);
+                setLibrary(validItems);
             }
         } catch (error) {
             console.error('Error fetching library:', error);
@@ -87,15 +90,24 @@ export default function MyLibraryPage() {
             });
 
             if (response.ok) {
+                if (newStatus) {
+                    toast.success(`Marked as ${newStatus.replace(/-/g, ' ')}`);
+                } else {
+                    toast.success("Status removed");
+                }
                 fetchLibrary(); // Re-fetch all items to update state
+            } else {
+                toast.error("Failed to update status");
             }
         } catch (error) {
+            toast.error("Something went wrong");
             console.error('Error updating status:', error);
         }
     };
 
     const getFilteredLibrary = () => {
-        let items = library;
+        // Filter out orphaned items where book might be null
+        let items = library.filter(item => item.book);
 
         // Status/Tab Filter
         if (statusTab === 'owned') {

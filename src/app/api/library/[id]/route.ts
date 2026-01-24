@@ -75,7 +75,7 @@ export async function PUT(
             );
         }
 
-        if (status) {
+        if (status !== undefined) {
             libraryItem.status = status;
 
             if (status === 'reading' && !libraryItem.startedReading) {
@@ -138,6 +138,11 @@ export async function DELETE(
                 { status: 404 }
             );
         }
+
+        // Recalculate copies for robustness
+        const count = await UserLibrary.countDocuments({ book: result.book, isOwned: true });
+        const Book = (await import('@/models/Book')).default;
+        await Book.findByIdAndUpdate(result.book, { copies: count });
 
         return NextResponse.json({
             message: 'Book removed from library',

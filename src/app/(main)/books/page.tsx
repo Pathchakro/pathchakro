@@ -19,10 +19,30 @@ export default function BooksPage() {
     const [searchQuery, setSearchQuery] = useState('');
     const [categoryFilter, setCategoryFilter] = useState('');
     const [authorFilter, setAuthorFilter] = useState('');
+    const [libraryMap, setLibraryMap] = useState<Record<string, { status: string; isOwned: boolean }>>({});
 
     useEffect(() => {
         fetchBooks();
+        fetchUserLibrary();
     }, []);
+
+    const fetchUserLibrary = async () => {
+        try {
+            const res = await fetch('/api/library');
+            const data = await res.json();
+            if (data.library) {
+                const map: Record<string, { status: string; isOwned: boolean }> = {};
+                data.library.forEach((item: any) => {
+                    if (item.book) {
+                        map[item.book._id] = { status: item.status, isOwned: item.isOwned };
+                    }
+                });
+                setLibraryMap(map);
+            }
+        } catch (error) {
+            console.error('Error fetching library map:', error);
+        }
+    };
 
     const handleAddToLibrary = async (bookId: string) => {
         try {
@@ -33,6 +53,11 @@ export default function BooksPage() {
             });
             if (res.ok) {
                 toast.success("Added to your library collection");
+                // Update local map instantly
+                setLibraryMap(prev => ({
+                    ...prev,
+                    [bookId]: { ...prev[bookId], isOwned: true }
+                }));
             } else {
                 toast.error("Failed to add to library");
             }
@@ -49,7 +74,16 @@ export default function BooksPage() {
                 body: JSON.stringify({ bookId, status }),
             });
             if (res.ok) {
-                toast.success(`Marked as ${status.replace(/-/g, ' ')} `);
+                if (status) {
+                    toast.success(`Marked as ${status.replace(/-/g, ' ')}`);
+                } else {
+                    toast.success("Status removed");
+                }
+                // Update local map instantly
+                setLibraryMap(prev => ({
+                    ...prev,
+                    [bookId]: { ...prev[bookId], status }
+                }));
             } else {
                 toast.error("Failed to update status");
             }
@@ -159,6 +193,8 @@ export default function BooksPage() {
                         <BookCard
                             key={book._id}
                             book={book}
+                            status={libraryMap[book._id]?.status}
+                            isOwned={libraryMap[book._id]?.isOwned}
                             onAddToLibrary={handleAddToLibrary}
                             onUpdateStatus={handleUpdateReadingStatus}
                         />
