@@ -64,11 +64,19 @@ export default function TeamDetailPage() {
     const [isJoining, setIsJoining] = useState(false);
     const [newPost, setNewPost] = useState('');
     const [isPosting, setIsPosting] = useState(false);
+    const [openComments, setOpenComments] = useState<Record<string, boolean>>({});
 
     useEffect(() => {
         fetchTeamData();
         fetchTeamPosts();
     }, [teamId]);
+
+    const toggleComments = (postId: string) => {
+        setOpenComments(prev => ({
+            ...prev,
+            [postId]: !prev[postId]
+        }));
+    };
 
     const fetchTeamData = async () => {
         try {
@@ -301,8 +309,8 @@ export default function TeamDetailPage() {
                             key={tab}
                             onClick={() => setActiveTab(tab)}
                             className={`px-6 py-3 font-medium text-sm whitespace-nowrap transition-colors ${activeTab === tab
-                                    ? 'text-primary border-b-2 border-primary'
-                                    : 'text-muted-foreground hover:text-foreground'
+                                ? 'text-primary border-b-2 border-primary'
+                                : 'text-muted-foreground hover:text-foreground'
                                 }`}
                         >
                             {tab.charAt(0).toUpperCase() + tab.slice(1)}
@@ -380,7 +388,10 @@ export default function TeamDetailPage() {
                                                 <Heart className={`h-4 w-4 ${post.likes.length > 0 ? 'fill-red-500 text-red-500' : ''}`} />
                                                 <span>{post.likes.length}</span>
                                             </button>
-                                            <button className="hover:text-foreground transition-colors flex items-center gap-1">
+                                            <button
+                                                onClick={() => toggleComments(post._id)}
+                                                className="hover:text-foreground transition-colors flex items-center gap-1"
+                                            >
                                                 <MessageCircle className="h-4 w-4" />
                                                 <span>{post.comments.length}</span>
                                             </button>
@@ -395,7 +406,12 @@ export default function TeamDetailPage() {
                                     </div>
 
                                     {/* Comment Section */}
-                                    <CommentSection postId={post._id} initialCount={post.comments.length} />
+                                    <CommentSection
+                                        postId={post._id}
+                                        initialCount={post.comments.length}
+                                        isOpen={!!openComments[post._id]}
+                                        onToggle={() => toggleComments(post._id)}
+                                    />
                                 </div>
                             ))
                         )}
