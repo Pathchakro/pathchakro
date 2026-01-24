@@ -6,8 +6,8 @@ import { useSession } from 'next-auth/react';
 import { Plus, Users, Calendar, MapPin, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+
+import { CourseCard } from '@/components/courses/CourseCard';
 
 interface Course {
     _id: string;
@@ -45,7 +45,7 @@ export default function CoursesPage() {
     const filteredCourses = courses.filter(c => c.title.toLowerCase().includes(search.toLowerCase()));
 
     return (
-        <div className="container py-8 space-y-8">
+        <div className="max-w-2xl mx-auto py-8 px-4 space-y-8">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight">Browse Courses</h1>
@@ -84,45 +84,13 @@ export default function CoursesPage() {
                     <h3 className="text-xl font-medium text-muted-foreground">No courses found matching your criteria.</h3>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="space-y-6">
                     {filteredCourses.map((course) => (
-                        <Card key={course._id} className="overflow-hidden flex flex-col hover:shadow-lg transition-all duration-300">
-                            <div className="relative aspect-video w-full overflow-hidden">
-                                <img
-                                    src={course.banner}
-                                    alt={course.title}
-                                    className="object-cover w-full h-full hover:scale-105 transition-transform duration-500"
-                                />
-                                <Badge className="absolute top-3 right-3 capitalize shadow-sm" variant="secondary">
-                                    {course.mode}
-                                </Badge>
-                            </div>
-                            <CardHeader>
-                                <CardTitle className="line-clamp-2 leading-tight min-h-[3rem] hover:text-primary transition-colors">
-                                    <Link href={`/courses/${course._id}`}>{course.title}</Link>
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent className="flex-1 space-y-4">
-                                <div className="flex items-center justify-between text-sm text-muted-foreground">
-                                    <div className="flex items-center gap-1">
-                                        <Users className="h-4 w-4" />
-                                        <span>{course.students?.length || 0} Enrolled</span>
-                                    </div>
-                                    <div className="flex items-center gap-1">
-                                        <Calendar className="h-4 w-4" />
-                                        <span>Deadline: {new Date(course.lastDateRegistration).toLocaleDateString()}</span>
-                                    </div>
-                                </div>
-                                <div className="text-2xl font-bold text-primary">
-                                    ৳ {course.fee}
-                                </div>
-                            </CardContent>
-                            <CardFooter>
-                                <Button asChild className="w-full" size="lg">
-                                    <Link href={`/courses/${course._id}`}>Details & Enroll</Link>
-                                </Button>
-                            </CardFooter>
-                        </Card>
+                        <CourseCard
+                            key={course._id}
+                            course={course}
+                            currentUserId={session?.user?.id}
+                        />
                     ))}
                 </div>
             )}

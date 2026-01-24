@@ -6,13 +6,21 @@ import Post from '@/models/Post';
 
 export async function GET(
     request: NextRequest,
-    props: { params: Promise<{ id: string }> }
+    props: { params: Promise<{ slug: string }> }
 ) {
     const params = await props.params;
     try {
         await dbConnect();
 
-        const comments = await Comment.find({ post: params.id })
+        const post = await Post.findOne({ slug: params.slug });
+        if (!post) {
+            return NextResponse.json(
+                { error: 'Post not found' },
+                { status: 404 }
+            );
+        }
+
+        const comments = await Comment.find({ post: post._id })
             .populate('author', 'name image rankTier')
             .sort({ createdAt: -1 })
             .lean();
@@ -29,7 +37,7 @@ export async function GET(
 
 export async function POST(
     request: NextRequest,
-    props: { params: Promise<{ id: string }> }
+    props: { params: Promise<{ slug: string }> }
 ) {
     const params = await props.params;
     try {
@@ -54,8 +62,8 @@ export async function POST(
 
         await dbConnect();
 
-        // Verify post exists
-        const post = await Post.findById(params.id);
+        // Verify post exists by slug
+        const post = await Post.findOne({ slug: params.slug });
         if (!post) {
             return NextResponse.json(
                 { error: 'Post not found' },
@@ -65,7 +73,7 @@ export async function POST(
 
         // Create comment
         const comment = await Comment.create({
-            post: params.id,
+            post: post._id,
             author: session.user.id,
             content: content.trim(),
             likes: [],

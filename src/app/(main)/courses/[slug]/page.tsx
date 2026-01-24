@@ -9,17 +9,17 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 
 // Helper to fetch course
-async function getCourse(id: string) {
-    const res = await fetch(`${process.env.NEXTAUTH_URL}/api/courses/${id}`, {
+async function getCourse(slug: string) {
+    const res = await fetch(`${process.env.NEXTAUTH_URL}/api/courses/slug/${slug}`, {
         cache: 'no-store'
     });
     if (!res.ok) return null;
     return res.json();
 }
 
-export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
-    const { id } = await params;
-    const course = await getCourse(id);
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+    const { slug } = await params;
+    const course = await getCourse(slug);
     if (!course) return {};
 
     return {
@@ -37,9 +37,9 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
     };
 }
 
-export default async function CourseDetailsPage({ params }: { params: Promise<{ id: string }> }) {
-    const { id } = await params;
-    const course = await getCourse(id);
+export default async function CourseDetailsPage({ params }: { params: Promise<{ slug: string }> }) {
+    const { slug } = await params;
+    const course = await getCourse(slug);
 
     if (!course) notFound();
 
@@ -83,39 +83,12 @@ export default async function CourseDetailsPage({ params }: { params: Promise<{ 
             <div className="grid lg:grid-cols-3 gap-10">
                 {/* Main Content */}
                 <div className="lg:col-span-2 space-y-8">
-                    {/* Render Rich Description (Assuming it's generic HTML or we use tiptap renderer if we had one component-ready,
-                        for now we will assume the description is generic HTML or use a simple div if simple text,
-                        but user asked for 'novel.sh', which saves JSON.
-                        Ideally we need a 'NovelViewer' component. Since we don't have one readily exported, 
-                        Wait, NovelEditor usually creates JSON. We need to render it. 
-                        If the user just wants to see it, I might need to implement a viewer or just parse key text.
-                        For simplicity in this turn, I will assume NovelEditor saves HTML if configured, OR 
-                        I will try to render it simply. 
-                        Actually, Novel extracts markdown often? 
-                        Let's verify what NovelEditor saves. It saves JSON by default.
-                        I will assume for now we just dump JSON text if no viewer exists, 
-                        OR I can try to use `tiptap` `generateHTML` if I have the schema.
-                        
-                        Better Approach: Use `tiptap-markdown` to render markdown if we can,
-                        or just display "Course Details" section placeholder if complex rendering is needed.
-                        However, the user wants it to be complete.
-                        I will fallback to a simple text display or check if I can reuse the Editor in readonly mode.
-                    */}
                     <div className="prose dark:prose-invert max-w-none">
                         <h2 className="text-2xl font-bold mb-4">About this Course</h2>
-                        {/* TODO: Implement proper JSON-to-HTML rendering. 
-                             For now, rendering raw if string, or basic placeholder if JSON object string.
-                          */}
-                        {/* Temporarily using a safe render or just text for the MVP step 
-                             unless I build a renderer. I will leave a note. */}
                         <div className="bg-muted/30 p-6 rounded-lg border">
-                            {/* Attempt to parse if simple string, else showing raw for debug or custom logic needed. 
-                                 Actually, let's use a readonly version of Editor if possible? 
-                                 No, client component in server component is tricky.
-                             */}
                             <p className="whitespace-pre-wrap">{
                                 typeof course.description === 'string' && course.description.startsWith('{')
-                                    ? "View course content details in the app." // Placeholder for JSON
+                                    ? "View course content details in the app."
                                     : course.description
                             }</p>
                         </div>
@@ -171,7 +144,7 @@ export default async function CourseDetailsPage({ params }: { params: Promise<{ 
                             </div>
 
                             <Button className="w-full text-lg font-semibold h-12 shadow-md hover:shadow-xl transition-all" asChild>
-                                <Link href={`/courses/${id}/enroll`}>Enroll Now</Link>
+                                <Link href={`/courses/${slug}/enroll`}>Enroll Now</Link>
                             </Button>
 
                             <div className="pt-4">
@@ -179,18 +152,17 @@ export default async function CourseDetailsPage({ params }: { params: Promise<{ 
                                     <Share2 className="h-4 w-4" /> Share this course
                                 </h4>
                                 <div className="flex gap-2">
-                                    {/* Social Share Buttons - Manual Links */}
                                     <SocialLink
                                         platform="facebook"
-                                        href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(`${process.env.NEXTAUTH_URL}/courses/${id}`)}`}
+                                        href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(`${process.env.NEXTAUTH_URL}/courses/${slug}`)}`}
                                     />
                                     <SocialLink
                                         platform="twitter"
-                                        href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(`Check out ${course.title}!`)}&url=${encodeURIComponent(`${process.env.NEXTAUTH_URL}/courses/${id}`)}`}
+                                        href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(`Check out ${course.title}!`)}&url=${encodeURIComponent(`${process.env.NEXTAUTH_URL}/courses/${slug}`)}`}
                                     />
                                     <SocialLink
                                         platform="linkedin"
-                                        href={`https://www.linkedin.com/shareArticle?mini=true&url=${encodeURIComponent(`${process.env.NEXTAUTH_URL}/courses/${id}`)}&title=${encodeURIComponent(course.title)}`}
+                                        href={`https://www.linkedin.com/shareArticle?mini=true&url=${encodeURIComponent(`${process.env.NEXTAUTH_URL}/courses/${slug}`)}&title=${encodeURIComponent(course.title)}`}
                                     />
                                 </div>
                             </div>

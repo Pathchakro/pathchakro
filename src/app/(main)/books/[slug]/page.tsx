@@ -62,7 +62,7 @@ interface PDF {
 export default function BookDetailPage() {
     const { data: session } = useSession();
     const params = useParams();
-    const bookId = params.id as string;
+    const slug = params.slug as string;
 
     const [book, setBook] = useState<Book | null>(null);
     const [reviews, setReviews] = useState<Review[]>([]);
@@ -84,18 +84,23 @@ export default function BookDetailPage() {
     const [isUploading, setIsUploading] = useState(false);
 
     useEffect(() => {
-        fetchBook();
-        fetchReviews();
-        fetchPDFs();
-    }, [bookId]);
+        if (slug) fetchBook();
+    }, [slug]);
+
+    useEffect(() => {
+        if (book?._id) {
+            fetchReviews(book._id);
+            fetchPDFs(book._id);
+        }
+    }, [book]);
 
     const fetchBook = async () => {
         try {
-            const response = await fetch(`/api/books/${bookId}`);
+            const response = await fetch(`/api/books/slug/${slug}`);
             const data = await response.json();
 
-            if (data.book) {
-                setBook(data.book);
+            if (data) {
+                setBook(data);
             }
         } catch (error) {
             console.error('Error fetching book:', error);
@@ -104,9 +109,9 @@ export default function BookDetailPage() {
         }
     };
 
-    const fetchReviews = async () => {
+    const fetchReviews = async (id: string) => {
         try {
-            const response = await fetch(`/api/books/${bookId}/reviews`);
+            const response = await fetch(`/api/books/${id}/reviews`);
             const data = await response.json();
 
             if (data.reviews) {
@@ -117,9 +122,9 @@ export default function BookDetailPage() {
         }
     };
 
-    const fetchPDFs = async () => {
+    const fetchPDFs = async (id: string) => {
         try {
-            const response = await fetch(`/api/books/${bookId}/pdfs`);
+            const response = await fetch(`/api/books/${id}/pdfs`);
             const data = await response.json();
 
             if (data.pdfs) {
@@ -147,7 +152,7 @@ export default function BookDetailPage() {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    bookId,
+                    bookId: book?._id,
                     rating,
                     content: reviewContent,
                     videoUrl: videoUrl || undefined,
@@ -161,7 +166,7 @@ export default function BookDetailPage() {
                 setRating(5);
                 setShowReviewForm(false);
                 fetchBook();
-                fetchReviews();
+                if (book?._id) fetchReviews(book._id);
             } else {
                 const data = await response.json();
                 alert(data.error);
@@ -181,13 +186,13 @@ export default function BookDetailPage() {
 
         setIsUploading(true);
         try {
-            const response = await fetch(`/api/books/${bookId}/pdfs`, {
+            const response = await fetch(`/api/books/${book?._id}/pdfs`, { // Use book._id
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     fileName: pdfFileName,
                     fileUrl: pdfFileUrl,
-                    fileSize: 0, // You can calculate this
+                    fileSize: 0,
                     description: pdfDescription,
                 }),
             });
@@ -199,7 +204,7 @@ export default function BookDetailPage() {
                 setPdfFileUrl('');
                 setPdfDescription('');
                 setShowPDFUpload(false);
-                fetchPDFs();
+                if (book?._id) fetchPDFs(book._id);
             } else {
                 alert(data.error);
             }
@@ -214,7 +219,7 @@ export default function BookDetailPage() {
         try {
             await fetch(`/api/books/pdfs/${pdf._id}/download`, { method: 'PUT' });
             window.open(pdf.fileUrl, '_blank');
-            fetchPDFs();
+            if (book?._id) fetchPDFs(book._id);
         } catch (error) {
             console.error('Error downloading PDF:', error);
         }
@@ -225,7 +230,7 @@ export default function BookDetailPage() {
             const response = await fetch('/api/library', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ bookId }),
+                body: JSON.stringify({ bookId: book?._id }),
             });
 
             const data = await response.json();
@@ -245,9 +250,10 @@ export default function BookDetailPage() {
         }
 
         try {
-            const res = await fetch(`/api/books/${bookId}`, {
+            const res = await fetch(`/api/books/${book?._id}`, {
                 method: 'DELETE',
             });
+            // ...
 
             if (!res.ok) {
                 const error = await res.json();

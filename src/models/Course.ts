@@ -2,6 +2,7 @@ import mongoose, { Schema, Document, Model } from 'mongoose';
 
 export interface ICourse extends Document {
     title: string;
+    slug: string;
     description: string; // JSON string from Novel.sh
     banner: string;
     fee: number;
@@ -9,8 +10,8 @@ export interface ICourse extends Document {
     classStartDate: Date;
     mode: 'online' | 'offline';
     totalClasses: number;
-    instructor: mongoose.Schema.Types.ObjectId;
-    students: mongoose.Schema.Types.ObjectId[];
+    instructor: mongoose.Types.ObjectId;
+    students: mongoose.Types.ObjectId[];
     createdAt: Date;
     updatedAt: Date;
 }
@@ -18,6 +19,7 @@ export interface ICourse extends Document {
 const CourseSchema: Schema<ICourse> = new Schema(
     {
         title: { type: String, required: true },
+        slug: { type: String, unique: true, index: true },
         description: { type: String, required: true },
         banner: { type: String, required: true },
         fee: { type: Number, required: true },

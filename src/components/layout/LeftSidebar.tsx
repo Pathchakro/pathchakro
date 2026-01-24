@@ -5,7 +5,8 @@ import { Home, Library, GraduationCap, ShoppingCart, Heart, DollarSign, Plane, P
 import { useSession } from 'next-auth/react';
 
 const QUICK_LINKS = [
-    { icon: Home, label: 'News Feed', href: '/feed' },
+    { icon: Home, label: 'News Feed', href: '/' },
+    { icon: Library, label: 'Posts', href: '/posts' },
     { icon: Library, label: 'My Library', href: '/library' },
     { icon: PenTool, label: 'My Writings', href: '/writing' },
     { icon: Calendar, label: 'Pathchakro Events', href: '/events' },

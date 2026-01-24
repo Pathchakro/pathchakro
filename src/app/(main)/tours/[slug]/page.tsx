@@ -47,7 +47,7 @@ interface Tour {
 
 export default function TourDetailPage() {
     const params = useParams();
-    const tourId = params.id as string;
+    const tourSlug = params.slug as string;
 
     const [tour, setTour] = useState<Tour | null>(null);
     const [loading, setLoading] = useState(true);
@@ -55,12 +55,12 @@ export default function TourDetailPage() {
     const [activeTab, setActiveTab] = useState('itinerary');
 
     useEffect(() => {
-        fetchTourData();
-    }, [tourId]);
+        if (tourSlug) fetchTourData();
+    }, [tourSlug]);
 
     const fetchTourData = async () => {
         try {
-            const response = await fetch(`/api/tours/${tourId}`);
+            const response = await fetch(`/api/tours/slug/${tourSlug}`);
             const data = await response.json();
 
             if (data.tour) {
@@ -76,7 +76,7 @@ export default function TourDetailPage() {
     const handleJoinTour = async () => {
         setIsJoining(true);
         try {
-            const response = await fetch(`/api/tours/${tourId}/join`, {
+            const response = await fetch(`/api/tours/${tourSlug}/join`, {
                 method: 'POST',
             });
 
@@ -230,8 +230,8 @@ export default function TourDetailPage() {
                             key={tab}
                             onClick={() => setActiveTab(tab)}
                             className={`px-6 py-3 font-medium text-sm whitespace-nowrap transition-colors ${activeTab === tab
-                                    ? 'text-primary border-b-2 border-primary'
-                                    : 'text-muted-foreground hover:text-foreground'
+                                ? 'text-primary border-b-2 border-primary'
+                                : 'text-muted-foreground hover:text-foreground'
                                 }`}
                         >
                             {tab.charAt(0).toUpperCase() + tab.slice(1)}

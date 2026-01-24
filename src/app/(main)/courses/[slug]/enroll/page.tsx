@@ -13,8 +13,8 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select-radix';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 
-export default function EnrollmentPage({ params }: { params: Promise<{ id: string }> }) {
-    const { id } = use(params);
+export default function EnrollmentPage({ params }: { params: Promise<{ slug: string }> }) {
+    const { slug } = use(params);
     const router = useRouter();
 
     const [loading, setLoading] = useState(false);
@@ -77,9 +77,8 @@ export default function EnrollmentPage({ params }: { params: Promise<{ id: strin
 
         setLoading(true);
         try {
-            const res = await fetch(`/api/courses/${id}/enroll`, {
+            const res = await fetch(`/api/courses/slug/${slug}/enroll`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     method,
                     transactionId,
@@ -91,7 +90,7 @@ export default function EnrollmentPage({ params }: { params: Promise<{ id: strin
             const data = await res.json();
             if (res.ok) {
                 toast.success('Enrollment submitted! Waiting for approval.');
-                router.push(`/courses/${id}`);
+                router.push(`/courses/${slug}`);
             } else {
                 toast.error(data.error || 'Enrollment failed');
             }
@@ -105,7 +104,7 @@ export default function EnrollmentPage({ params }: { params: Promise<{ id: strin
     return (
         <div className="container max-w-2xl py-10 space-y-8">
             <Button variant="ghost" className="pl-0 hover:pl-2 transition-all" asChild>
-                <Link href={`/courses/${id}`}>
+                <Link href={`/courses/${slug}`}>
                     <ArrowLeft className="mr-2 h-4 w-4" /> Back to Course
                 </Link>
             </Button>

@@ -5,7 +5,7 @@ import Post from '@/models/Post';
 
 export async function POST(
     request: NextRequest,
-    props: { params: Promise<{ id: string }> }
+    props: { params: Promise<{ slug: string }> }
 ) {
     const params = await props.params;
     try {
@@ -20,7 +20,7 @@ export async function POST(
 
         await dbConnect();
 
-        const post = await Post.findById(params.id);
+        const post = await Post.findOne({ slug: params.slug });
 
         if (!post) {
             return NextResponse.json(

@@ -4,6 +4,7 @@ export interface ITour {
     _id: string;
     organizer: mongoose.Types.ObjectId;
     title: string;
+    slug: string;
     destination: string;
     description: string;
     startDate: Date;
@@ -42,6 +43,11 @@ const TourSchema = new Schema<ITour>(
             type: String,
             required: [true, 'Tour title is required'],
             trim: true,
+        },
+        slug: {
+            type: String,
+            unique: true,
+            index: true,
         },
         destination: {
             type: String,
@@ -132,6 +138,7 @@ const TourSchema = new Schema<ITour>(
 
 // Indexes for efficient querying
 TourSchema.index({ startDate: 1, status: 1 });
+TourSchema.index({ slug: 1 });
 TourSchema.index({ destination: 1, status: 1 });
 TourSchema.index({ organizer: 1, createdAt: -1 });
 

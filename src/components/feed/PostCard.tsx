@@ -2,7 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { formatDate } from '@/lib/utils';
-import { Heart, MessageCircle, Share2, Bookmark, MoreHorizontal } from 'lucide-react';
+import { Heart, MessageCircle, Share2, Bookmark, MoreHorizontal, Pencil, Trash2, EyeOff } from 'lucide-react';
+import Swal from 'sweetalert2';
+import { toast } from 'sonner';
 import { CommentSection } from './CommentSection';
 import { PostContent } from './PostContent';
 import {
@@ -11,6 +13,7 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { useRouter } from 'next/navigation';
 
 export interface Post {
     _id: string;
@@ -37,12 +40,14 @@ export interface Post {
 interface PostCardProps {
     initialPost: Post;
     currentUserId?: string;
+    onDelete?: (postId: string) => void;
 }
 
-export function PostCard({ initialPost, currentUserId }: PostCardProps) {
+export function PostCard({ initialPost, currentUserId, onDelete }: PostCardProps) {
     const [post, setPost] = useState<Post>(initialPost);
     const [isBookmarked, setIsBookmarked] = useState(false);
     const [currentSlide, setCurrentSlide] = useState(0);
+    const router = useRouter();
 
     // Auto-slide effect
     useEffect(() => {
@@ -57,7 +62,8 @@ export function PostCard({ initialPost, currentUserId }: PostCardProps) {
 
     const handleLike = async () => {
         try {
-            const response = await fetch(`/api/posts/${post._id}/like`, {
+            const slugOrId = (post as any).slug || post._id;
+            const response = await fetch(`/api/posts/slug/${slugOrId}/like`, {
                 method: 'POST',
             });
             const data = await response.json();
@@ -100,10 +106,59 @@ export function PostCard({ initialPost, currentUserId }: PostCardProps) {
         }
     };
 
+    const handleDelete = async () => {
+        const result = await Swal.fire({
+            title: 'Are you sure?',
+            text: "You won't be able to revert this!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Yes, delete it!'
+        });
+
+        if (!result.isConfirmed) return;
+
+        try {
+            const slugOrId = (post as any).slug || post._id;
+            const response = await fetch(`/api/posts/slug/${slugOrId}`, {
+                method: 'DELETE',
+            });
+
+            if (response.ok) {
+                toast.success('Post deleted successfully');
+                // If parent component provided a callback (e.g., to remove from list)
+                if (onDelete) {
+                    onDelete(post._id);
+                } else {
+                    // Otherwise just refresh or hide locally (reloading for now simpler)
+                    window.location.reload();
+                }
+            } else {
+                toast.error('Failed to delete post');
+            }
+        } catch (error) {
+            console.error('Error deleting post:', error);
+            toast.error('Error deleting post');
+        }
+    };
+
+    const handleHide = () => {
+        // Just hide visually for this session
+        // In a real app, this would probably call an API to hide for the user permanently
+        if (confirm('Hide this post?')) {
+            const element = document.getElementById(`post-${post._id}`);
+            if (element) {
+                element.style.display = 'none';
+            }
+        }
+    };
+
+    const isOwnPost = currentUserId === post.author._id;
     const isLiked = post.likes.includes(currentUserId || 'current-user');
 
     return (
-        <div className="bg-card rounded-lg shadow-sm p-4 mb-4 border">
+        <div id={`post-${post._id}`} className="bg-card rounded-lg shadow-sm p-4 mb-4 border">
             {/* Post Header */}
             <div className="flex items-start justify-between mb-4">
                 <div className="flex items-start gap-3">
@@ -127,9 +182,33 @@ export function PostCard({ initialPost, currentUserId }: PostCardProps) {
                         </p>
                     </div>
                 </div>
-                <button className="text-muted-foreground hover:text-foreground">
-                    <MoreHorizontal className="h-5 w-5" />
-                </button>
+
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <button className="text-muted-foreground hover:text-foreground p-1 hover:bg-muted rounded-full transition-colors">
+                            <MoreHorizontal className="h-5 w-5" />
+                        </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                        {isOwnPost ? (
+                            <>
+                                <DropdownMenuItem onClick={() => router.push(`/posts/${(post as any).slug || post._id}/edit`)}>
+                                    <Pencil className="h-4 w-4 mr-2" />
+                                    Edit Post
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={handleDelete} className="text-red-600 focus:text-red-600">
+                                    <Trash2 className="h-4 w-4 mr-2" />
+                                    Delete
+                                </DropdownMenuItem>
+                            </>
+                        ) : (
+                            <DropdownMenuItem onClick={handleHide}>
+                                <EyeOff className="h-4 w-4 mr-2" />
+                                Hide Post
+                            </DropdownMenuItem>
+                        )}
+                    </DropdownMenuContent>
+                </DropdownMenu>
             </div>
 
             {/* Post Title */}
@@ -226,7 +305,12 @@ export function PostCard({ initialPost, currentUserId }: PostCardProps) {
             </div>
 
             {/* Comment Section */}
-            <CommentSection postId={post._id} initialCount={post.comments.length} />
+            {/* Comment Section */}
+            <CommentSection
+                postId={post._id}
+                initialCount={post.comments.length}
+                slug={(post as any).slug || post._id}
+            />
         </div>
     );
 }

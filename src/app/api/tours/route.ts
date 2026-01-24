@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import dbConnect from '@/lib/mongodb';
 import Tour from '@/models/Tour';
+import slugify from 'slugify';
 
 export async function GET(request: NextRequest) {
     try {
@@ -93,9 +94,18 @@ export async function POST(request: NextRequest) {
 
         await dbConnect();
 
+        let slug = slugify(title, { lower: true, strict: true });
+
+        let counter = 1;
+        while (await Tour.findOne({ slug })) {
+            slug = `${slugify(title, { lower: true, strict: true })}-${counter}`;
+            counter++;
+        }
+
         const tour = await Tour.create({
             organizer: session.user.id,
             title,
+            slug,
             destination,
             departureLocation,
             bannerUrl,

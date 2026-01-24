@@ -5,9 +5,10 @@ import { useParams, useRouter } from 'next/navigation';
 import { ProfileHeader } from '@/components/profile/ProfileHeader';
 import { ProfileTabs } from '@/components/profile/ProfileTabs';
 import { EventsTabContent } from '@/components/profile/EventsTabContent';
-import { Heart, MessageCircle, Share2, Bookmark, MapPin, Calendar, Edit, Trash2 } from 'lucide-react';
+import { MapPin, Calendar, Edit, Trash2 } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 import { useSession } from 'next-auth/react';
+import { PostCard, Post } from '@/components/feed/PostCard';
 
 interface User {
     _id: string;
@@ -32,20 +33,10 @@ interface Stats {
     following: number;
 }
 
-interface Post {
-    _id: string;
-    content: string;
-    type: string;
-    privacy: string;
-    likes: string[];
-    comments: string[];
-    shares: number;
-    createdAt: string;
-}
-
 export default function ProfilePage() {
     const params = useParams();
     const username = params.username as string;
+    const { data: session } = useSession();
 
     const [user, setUser] = useState<User | null>(null);
     const [stats, setStats] = useState<Stats | null>(null);
@@ -119,7 +110,6 @@ export default function ProfilePage() {
         }
     };
 
-    const { data: session } = useSession();
     const isOwnProfile = session?.user?.id === user?._id;
 
     if (loading) {
@@ -163,36 +153,11 @@ export default function ProfilePage() {
                             </div>
                         ) : (
                             posts.map((post) => (
-                                <div key={post._id} className="bg-card rounded-lg shadow-sm border p-4">
-                                    <div className="flex items-start gap-3 mb-4">
-                                        <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white font-medium">
-                                            {user.name[0]}
-                                        </div>
-                                        <div className="flex-1">
-                                            <p className="font-semibold">{user.name}</p>
-                                            <p className="text-xs text-muted-foreground">
-                                                {formatDate(post.createdAt)} • {post.privacy}
-                                            </p>
-                                        </div>
-                                    </div>
-
-                                    <p className="text-sm leading-relaxed mb-4 whitespace-pre-wrap">{post.content}</p>
-
-                                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                                        <button className="hover:text-foreground transition-colors flex items-center gap-1">
-                                            <Heart className="h-4 w-4" />
-                                            <span>{post.likes.length}</span>
-                                        </button>
-                                        <button className="hover:text-foreground transition-colors flex items-center gap-1">
-                                            <MessageCircle className="h-4 w-4" />
-                                            <span>{post.comments.length}</span>
-                                        </button>
-                                        <button className="hover:text-foreground transition-colors flex items-center gap-1">
-                                            <Share2 className="h-4 w-4" />
-                                            <span>Share</span>
-                                        </button>
-                                    </div>
-                                </div>
+                                <PostCard
+                                    key={post._id}
+                                    initialPost={post}
+                                    currentUserId={session?.user?.id}
+                                />
                             ))
                         )}
                     </>
@@ -292,8 +257,8 @@ export default function ProfilePage() {
                                             {/* Badge for role */}
                                             <div className="absolute top-2 right-2 flex gap-2">
                                                 <span className={`px-2 py-1 rounded-full text-xs font-medium ${tour.organizer._id === user?._id
-                                                        ? 'bg-primary/90 text-primary-foreground'
-                                                        : 'bg-secondary/90 text-secondary-foreground'
+                                                    ? 'bg-primary/90 text-primary-foreground'
+                                                    : 'bg-secondary/90 text-secondary-foreground'
                                                     }`}>
                                                     {tour.organizer._id === user?._id ? 'Organizer' : 'Participant'}
                                                 </span>

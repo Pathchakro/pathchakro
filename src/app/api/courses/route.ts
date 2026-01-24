@@ -3,6 +3,7 @@ import { auth } from '@/auth';
 import dbConnect from '@/lib/mongodb';
 import Course from '@/models/Course';
 import User from '@/models/User';
+import slugify from 'slugify';
 
 export const dynamic = 'force-dynamic';
 
@@ -37,8 +38,18 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'Title and Fee are required' }, { status: 400 });
         }
 
+        let slug = slugify(data.title, { lower: true, strict: true });
+
+        // Ensure uniqueness
+        let counter = 1;
+        while (await Course.findOne({ slug })) {
+            slug = `${slugify(data.title, { lower: true, strict: true })}-${counter}`;
+            counter++;
+        }
+
         const course = await Course.create({
             ...data,
+            slug,
             instructor: session.user.id,
             students: []
         });

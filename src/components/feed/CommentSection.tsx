@@ -21,9 +21,10 @@ interface Comment {
 interface CommentSectionProps {
     postId: string;
     initialCount: number;
+    slug?: string;
 }
 
-export function CommentSection({ postId, initialCount }: CommentSectionProps) {
+export function CommentSection({ postId, initialCount, slug }: CommentSectionProps) {
     const [comments, setComments] = useState<Comment[]>([]);
     const [newComment, setNewComment] = useState('');
     const [isExpanded, setIsExpanded] = useState(false);
@@ -39,7 +40,12 @@ export function CommentSection({ postId, initialCount }: CommentSectionProps) {
     const fetchComments = async () => {
         setIsLoading(true);
         try {
-            const response = await fetch(`/api/posts/${postId}/comments`);
+            // Use slug if provided
+            const url = slug
+                ? `/api/posts/slug/${slug}/comments`
+                : `/api/posts/${postId}/comments`;
+
+            const response = await fetch(url);
             const data = await response.json();
             if (data.comments) {
                 setComments(data.comments);
@@ -58,7 +64,12 @@ export function CommentSection({ postId, initialCount }: CommentSectionProps) {
 
         setIsSubmitting(true);
         try {
-            const response = await fetch(`/api/posts/${postId}/comments`, {
+            // Use slug if provided
+            const url = slug
+                ? `/api/posts/slug/${slug}/comments`
+                : `/api/posts/${postId}/comments`;
+
+            const response = await fetch(url, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

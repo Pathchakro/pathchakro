@@ -10,16 +10,31 @@ export async function GET(request: NextRequest) {
         const { searchParams } = new URL(request.url);
         const page = parseInt(searchParams.get('page') || '1');
         const limit = parseInt(searchParams.get('limit') || '10');
+        const search = searchParams.get('search') || '';
+        const category = searchParams.get('category') || '';
         const skip = (page - 1) * limit;
 
-        const posts = await Post.find()
+        const query: any = {};
+
+        if (search) {
+            query.$or = [
+                { title: { $regex: search, $options: 'i' } },
+                { content: { $regex: search, $options: 'i' } }
+            ];
+        }
+
+        if (category && category !== 'All') {
+            query.category = category;
+        }
+
+        const posts = await Post.find(query)
             .populate('author', 'name image rankTier')
             .sort({ createdAt: -1 })
             .skip(skip)
             .limit(limit)
             .lean();
 
-        const total = await Post.countDocuments();
+        const total = await Post.countDocuments(query);
 
         return NextResponse.json({
             posts,
