@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { formatDate } from '@/lib/utils';
 import { Heart, MessageCircle, Share2, Bookmark, MoreHorizontal, Pencil, Trash2, EyeOff } from 'lucide-react';
 import Swal from 'sweetalert2';
@@ -47,6 +48,7 @@ export function PostCard({ initialPost, currentUserId, onDelete }: PostCardProps
     const [post, setPost] = useState<Post>(initialPost);
     const [isBookmarked, setIsBookmarked] = useState(false);
     const [currentSlide, setCurrentSlide] = useState(0);
+    const [showComments, setShowComments] = useState(false);
     const router = useRouter();
 
     // Auto-slide effect
@@ -162,23 +164,35 @@ export function PostCard({ initialPost, currentUserId, onDelete }: PostCardProps
             {/* Post Header */}
             <div className="flex items-start justify-between mb-4">
                 <div className="flex items-start gap-3">
-                    {post.author.image ? (
-                        <div className="h-10 w-10 rounded-full overflow-hidden">
-                            <img
-                                src={post.author.image}
-                                alt={post.author.name}
-                                className="h-full w-full object-cover"
-                            />
-                        </div>
-                    ) : (
-                        <div className="h-10 w-10 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white font-medium">
-                            {post.author.name[0]}
-                        </div>
-                    )}
+                    <Link href={`/profile/${post.author._id}`}>
+                        {post.author.image ? (
+                            <div className="h-10 w-10 rounded-full overflow-hidden">
+                                <img
+                                    src={post.author.image}
+                                    alt={post.author.name}
+                                    className="h-full w-full object-cover"
+                                />
+                            </div>
+                        ) : (
+                            <div className="h-10 w-10 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white font-medium">
+                                {post.author.name[0]}
+                            </div>
+                        )}
+                    </Link>
                     <div>
-                        <p className="font-semibold">{post.author.name}</p>
+                        <Link href={`/profile/${post.author._id}`} className="font-semibold hover:underline">
+                            {post.author.name}
+                        </Link>
                         <p className="text-sm text-muted-foreground">
                             {formatDate(post.createdAt)} • {post.privacy}
+                            {post.category && (
+                                <>
+                                    {' • '}
+                                    <Link href={`/posts?category=${post.category}`} className="hover:text-primary hover:underline capitalize">
+                                        {post.category}
+                                    </Link>
+                                </>
+                            )}
                         </p>
                     </div>
                 </div>
@@ -284,7 +298,10 @@ export function PostCard({ initialPost, currentUserId, onDelete }: PostCardProps
                         <Heart className={`h-5 w-5 ${isLiked ? 'fill-red-500 text-red-500' : ''}`} />
                         <span className="text-sm font-medium">Like</span>
                     </button>
-                    <button className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-muted transition-colors">
+                    <button
+                        onClick={() => setShowComments(!showComments)}
+                        className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-muted transition-colors"
+                    >
                         <MessageCircle className="h-5 w-5" />
                         <span className="text-sm font-medium">Comment</span>
                     </button>
@@ -310,6 +327,8 @@ export function PostCard({ initialPost, currentUserId, onDelete }: PostCardProps
                 postId={post._id}
                 initialCount={post.comments.length}
                 slug={(post as any).slug || post._id}
+                isOpen={showComments}
+                onToggle={() => setShowComments(!showComments)}
             />
         </div>
     );

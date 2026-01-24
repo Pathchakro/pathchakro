@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useSession } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { formatDate } from '@/lib/utils';
@@ -22,22 +23,25 @@ interface CommentSectionProps {
     postId: string;
     initialCount: number;
     slug?: string;
+    isOpen: boolean;
+    onToggle: () => void;
 }
 
-export function CommentSection({ postId, initialCount, slug }: CommentSectionProps) {
+export function CommentSection({ postId, initialCount, slug, isOpen, onToggle }: CommentSectionProps) {
+    const { data: session } = useSession();
     const [comments, setComments] = useState<Comment[]>([]);
     const [newComment, setNewComment] = useState('');
-    const [isExpanded, setIsExpanded] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     useEffect(() => {
-        if (isExpanded && comments.length === 0) {
+        if (isOpen && comments.length === 0) {
             fetchComments();
         }
-    }, [isExpanded]);
+    }, [isOpen]);
 
     const fetchComments = async () => {
+        // ... (fetch logic remains same)
         setIsLoading(true);
         try {
             // Use slug if provided
@@ -92,23 +96,33 @@ export function CommentSection({ postId, initialCount, slug }: CommentSectionPro
 
     return (
         <div className="border-t pt-3">
-            {initialCount > 0 && !isExpanded && (
+            {initialCount > 0 && !isOpen && (
                 <button
-                    onClick={() => setIsExpanded(true)}
+                    onClick={onToggle}
                     className="text-sm text-muted-foreground hover:text-foreground mb-3"
                 >
                     View {initialCount} {initialCount === 1 ? 'comment' : 'comments'}
                 </button>
             )}
 
-            {isExpanded && (
+            {isOpen && (
                 <>
                     {/* Add Comment Form */}
                     <form onSubmit={handleSubmit} className="mb-4">
                         <div className="flex gap-2">
-                            <div className="h-8 w-8 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white text-xs font-medium flex-shrink-0">
-                                U
-                            </div>
+                            {session?.user?.image ? (
+                                <div className="h-8 w-8 rounded-full overflow-hidden flex-shrink-0">
+                                    < img
+                                        src={session.user.image}
+                                        alt={session.user.name || 'User'}
+                                        className="h-full w-full object-cover"
+                                    />
+                                </div>
+                            ) : (
+                                <div className="h-8 w-8 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white text-xs font-medium flex-shrink-0">
+                                    {session?.user?.name?.[0] || 'U'}
+                                </div>
+                            )}
                             <div className="flex-1 flex gap-2">
                                 <Textarea
                                     value={newComment}
