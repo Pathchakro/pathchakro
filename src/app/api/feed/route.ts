@@ -1,14 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
+import mongoose from 'mongoose';
 import dbConnect from '@/lib/mongodb';
 import Post from '@/models/Post';
 import Review from '@/models/Review';
 import Event from '@/models/Event';
 import Course from '@/models/Course';
 import Tour from '@/models/Tour';
+import Book from '@/models/Book'; // Ensure Book model is registered for Review population
 
 export async function GET(request: NextRequest) {
     try {
         await dbConnect();
+
+        // Ensure Book model is registered
+        console.log('Registered Models:', Object.keys(mongoose.connection.models));
+        // Force Book model registration check
+        if (!mongoose.models.Book) {
+            console.log('Book model not registered in feed, registering...');
+            // Forces the import to be used and executed if not already
+            const _ = Book.schema;
+        }
 
         const { searchParams } = new URL(request.url);
         const limit = parseInt(searchParams.get('limit') || '10');
