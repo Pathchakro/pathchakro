@@ -20,7 +20,7 @@ const NovelEditor = dynamic(() => import('@/components/editor/NovelEditor'), { s
 export default function CreateCoursePage() {
     const router = useRouter();
 
-    const router = useRouter();
+
     const { data: session } = useSession();
     const { checkVerifiedAccess } = useAccessControl();
 
