@@ -8,6 +8,7 @@ import Swal from 'sweetalert2';
 import { toast } from 'sonner';
 import { CommentSection } from './CommentSection';
 import { PostContent } from './PostContent';
+import { ShareDialog } from './ShareDialog';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -22,7 +23,7 @@ export interface Post {
         _id: string;
         name: string;
         image?: string;
-        rankTier: string;
+        rankTier?: string;
     };
     content: string;
     type: string;
@@ -40,16 +41,23 @@ export interface Post {
 
 interface PostCardProps {
     initialPost: Post;
+    initialIsBookmarked?: boolean;
     currentUserId?: string;
     onDelete?: (postId: string) => void;
 }
 
-export function PostCard({ initialPost, currentUserId, onDelete }: PostCardProps) {
+export function PostCard({ initialPost, currentUserId, onDelete, initialIsBookmarked = false }: PostCardProps) {
     const [post, setPost] = useState<Post>(initialPost);
-    const [isBookmarked, setIsBookmarked] = useState(false);
+    const [isBookmarked, setIsBookmarked] = useState(initialIsBookmarked);
     const [currentSlide, setCurrentSlide] = useState(0);
     const [showComments, setShowComments] = useState(false);
+    const [isSharing, setIsSharing] = useState(false);
     const router = useRouter();
+
+    // Sync isBookmarked if prop changes (though mainly useful for initial load)
+    useEffect(() => {
+        setIsBookmarked(initialIsBookmarked);
+    }, [initialIsBookmarked]);
 
     // Auto-slide effect
     useEffect(() => {
@@ -81,11 +89,33 @@ export function PostCard({ initialPost, currentUserId, onDelete }: PostCardProps
         }
     };
 
-    const handleBookmark = () => {
-        setIsBookmarked(prev => !prev);
+    const handleBookmark = async () => {
+        // Optimistic update
+        const previousState = isBookmarked;
+        setIsBookmarked(!previousState);
+
+        try {
+            const slugOrId = (post as any).slug || post._id;
+            const response = await fetch(`/api/posts/slug/${slugOrId}/bookmark`, {
+                method: 'POST',
+            });
+
+            if (!response.ok) {
+                // Revert if failed
+                setIsBookmarked(previousState);
+                toast.error('Failed to bookmark post');
+            }
+        } catch (error) {
+            console.error('Error bookmarking post:', error);
+            setIsBookmarked(previousState);
+            toast.error('Something went wrong');
+        }
     };
 
     const handleShare = async () => {
+        if (isSharing) return;
+        setIsSharing(true);
+
         const shareText = `Check out this post on Pathchakro:\n${post.title || 'New Post'}\n\n${post.content.substring(0, 100)}...`;
         // Use slug if available, fallback to _id
         const shareUrl = `${window.location.origin}/posts/${(post as any).slug || post._id}`;
@@ -97,14 +127,20 @@ export function PostCard({ initialPost, currentUserId, onDelete }: PostCardProps
                     text: shareText,
                     url: shareUrl,
                 });
-            } catch (error) {
-                console.error('Error sharing:', error);
-                navigator.clipboard.writeText(shareUrl);
-                alert('Link copied to clipboard!');
+            } catch (error: any) {
+                // Ignore AbortError (user cancelled)
+                if (error.name !== 'AbortError') {
+                    console.error('Error sharing:', error);
+                    navigator.clipboard.writeText(shareUrl);
+                    toast.success('Link copied to clipboard!');
+                }
+            } finally {
+                setIsSharing(false);
             }
         } else {
             navigator.clipboard.writeText(shareUrl);
-            alert('Link copied to clipboard!');
+            toast.success('Link copied to clipboard!');
+            setIsSharing(false);
         }
     };
 
@@ -305,13 +341,17 @@ export function PostCard({ initialPost, currentUserId, onDelete }: PostCardProps
                         <MessageCircle className="h-5 w-5" />
                         <span className="text-sm font-medium">Comment</span>
                     </button>
-                    <button
-                        onClick={handleShare}
-                        className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-muted transition-colors"
-                    >
-                        <Share2 className="h-5 w-5" />
-                        <span className="text-sm font-medium">Share</span>
-                    </button>
+                    <ShareDialog
+                        post={post}
+                        trigger={
+                            <button
+                                className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-muted transition-colors"
+                            >
+                                <Share2 className="h-5 w-5" />
+                                <span className="text-sm font-medium">Share</span>
+                            </button>
+                        }
+                    />
                 </div>
                 <button
                     onClick={handleBookmark}

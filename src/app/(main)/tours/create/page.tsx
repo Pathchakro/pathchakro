@@ -12,7 +12,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { MapPin, Plus, Trash2, ArrowLeft, Upload, X } from 'lucide-react';
 import { z } from 'zod';
 import Link from 'next/link';
+
 import Image from 'next/image';
+import { useAccessControl } from '@/hooks/useAccessControl';
+import { useEffect } from 'react';
 
 const tourSchema = z.object({
     title: z.string().min(5, 'Title must be at least 5 characters'),
@@ -35,6 +38,12 @@ type TourData = z.infer<typeof tourSchema>;
 
 export default function CreateTourPage() {
     const router = useRouter();
+    const { checkVerifiedAccess } = useAccessControl();
+
+    useEffect(() => {
+        checkVerifiedAccess(true);
+    }, [checkVerifiedAccess]);
+
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
     const [bannerFile, setBannerFile] = useState<File | null>(null);

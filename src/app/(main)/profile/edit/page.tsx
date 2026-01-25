@@ -10,8 +10,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../../../components/ui/tabs';
 import { User, GraduationCap, Briefcase, Globe, Heart, ArrowLeft, MapPin, ShieldCheck, X } from 'lucide-react';
 import Link from 'next/link';
-import { bdLocations } from '@/lib/bd-locations';
-import { INTERESTS_LIST } from '@/lib/constants';
+// import { bdLocations } from '@/lib/bd-locations';
+// import { INTERESTS_LIST } from '@/lib/constants';
+import { useDynamicConfig } from '@/hooks/useDynamicConfig';
+import { InstituteSearch } from '@/components/profile/InstituteSearch';
 
 export default function EditProfilePage() {
     const router = useRouter();
@@ -19,6 +21,12 @@ export default function EditProfilePage() {
     const [error, setError] = useState('');
 
     // Personal
+    const [name, setName] = useState('');
+    const [email, setEmail] = useState('');
+    const [image, setImage] = useState('');
+    const [imagePreview, setImagePreview] = useState('');
+    const [isImageUploading, setIsImageUploading] = useState(false);
+
     const [title, setTitle] = useState('');
     const [bio, setBio] = useState('');
     const [location, setLocation] = useState('');
@@ -50,6 +58,7 @@ export default function EditProfilePage() {
     const [linkedin, setLinkedin] = useState('');
     const [github, setGithub] = useState('');
     const [twitter, setTwitter] = useState('');
+    const [facebook, setFacebook] = useState('');
 
     // Interests
     const [interests, setInterests] = useState<string[]>([]);
@@ -76,6 +85,130 @@ export default function EditProfilePage() {
     // Verification
     const [verificationFiles, setVerificationFiles] = useState<File[]>([]);
     const [isUploading, setIsUploading] = useState(false);
+
+    // Fetch Profile Data
+    useEffect(() => {
+        const fetchProfile = async () => {
+            try {
+                const res = await fetch('/api/profile/me');
+                if (res.ok) {
+                    const data = await res.json();
+                    const user = data.user;
+
+                    if (user) {
+                        setName(user.name || '');
+                        setEmail(user.email || '');
+                        setImage(user.image || '');
+                        setImagePreview(user.image || ''); // Set preview to existing image
+                        setTitle(user.title || '');
+                        setBio(user.bio || '');
+                        setLocation(user.location || '');
+                        setWebsite(user.social?.website || user.website || ''); // Handle both locations potentially
+                        // Date might need formatting if IT comes as ISO string
+                        if (user.dateOfBirth) {
+                            setDateOfBirth(new Date(user.dateOfBirth).toISOString().split('T')[0]);
+                        }
+                        setPhone(user.phone || '');
+                        setWhatsappNumber(user.whatsappNumber || '');
+                        setBloodGroup(user.bloodGroup || '');
+                        setWillingToDonateBlood(user.willingToDonateBlood !== undefined ? user.willingToDonateBlood : true);
+                        if (user.lastDateOfDonateBlood) {
+                            setLastDateOfDonateBlood(new Date(user.lastDateOfDonateBlood).toISOString().split('T')[0]);
+                        }
+
+                        // Populate other fields
+                        if (user.academic) {
+                            setCurrentEducation(user.academic.currentEducation || '');
+                            setInstitution(user.academic.institution || '');
+                            setDegree(user.academic.degree || '');
+                            setFieldOfStudy(user.academic.fieldOfStudy || '');
+                            setGraduationYear(user.academic.graduationYear?.toString() || '');
+                            setGpa(user.academic.gpa?.toString() || '');
+                        }
+
+                        if (user.career) {
+                            setCurrentPosition(user.career.currentPosition || '');
+                            setCompany(user.career.company || '');
+                            setIndustry(user.career.industry || '');
+                            setYearsOfExperience(user.career.yearsOfExperience?.toString() || '');
+                            setSkills(user.career.skills?.join(', ') || '');
+                            setCvLink(user.career.cvLink || '');
+                        }
+
+                        if (user.social) {
+                            setLinkedin(user.social.linkedin || '');
+                            setGithub(user.social.github || '');
+                            setTwitter(user.social.twitter || '');
+                            setFacebook(user.social.facebook || '');
+                        }
+
+                        if (user.interests) setInterests(user.interests);
+
+                        if (user.address?.present) {
+                            setPresentAddress({
+                                division: user.address.present.division || '',
+                                district: user.address.present.district || '',
+                                thana: user.address.present.thana || '',
+                                addressLine: user.address.present.addressLine || '',
+                                postCode: user.address.present.postCode || '',
+                                postOffice: user.address.present.postOffice || '',
+                            });
+                        }
+                        if (user.address?.permanent) {
+                            setPermanentAddress({
+                                division: user.address.permanent.division || '',
+                                district: user.address.permanent.district || '',
+                                thana: user.address.permanent.thana || '',
+                                addressLine: user.address.permanent.addressLine || '',
+                                postCode: user.address.permanent.postCode || '',
+                                postOffice: user.address.permanent.postOffice || '',
+                            });
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error("Failed to fetch profile", error);
+            }
+        };
+        fetchProfile();
+    }, []);
+
+    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        // Local preview
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            setImagePreview(reader.result as string);
+        };
+        reader.readAsDataURL(file);
+
+        // Upload to ImgBB
+        setIsImageUploading(true);
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+
+            const res = await fetch('/api/upload/image', {
+                method: 'POST',
+                body: formData
+            });
+            const data = await res.json();
+
+            if (res.ok) {
+                setImage(data.displayUrl || data.url);
+            } else {
+                console.error('Upload failed', data.error);
+                alert('Failed to upload image: ' + data.error);
+            }
+        } catch (error) {
+            console.error('Error uploading image', error);
+            alert('Error uploading image');
+        } finally {
+            setIsImageUploading(false);
+        }
+    };
 
     const handleAddressChange = (type: 'present' | 'permanent', field: string, value: string) => {
         if (type === 'present') {
@@ -144,6 +277,8 @@ export default function EditProfilePage() {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
+                    name,
+                    image,
                     title,
                     bio,
                     location,
@@ -169,6 +304,7 @@ export default function EditProfilePage() {
                     linkedin,
                     github,
                     twitter,
+                    facebook,
                     interests,
                     presentAddress,
                     permanentAddress,
@@ -207,9 +343,12 @@ export default function EditProfilePage() {
     };
     const completionPercentage = calculateCompletion();
 
+    // Dynamic Config
+    const { categories: dynamicInterests, locations: dynamicLocations, loading: configLoading } = useDynamicConfig();
+
     // Helpers to get districts and thanas based on selection
     const getDistricts = (divisionName: string) => {
-        const division = bdLocations.find(d => d.division === divisionName);
+        const division = dynamicLocations.find(d => d.division === divisionName);
         return division ? division.districts : [];
     };
 
@@ -229,6 +368,13 @@ export default function EditProfilePage() {
             }
         });
     };
+
+    // Use dynamic locations for mapping options
+    const divisions = dynamicLocations;
+
+    if (configLoading) {
+        return <div className="p-8 text-center"><p>Loading configuration...</p></div>;
+    }
 
     return (
         <div className="max-w-4xl mx-auto p-4">
@@ -283,6 +429,54 @@ export default function EditProfilePage() {
 
                         {/* Personal Tab */}
                         <TabsContent value="personal" className="space-y-4">
+                            {/* Profile Image & Name */}
+                            <div className="flex flex-col items-center sm:flex-row gap-6 mb-6">
+                                <div className="relative group">
+                                    <div className="h-24 w-24 rounded-full overflow-hidden border-2 border-primary/20 bg-muted flex items-center justify-center">
+                                        {imagePreview || image ? (
+                                            <img src={imagePreview || image} alt="Profile" className="h-full w-full object-cover" />
+                                        ) : (
+                                            <User className="h-12 w-12 text-muted-foreground" />
+                                        )}
+                                    </div>
+                                    <label htmlFor="profile-image" className="absolute bottom-0 right-0 bg-primary text-primary-foreground p-1.5 rounded-full cursor-pointer hover:bg-primary/90 shadow-sm">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></svg>
+                                        <input
+                                            type="file"
+                                            id="profile-image"
+                                            className="hidden"
+                                            accept="image/*"
+                                            onChange={handleImageUpload}
+                                            disabled={isImageUploading}
+                                        />
+                                    </label>
+                                    {isImageUploading && (
+                                        <div className="absolute inset-0 bg-background/50 flex items-center justify-center rounded-full">
+                                            <span className="text-xs font-medium">Uploading...</span>
+                                        </div>
+                                    )}
+                                </div>
+                                <div className="flex-1 w-full">
+                                    <Label htmlFor="name">Full Name</Label>
+                                    <Input
+                                        id="name"
+                                        value={name}
+                                        onChange={(e) => setName(e.target.value)}
+                                        placeholder="Your Full Name"
+                                        className="mt-1.5"
+                                    />
+                                    <div className="mt-3">
+                                        <Label htmlFor="email">Email Address</Label>
+                                        <Input
+                                            id="email"
+                                            value={email}
+                                            disabled
+                                            className="mt-1.5 bg-muted"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
                             <div>
                                 <Label htmlFor="title">Professional Title</Label>
                                 <Input
@@ -382,15 +576,6 @@ export default function EditProfilePage() {
                                     />
                                 </div>
                             </div>
-                            <div>
-                                <Label htmlFor="website">Website</Label>
-                                <Input
-                                    id="website"
-                                    value={website}
-                                    onChange={(e) => setWebsite(e.target.value)}
-                                    placeholder="https://example.com"
-                                />
-                            </div>
                         </TabsContent>
 
                         {/* Address Tab */}
@@ -407,7 +592,7 @@ export default function EditProfilePage() {
                                             onChange={(e) => handleAddressChange('present', 'division', e.target.value)}
                                         >
                                             <option value="">Select Division</option>
-                                            {bdLocations.map(div => (
+                                            {divisions.map(div => (
                                                 <option key={div.division} value={div.division}>{div.division}</option>
                                             ))}
                                         </select>
@@ -483,7 +668,7 @@ export default function EditProfilePage() {
                                             onChange={(e) => handleAddressChange('permanent', 'division', e.target.value)}
                                         >
                                             <option value="">Select Division</option>
-                                            {bdLocations.map(div => (
+                                            {divisions.map(div => (
                                                 <option key={div.division} value={div.division}>{div.division}</option>
                                             ))}
                                         </select>
@@ -550,33 +735,24 @@ export default function EditProfilePage() {
 
                         {/* Academic Tab */}
                         <TabsContent value="academic" className="space-y-4">
-                            <div>
-                                <Label htmlFor="currentEducation">Current Education Level</Label>
-                                <select
-                                    id="currentEducation"
-                                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                                    value={currentEducation}
-                                    onChange={(e) => setCurrentEducation(e.target.value)}
-                                >
-                                    <option value="">Select One</option>
-                                    <option value="JSC/JDC/8 pass">JSC/JDC/8 pass</option>
-                                    <option value="Secondary">Secondary</option>
-                                    <option value="Higher Secondary">Higher Secondary</option>
-                                    <option value="Diploma">Diploma</option>
-                                    <option value="Bachelor/Honors">Bachelor/Honors</option>
-                                    <option value="Masters">Masters</option>
-                                    <option value="PhD (Doctor of Philosophy)">PhD (Doctor of Philosophy)</option>
-                                </select>
-                            </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <Label htmlFor="institution">Institution</Label>
-                                    <Input
-                                        id="institution"
-                                        value={institution}
-                                        onChange={(e) => setInstitution(e.target.value)}
-                                        placeholder="Dhaka University"
-                                    />
+                                    <Label htmlFor="currentEducation">Highest Education Level</Label>
+                                    <select
+                                        id="currentEducation"
+                                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                        value={currentEducation}
+                                        onChange={(e) => setCurrentEducation(e.target.value)}
+                                    >
+                                        <option value="">Select One</option>
+                                        <option value="JSC/JDC/8 pass">JSC/JDC/8 pass</option>
+                                        <option value="Secondary">Secondary</option>
+                                        <option value="Higher Secondary">Higher Secondary</option>
+                                        <option value="Diploma">Diploma</option>
+                                        <option value="Bachelor/Honors">Bachelor/Honors</option>
+                                        <option value="Masters">Masters</option>
+                                        <option value="PhD (Doctor of Philosophy)">PhD (Doctor of Philosophy)</option>
+                                    </select>
                                 </div>
                                 <div>
                                     <Label htmlFor="degree">Degree</Label>
@@ -587,6 +763,14 @@ export default function EditProfilePage() {
                                         placeholder="BSc, MSc, PhD"
                                     />
                                 </div>
+                            </div>
+
+                            <div>
+                                <Label htmlFor="institution">Institution</Label>
+                                <InstituteSearch
+                                    value={institution}
+                                    onSelect={(val) => setInstitution(val)}
+                                />
                             </div>
                             <div className="grid grid-cols-3 gap-4">
                                 <div>
@@ -715,6 +899,24 @@ export default function EditProfilePage() {
                                     placeholder="https://twitter.com/username"
                                 />
                             </div>
+                            <div>
+                                <Label htmlFor="facebook">Facebook Profile</Label>
+                                <Input
+                                    id="facebook"
+                                    value={facebook}
+                                    onChange={(e) => setFacebook(e.target.value)}
+                                    placeholder="https://facebook.com/username"
+                                />
+                            </div>
+                            <div>
+                                <Label htmlFor="website">Website</Label>
+                                <Input
+                                    id="website"
+                                    value={website}
+                                    onChange={(e) => setWebsite(e.target.value)}
+                                    placeholder="https://example.com"
+                                />
+                            </div>
                         </TabsContent>
 
                         {/* Interests Tab */}
@@ -722,7 +924,7 @@ export default function EditProfilePage() {
                             <div>
                                 <Label className="mb-2 block">Interests (Select up to 3)</Label>
                                 <div className="flex flex-wrap gap-2">
-                                    {INTERESTS_LIST.map((interest) => (
+                                    {dynamicInterests.map((interest) => (
                                         <Button
                                             key={interest}
                                             type="button"

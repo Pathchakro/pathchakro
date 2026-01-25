@@ -5,26 +5,14 @@ import { useParams, useRouter } from 'next/navigation';
 import { ProfileHeader } from '@/components/profile/ProfileHeader';
 import { ProfileTabs } from '@/components/profile/ProfileTabs';
 import { EventsTabContent } from '@/components/profile/EventsTabContent';
-import { MapPin, Calendar, Edit, Trash2 } from 'lucide-react';
+import { LibraryTabContent } from '@/components/profile/LibraryTabContent';
+import { BookmarksTabContent } from '@/components/profile/BookmarksTabContent';
+import { MapPin, Calendar, Edit, Trash2, Briefcase, GraduationCap, Globe, Github, Linkedin, Facebook, Twitter, Phone, Mail, Bookmark } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 import { useSession } from 'next-auth/react';
 import { PostCard, Post } from '@/components/feed/PostCard';
 
-interface User {
-    _id: string;
-    name: string;
-    email: string;
-    image?: string;
-    coverImage?: string;
-    bio?: string;
-    profileType: string;
-    university?: string;
-    thana?: string;
-    bloodGroup?: string;
-    bookPreferences?: string[];
-    rankTier: string;
-    createdAt: string;
-}
+import { IUser } from '@/types';
 
 interface Stats {
     posts: number;
@@ -38,7 +26,7 @@ export default function ProfilePage() {
     const username = params.username as string;
     const { data: session } = useSession();
 
-    const [user, setUser] = useState<User | null>(null);
+    const [user, setUser] = useState<IUser | null>(null);
     const [stats, setStats] = useState<Stats | null>(null);
     const [activeTab, setActiveTab] = useState('posts');
     const [posts, setPosts] = useState<Post[]>([]);
@@ -46,9 +34,29 @@ export default function ProfilePage() {
     const [loading, setLoading] = useState(true);
     const router = useRouter();
 
+    const [myBookmarkedIds, setMyBookmarkedIds] = useState<string[]>([]);
+
     useEffect(() => {
         fetchUserData();
     }, [username]);
+
+    useEffect(() => {
+        if (session?.user?.id) {
+            fetchMyBookmarks();
+        }
+    }, [session?.user?.id]);
+
+    const fetchMyBookmarks = async () => {
+        try {
+            const response = await fetch(`/api/users/bookmarks?userId=${session?.user?.id}`);
+            const data = await response.json();
+            if (data.bookmarks) {
+                setMyBookmarkedIds(data.bookmarks.map((b: any) => b._id));
+            }
+        } catch (error) {
+            console.error('Error fetching bookmarks:', error);
+        }
+    };
 
     const fetchUserData = async () => {
         try {
@@ -137,7 +145,7 @@ export default function ProfilePage() {
         <div className="max-w-4xl mx-auto p-4">
             <ProfileHeader user={user} stats={stats} isOwnProfile={isOwnProfile} />
 
-            <ProfileTabs activeTab={activeTab} onTabChange={setActiveTab} />
+            <ProfileTabs activeTab={activeTab} onTabChange={setActiveTab} isOwnProfile={isOwnProfile} />
 
             {/* Tab Content */}
             <div className="space-y-4">
@@ -157,6 +165,7 @@ export default function ProfilePage() {
                                     key={post._id}
                                     initialPost={post}
                                     currentUserId={session?.user?.id}
+                                    initialIsBookmarked={myBookmarkedIds.includes(post._id)}
                                 />
                             ))
                         )}
@@ -176,10 +185,6 @@ export default function ProfilePage() {
                             )}
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <h4 className="text-sm font-medium text-muted-foreground mb-1">Profile Type</h4>
-                                    <p className="text-sm">{user.profileType}</p>
-                                </div>
 
                                 {user.university && (
                                     <div>
@@ -202,19 +207,198 @@ export default function ProfilePage() {
                                     </div>
                                 )}
 
-                                <div>
-                                    <h4 className="text-sm font-medium text-muted-foreground mb-1">Rank</h4>
-                                    <p className="text-sm font-semibold text-primary">{user.rankTier}</p>
-                                </div>
 
-                                <div>
-                                    <h4 className="text-sm font-medium text-muted-foreground mb-1">Member Since</h4>
-                                    <p className="text-sm">{formatDate(user.createdAt)}</p>
+                            </div>
+
+                            {/* Contact & Personal Details */}
+                            <div className="pt-4 border-t">
+                                <h4 className="font-medium mb-3 flex items-center gap-2">
+                                    <Globe className="h-4 w-4" /> Personal Details
+                                </h4>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {user.title && (
+                                        <div>
+                                            <h4 className="text-sm font-medium text-muted-foreground">Title</h4>
+                                            <p className="text-sm">{user.title}</p>
+                                        </div>
+                                    )}
+                                    {user.email && (
+                                        <div>
+                                            <h4 className="text-sm font-medium text-muted-foreground">Email</h4>
+                                            <p className="text-sm">{user.email}</p>
+                                        </div>
+                                    )}
+                                    {user.phone && (
+                                        <div>
+                                            <h4 className="text-sm font-medium text-muted-foreground">Phone</h4>
+                                            <p className="text-sm">{user.phone}</p>
+                                        </div>
+                                    )}
+                                    {user.website && (
+                                        <div>
+                                            <h4 className="text-sm font-medium text-muted-foreground">Website</h4>
+                                            <a href={user.website} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-500 hover:underline">{user.website}</a>
+                                        </div>
+                                    )}
+                                    {user.dateOfBirth && (
+                                        <div>
+                                            <h4 className="text-sm font-medium text-muted-foreground">Date of Birth</h4>
+                                            <p className="text-sm">{new Date(user.dateOfBirth).toLocaleDateString()}</p>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 
+                            {/* Academic */}
+                            {(user.academic?.currentEducation || user.academic?.institution || user.academic?.degree) && (
+                                <div className="pt-4 border-t">
+                                    <h4 className="font-medium mb-3 flex items-center gap-2">
+                                        <GraduationCap className="h-4 w-4" /> Education
+                                    </h4>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        {user.academic?.institution && (
+                                            <div>
+                                                <h4 className="text-sm font-medium text-muted-foreground">Institution</h4>
+                                                <p className="text-sm">{user.academic.institution}</p>
+                                            </div>
+                                        )}
+                                        {user.academic?.currentEducation && (
+                                            <div>
+                                                <h4 className="text-sm font-medium text-muted-foreground">Current Level</h4>
+                                                <p className="text-sm">{user.academic.currentEducation}</p>
+                                            </div>
+                                        )}
+                                        {user.academic?.degree && (
+                                            <div>
+                                                <h4 className="text-sm font-medium text-muted-foreground">Degree</h4>
+                                                <p className="text-sm">{user.academic.degree}</p>
+                                            </div>
+                                        )}
+                                        {user.academic?.fieldOfStudy && (
+                                            <div>
+                                                <h4 className="text-sm font-medium text-muted-foreground">Field of Study</h4>
+                                                <p className="text-sm">{user.academic.fieldOfStudy}</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Career */}
+                            {(user.career?.currentPosition || user.career?.company || user.career?.skills) && (
+                                <div className="pt-4 border-t">
+                                    <h4 className="font-medium mb-3 flex items-center gap-2">
+                                        <Briefcase className="h-4 w-4" /> Career & Skills
+                                    </h4>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        {user.career?.currentPosition && (
+                                            <div>
+                                                <h4 className="text-sm font-medium text-muted-foreground">Current Position</h4>
+                                                <p className="text-sm">{user.career.currentPosition}</p>
+                                            </div>
+                                        )}
+                                        {user.career?.company && (
+                                            <div>
+                                                <h4 className="text-sm font-medium text-muted-foreground">Company</h4>
+                                                <p className="text-sm">{user.career.company}</p>
+                                            </div>
+                                        )}
+                                        {user.career?.yearsOfExperience && (
+                                            <div>
+                                                <h4 className="text-sm font-medium text-muted-foreground">Experience</h4>
+                                                <p className="text-sm">{user.career.yearsOfExperience} Years</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                    {user.career?.skills && user.career.skills.length > 0 && (
+                                        <div className="mt-3">
+                                            <h4 className="text-sm font-medium text-muted-foreground mb-2">Skills</h4>
+                                            <div className="flex flex-wrap gap-2">
+                                                {user.career.skills.map((skill: string, idx: number) => (
+                                                    <span key={idx} className="text-xs bg-secondary px-2 py-1 rounded">
+                                                        {skill}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* Address */}
+                            {(user.address?.present || user.address?.permanent) && (
+                                <div className="pt-4 border-t">
+                                    <h4 className="font-medium mb-3 flex items-center gap-2">
+                                        <MapPin className="h-4 w-4" /> Address
+                                    </h4>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        {user.address?.present && (
+                                            <div className="space-y-1">
+                                                <h5 className="text-sm font-semibold">Present Address</h5>
+                                                {user.address.present.division && <p className="text-sm text-muted-foreground">{user.address.present.addressLine}</p>}
+                                                <p className="text-sm text-muted-foreground">
+                                                    {[user.address.present.thana, user.address.present.district, user.address.present.division].filter(Boolean).join(', ')}
+                                                </p>
+                                            </div>
+                                        )}
+                                        {user.address?.permanent && (
+                                            <div className="space-y-1">
+                                                <h5 className="text-sm font-semibold">Permanent Address</h5>
+                                                {user.address.permanent.division && <p className="text-sm text-muted-foreground">{user.address.permanent.addressLine}</p>}
+                                                <p className="text-sm text-muted-foreground">
+                                                    {[user.address.permanent.thana, user.address.permanent.district, user.address.permanent.division].filter(Boolean).join(', ')}
+                                                </p>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Social */}
+                            {user.social && (user.social.linkedin || user.social.github || user.social.twitter || user.social.facebook) && (
+                                <div className="pt-4 border-t">
+                                    <h4 className="font-medium mb-3">Social Profiles</h4>
+                                    <div className="flex gap-4">
+                                        {user.social.linkedin && (
+                                            <a href={user.social.linkedin} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-[#0077b5]">
+                                                <Linkedin className="h-5 w-5" />
+                                            </a>
+                                        )}
+                                        {user.social.github && (
+                                            <a href={user.social.github} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-black">
+                                                <Github className="h-5 w-5" />
+                                            </a>
+                                        )}
+                                        {user.social.facebook && (
+                                            <a href={user.social.facebook} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-[#1877F2]">
+                                                <Facebook className="h-5 w-5" />
+                                            </a>
+                                        )}
+                                        {user.social.twitter && (
+                                            <a href={user.social.twitter} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-[#1DA1F2]">
+                                                <Twitter className="h-5 w-5" />
+                                            </a>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Interests (General) */}
+                            {user.interests && user.interests.length > 0 && (
+                                <div className="pt-4 border-t">
+                                    <h4 className="font-medium mb-3">Interests</h4>
+                                    <div className="flex flex-wrap gap-2">
+                                        {user.interests.map((interest) => (
+                                            <span key={interest} className="text-sm border px-3 py-1 rounded-full">
+                                                {interest}
+                                            </span>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
                             {user.bookPreferences && user.bookPreferences.length > 0 && (
-                                <div>
+                                <div className="pt-4 border-t">
                                     <h4 className="text-sm font-medium text-muted-foreground mb-2">Book Interests</h4>
                                     <div className="flex flex-wrap gap-2">
                                         {user.bookPreferences.map((pref) => (
@@ -316,9 +500,11 @@ export default function ProfilePage() {
                 )}
 
                 {activeTab === 'library' && (
-                    <div className="bg-card rounded-lg p-8 text-center text-muted-foreground">
-                        Library feature coming soon!
-                    </div>
+                    <LibraryTabContent userId={user._id} isOwnProfile={isOwnProfile} />
+                )}
+
+                {activeTab === 'bookmarks' && isOwnProfile && (
+                    <BookmarksTabContent userId={user._id} currentUserId={session?.user?.id} />
                 )}
             </div>
         </div>

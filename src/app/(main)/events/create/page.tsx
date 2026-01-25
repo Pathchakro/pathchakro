@@ -8,10 +8,18 @@ import { Calendar, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'sonner';
 import { EventForm, EventData } from '@/components/events/EventForm';
+import { useAccessControl } from '@/hooks/useAccessControl';
+import { useEffect } from 'react';
 
 export default function CreateEventPage() {
     const router = useRouter();
     const [isLoading, setIsLoading] = useState(false);
+    const { checkVerifiedAccess } = useAccessControl();
+
+    useEffect(() => {
+        checkVerifiedAccess(true);
+    }, [checkVerifiedAccess]);
+
     const [uploadingBanner, setUploadingBanner] = useState(false);
 
     const onSubmit = async (data: EventData, bannerFile: File | null) => {

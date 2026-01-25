@@ -14,6 +14,8 @@ import { ImageUploader } from '@/components/uploads/ImageUploader';
 import { ShoppingBag, ArrowLeft } from 'lucide-react';
 import { z } from 'zod';
 import Link from 'next/link';
+import { useAccessControl } from '@/hooks/useAccessControl';
+import { useEffect } from 'react';
 
 const productSchema = z.object({
     title: z.string().min(5, 'Title must be at least 5 characters'),
@@ -31,6 +33,12 @@ type ProductData = z.infer<typeof productSchema>;
 
 export default function SellPage() {
     const router = useRouter();
+    const { checkVerifiedAccess } = useAccessControl();
+
+    useEffect(() => {
+        checkVerifiedAccess(true);
+    }, [checkVerifiedAccess]);
+
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
     const [productImages, setProductImages] = useState<string[]>([]);

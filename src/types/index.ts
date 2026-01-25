@@ -19,8 +19,10 @@ export interface IUser {
     lastDateOfDonateBlood?: Date;
     bookPreferences?: string[];
     rank?: number;
+    profileCompletion?: number;
     rankTier?: 'Beginner' | 'Reader' | 'Critic' | 'Scholar' | 'Master';
     followers?: string[] | IUser[];
+    savedPosts?: string[] | IPost[];
     following?: string[] | IUser[];
     role?: 'user' | 'admin';
     title?: string;
@@ -49,6 +51,7 @@ export interface IUser {
         linkedin?: string;
         github?: string;
         twitter?: string;
+        facebook?: string;
     };
     interests?: string[];
     languages?: string[];

@@ -27,9 +27,29 @@ export default function HomePage() {
     const [isCreatePostOpen, setIsCreatePostOpen] = useState(false);
     const [isCreateReviewOpen, setIsCreateReviewOpen] = useState(false);
 
+    const [myBookmarkedIds, setMyBookmarkedIds] = useState<string[]>([]);
+
     useEffect(() => {
         fetchFeed();
     }, []);
+
+    useEffect(() => {
+        if (session?.user?.id) {
+            fetchMyBookmarks();
+        }
+    }, [session?.user?.id]);
+
+    const fetchMyBookmarks = async () => {
+        try {
+            const response = await fetch(`/api/users/bookmarks?userId=${session?.user?.id}`);
+            const data = await response.json();
+            if (data.bookmarks) {
+                setMyBookmarkedIds(data.bookmarks.map((b: any) => b._id));
+            }
+        } catch (error) {
+            console.error('Error fetching bookmarks:', error);
+        }
+    };
 
     const fetchFeed = async (nextCursor?: string) => {
         if (nextCursor) {
@@ -121,7 +141,12 @@ export default function HomePage() {
                 {items.map((item) => {
                     switch (item.type) {
                         case 'post':
-                            return <PostCard key={item._id} initialPost={item} currentUserId={session?.user?.id} />;
+                            return <PostCard
+                                key={item._id}
+                                initialPost={item}
+                                currentUserId={session?.user?.id}
+                                initialIsBookmarked={myBookmarkedIds.includes(item._id)}
+                            />;
                         case 'review':
                             return <ReviewCard key={item._id} review={item} />;
                         case 'event':

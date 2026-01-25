@@ -90,6 +90,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
                     (session.user as any).rank = dbUser.rank;
                     (session.user as any).rankTier = dbUser.rankTier;
                     (session.user as any).role = dbUser.role;
+                    (session.user as any).profileCompletion = dbUser.profileCompletion;
+                    (session.user as any).isVerified = dbUser.verification?.isVerified || false;
                     (session.user as any).followers = dbUser.followers;
                     (session.user as any).following = dbUser.following;
                 }

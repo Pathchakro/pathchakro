@@ -27,6 +27,26 @@ export default function PostsPage() {
         return () => clearTimeout(timer);
     }, [search]);
 
+    const [myBookmarkedIds, setMyBookmarkedIds] = useState<string[]>([]);
+
+    useEffect(() => {
+        if (session?.user?.id) {
+            fetchMyBookmarks();
+        }
+    }, [session?.user?.id]);
+
+    const fetchMyBookmarks = async () => {
+        try {
+            const response = await fetch(`/api/users/bookmarks?userId=${session?.user?.id}`);
+            const data = await response.json();
+            if (data.bookmarks) {
+                setMyBookmarkedIds(data.bookmarks.map((b: any) => b._id));
+            }
+        } catch (error) {
+            console.error('Error fetching bookmarks:', error);
+        }
+    };
+
     useEffect(() => {
         fetchPosts();
     }, [debouncedSearch, category]);
@@ -90,6 +110,7 @@ export default function PostsPage() {
                             key={post._id}
                             initialPost={post}
                             currentUserId={session?.user?.id}
+                            initialIsBookmarked={myBookmarkedIds.includes(post._id)}
                             onDelete={(id) => setPosts(prev => prev.filter(p => p._id !== id))}
                         />
                     ))}

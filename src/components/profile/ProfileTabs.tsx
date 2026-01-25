@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 interface ProfileTabsProps {
     activeTab: string;
     onTabChange: (tab: string) => void;
+    isOwnProfile?: boolean;
 }
 
 const TABS = [
@@ -17,11 +18,16 @@ const TABS = [
     { id: 'library', label: 'Library' },
 ];
 
-export function ProfileTabs({ activeTab, onTabChange }: ProfileTabsProps) {
+export function ProfileTabs({ activeTab, onTabChange, isOwnProfile }: ProfileTabsProps) {
+    const tabs = [...TABS];
+    if (isOwnProfile) {
+        tabs.push({ id: 'bookmarks', label: 'Bookmarks' });
+    }
+
     return (
         <div className="bg-card rounded-lg shadow-sm border mb-4">
             <div className="flex overflow-x-auto">
-                {TABS.map((tab) => (
+                {tabs.map((tab) => (
                     <button
                         key={tab.id}
                         onClick={() => onTabChange(tab.id)}

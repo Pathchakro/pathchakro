@@ -18,8 +18,8 @@ interface ProfileHeaderProps {
         thana?: string;
         bloodGroup?: string;
         bookPreferences?: string[];
-        rankTier: string;
-        createdAt: string;
+        rankTier?: string;
+        createdAt: string | Date;
     };
     stats: {
         posts: number;
@@ -45,7 +45,7 @@ export function ProfileHeader({ user, stats, isOwnProfile }: ProfileHeaderProps)
     return (
         <div className="bg-card rounded-lg shadow-sm border overflow-hidden">
             {/* Cover Image */}
-            <div className={`h-48 bg-gradient-to-r ${getRankColor(user.rankTier)}`}>
+            <div className={`h-48 bg-gradient-to-r ${getRankColor(user.rankTier || 'Beginner')}`}>
                 {user.coverImage && (
                     <img src={user.coverImage} alt="Cover" className="w-full h-full object-cover" />
                 )}
@@ -56,7 +56,7 @@ export function ProfileHeader({ user, stats, isOwnProfile }: ProfileHeaderProps)
                 <div className="flex flex-col md:flex-row gap-4 items-start md:items-end -mt-20 md:-mt-16">
                     {/* Avatar */}
                     <div className="relative">
-                        <div className={`h-32 w-32 rounded-full border-4 border-card bg-gradient-to-br ${getRankColor(user.rankTier)} flex items-center justify-center text-white font-bold text-4xl shadow-lg`}>
+                        <div className={`h-32 w-32 rounded-full border-4 border-card bg-gradient-to-br ${getRankColor(user.rankTier || 'Beginner')} flex items-center justify-center text-white font-bold text-4xl shadow-lg`}>
                             {user.image ? (
                                 <img src={user.image} alt={user.name} className="h-full w-full rounded-full object-cover" />
                             ) : (
@@ -65,7 +65,7 @@ export function ProfileHeader({ user, stats, isOwnProfile }: ProfileHeaderProps)
                         </div>
                         {/* Rank Badge */}
                         <div className="absolute -bottom-2 -right-2 bg-primary text-primary-foreground text-xs font-bold px-3 py-1 rounded-full shadow-md">
-                            {user.rankTier}
+                            {user.rankTier || 'Beginner'}
                         </div>
                     </div>
 

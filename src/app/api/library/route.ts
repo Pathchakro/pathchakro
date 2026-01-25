@@ -7,14 +7,8 @@ export async function GET(request: NextRequest) {
     try {
         const session = await auth();
 
-        if (!session?.user?.id) {
-            return NextResponse.json(
-                { error: 'Unauthorized' },
-                { status: 401 }
-            );
-        }
-
         const { searchParams } = new URL(request.url);
+        const userId = searchParams.get('userId');
         const status = searchParams.get('status');
         const category = searchParams.get('category');
         const author = searchParams.get('author');
@@ -22,7 +16,20 @@ export async function GET(request: NextRequest) {
 
         await dbConnect();
 
-        let filter: any = { user: session.user.id };
+        let targetUserId = userId;
+
+        // If no userId provided, must be logged in to see own library
+        if (!targetUserId) {
+            if (!session?.user?.id) {
+                return NextResponse.json(
+                    { error: 'Unauthorized' },
+                    { status: 401 }
+                );
+            }
+            targetUserId = session.user.id;
+        }
+
+        let filter: any = { user: targetUserId };
 
         if (status) {
             filter.status = status;

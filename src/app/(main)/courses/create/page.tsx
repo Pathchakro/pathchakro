@@ -12,12 +12,21 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select-radix';
 import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
+import { useAccessControl } from '@/hooks/useAccessControl';
+import { useEffect } from 'react';
 
 const NovelEditor = dynamic(() => import('@/components/editor/NovelEditor'), { ssr: false });
 
 export default function CreateCoursePage() {
     const router = useRouter();
+
+    const router = useRouter();
     const { data: session } = useSession();
+    const { checkVerifiedAccess } = useAccessControl();
+
+    useEffect(() => {
+        checkVerifiedAccess(true);
+    }, [checkVerifiedAccess]);
 
     const [loading, setLoading] = useState(false);
     const [uploading, setUploading] = useState(false);

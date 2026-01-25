@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { formatDate } from '@/lib/utils';
 import { Send } from 'lucide-react';
+import { useAccessControl } from '@/hooks/useAccessControl';
+import { toast } from 'sonner';
 
 interface Comment {
     _id: string;
@@ -29,6 +31,7 @@ interface CommentSectionProps {
 
 export function CommentSection({ postId, initialCount, slug, isOpen, onToggle }: CommentSectionProps) {
     const { data: session } = useSession();
+    const { checkBasicAccess } = useAccessControl();
     const [comments, setComments] = useState<Comment[]>([]);
     const [newComment, setNewComment] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -64,6 +67,7 @@ export function CommentSection({ postId, initialCount, slug, isOpen, onToggle }:
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
+        if (!checkBasicAccess()) return;
         if (!newComment.trim()) return;
 
         setIsSubmitting(true);

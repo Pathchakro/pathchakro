@@ -46,6 +46,7 @@ export async function PUT(request: NextRequest) {
             linkedin,
             github,
             twitter,
+            facebook,
             // Interests
             interests,
             languages,
@@ -87,6 +88,11 @@ export async function PUT(request: NextRequest) {
         if (linkedin !== undefined) updateData['social.linkedin'] = linkedin;
         if (github !== undefined) updateData['social.github'] = github;
         if (twitter !== undefined) updateData['social.twitter'] = twitter;
+        if (facebook !== undefined) updateData['social.facebook'] = facebook;
+
+        // Core Profile Updates (Name & Image)
+        if (body.name !== undefined) updateData.name = body.name;
+        if (body.image !== undefined) updateData.image = body.image;
 
         // Interests
         // Interests & Groups Logic
@@ -218,6 +224,49 @@ export async function PUT(request: NextRequest) {
             updateData['verification.documentUrls'] = body.verificationDocuments;
             updateData['verification.status'] = 'pending';
             updateData['verification.submittedAt'] = new Date();
+        }
+
+        // Calculate Profile Completion
+        // Based on fields present in updateData (merged with existing would be better, but we don't have full user here easily without extra fetch)
+        // Better approach: User is fetched in next-auth session or we can fetch only needed fields if we want perfection.
+        // For now, let's use what we have in updateData + assume untouched fields didn't change status.
+        // Actually, to do this accurately on server side, we should fetch the current user data first.
+        // We already have currentUser fetched for groups sync logic if session.user.id exists.
+
+        if (session.user.id) {
+            const userForCalc = await User.findById(session.user.id); // Re-fetch to be sure or reuse currentUser if fields are sufficient
+
+            if (userForCalc) {
+                // Create a temporary object merging current user data with updateData
+                const mergedData = { ...userForCalc.toObject(), ...updateData };
+
+                // Handle nested updates for calculation
+                if (updateData['academic.currentEducation']) mergedData.academic = { ...mergedData.academic, currentEducation: updateData['academic.currentEducation'] };
+                if (updateData['academic.institution']) mergedData.academic = { ...mergedData.academic, institution: updateData['academic.institution'] };
+                if (updateData['career.currentPosition']) mergedData.career = { ...mergedData.career, currentPosition: updateData['career.currentPosition'] };
+                if (updateData['career.company']) mergedData.career = { ...mergedData.career, company: updateData['career.company'] };
+                if (updateData['address.present']) mergedData.address = { ...mergedData.address, present: updateData['address.present'] };
+                if (updateData['address.permanent']) mergedData.address = { ...mergedData.address, permanent: updateData['address.permanent'] };
+
+                const fieldsToCheck = [
+                    mergedData.title,
+                    mergedData.bio,
+                    mergedData.location,
+                    mergedData.phone,
+                    mergedData.academic?.currentEducation,
+                    mergedData.academic?.institution,
+                    mergedData.career?.currentPosition,
+                    mergedData.career?.company,
+                    mergedData.address?.present?.addressLine,
+                    mergedData.address?.permanent?.addressLine,
+                    (mergedData.interests && mergedData.interests.length > 0) ? 'filled' : ''
+                ];
+
+                const filledCount = fieldsToCheck.filter(f => f && typeof f === 'string' && f.trim().length > 0).length;
+                const completionScore = Math.round((filledCount / 11) * 100);
+
+                updateData.profileCompletion = completionScore;
+            }
         }
 
         const user = await User.findByIdAndUpdate(

@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Trash2, Star, ArrowLeft, Video, Download, Upload, ShoppingCart, FileText, Plus, Library } from 'lucide-react';
+import { Trash2, Star, ArrowLeft, Video, Download, Upload, ShoppingCart, FileText, Plus, Library, BookOpen, CheckCircle, Bookmark, Users } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 import { YouTubeEmbed } from '@/components/media/YouTubeEmbed';
 import { isValidYouTubeUrl } from '@/lib/youtube';
@@ -27,7 +27,14 @@ interface Book {
     description?: string;
     averageRating: number;
     totalReviews: number;
+    desc?: string; // This line seems to be missing in my view, but I'll target 'addedBy' which I see.
     addedBy?: string;
+    stats?: {
+        reading: number;
+        completed: number;
+        wantToRead: number;
+        inLibrary: number;
+    };
 }
 
 interface Review {
@@ -112,7 +119,7 @@ export default function BookDetailPage() {
 
     const fetchReviews = async (id: string) => {
         try {
-            const response = await fetch(`/api/books/${id}/reviews`);
+            const response = await fetch(`/api/reviews?bookId=${id}`);
             const data = await response.json();
 
             if (data.reviews) {
@@ -324,6 +331,45 @@ export default function BookDetailPage() {
                                 <Library className="h-4 w-4 mr-2" />
                                 Add to My Library
                             </Button>
+
+                            {/* Stats Section */}
+                            {book.stats && (
+                                <div className="grid grid-cols-2 gap-2 pt-2">
+                                    <Link
+                                        href={`/books/${slug}/users?status=reading`}
+                                        className="bg-blue-50 hover:bg-blue-100 p-2 rounded text-center transition-colors cursor-pointer border border-blue-100"
+                                    >
+                                        <BookOpen className="h-4 w-4 text-blue-500 mx-auto mb-1" />
+                                        <div className="font-bold text-blue-700 leading-none">{book.stats.reading}</div>
+                                        <div className="text-[10px] text-blue-600 uppercase tracking-wide">Reading</div>
+                                    </Link>
+                                    <Link
+                                        href={`/books/${slug}/users?status=completed`}
+                                        className="bg-green-50 hover:bg-green-100 p-2 rounded text-center transition-colors cursor-pointer border border-green-100"
+                                    >
+                                        <CheckCircle className="h-4 w-4 text-green-500 mx-auto mb-1" />
+                                        <div className="font-bold text-green-700 leading-none">{book.stats.completed}</div>
+                                        <div className="text-[10px] text-green-600 uppercase tracking-wide">Completed</div>
+                                    </Link>
+                                    <Link
+                                        href={`/books/${slug}/users?status=want-to-read`}
+                                        className="bg-amber-50 hover:bg-amber-100 p-2 rounded text-center transition-colors cursor-pointer border border-amber-100"
+                                    >
+                                        <Bookmark className="h-4 w-4 text-amber-500 mx-auto mb-1" />
+                                        <div className="font-bold text-amber-700 leading-none">{book.stats.wantToRead}</div>
+                                        <div className="text-[10px] text-amber-600 uppercase tracking-wide">Want to Read</div>
+                                    </Link>
+                                    <Link
+                                        href={`/books/${slug}/users?status=in-library`}
+                                        className="bg-purple-50 hover:bg-purple-100 p-2 rounded text-center transition-colors cursor-pointer border border-purple-100"
+                                    >
+                                        <Users className="h-4 w-4 text-purple-500 mx-auto mb-1" />
+                                        <div className="font-bold text-purple-700 leading-none">{book.stats.inLibrary}</div>
+                                        <div className="text-[10px] text-purple-600 uppercase tracking-wide">Have it</div>
+                                    </Link>
+                                </div>
+                            )}
+
                             <Button className="w-full">
                                 <ShoppingCart className="h-4 w-4 mr-2" />
                                 Buy This Book
@@ -372,7 +418,7 @@ export default function BookDetailPage() {
                         )}
 
                         <div className="flex flex-wrap gap-2 mb-4">
-                            {book.category.map((cat, idx) => (
+                            {book.category?.map((cat, idx) => (
                                 <span key={idx} className="px-3 py-1 bg-primary/10 text-primary rounded-full text-sm font-medium">
                                     {cat}
                                 </span>

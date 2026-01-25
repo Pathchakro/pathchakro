@@ -8,8 +8,11 @@ import NovelEditor from '@/components/editor/NovelEditor';
 import { Select } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { Image as ImageIcon, X, Loader2 } from 'lucide-react';
-import { BOOK_CATEGORIES } from '@/lib/constants';
+// import { BOOK_CATEGORIES } from '@/lib/constants';
 import { toast } from 'sonner';
+import { useDynamicConfig } from '@/hooks/useDynamicConfig';
+import { useAccessControl } from '@/hooks/useAccessControl';
+import { useEffect } from 'react';
 
 interface CreatePostDialogProps {
     open: boolean;
@@ -18,11 +21,29 @@ interface CreatePostDialogProps {
 
 export function CreatePostDialog({ open, onOpenChange }: CreatePostDialogProps) {
     const { data: session } = useSession();
+    const { categories } = useDynamicConfig();
+    const { checkBasicAccess } = useAccessControl();
+
+    useEffect(() => {
+        if (open) {
+            const allowed = checkBasicAccess(false);
+            if (!allowed) {
+                toast.error("Complete your profile (70%) to create posts.");
+                onOpenChange(false);
+            }
+        }
+    }, [open, checkBasicAccess, onOpenChange]);
+
     const [title, setTitle] = useState('');
     const [content, setContent] = useState('');
     const [mediaUrls, setMediaUrls] = useState<string[]>([]);
-    const [category, setCategory] = useState(BOOK_CATEGORIES[0]);
+    const [category, setCategory] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+
+    // Set default category when loaded
+    if (!category && categories.length > 0) {
+        setCategory(categories[0]);
+    }
     const [isUploading, setIsUploading] = useState(false);
 
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -102,7 +123,9 @@ export function CreatePostDialog({ open, onOpenChange }: CreatePostDialogProps) 
                 setTitle('');
                 setContent('');
                 setMediaUrls([]);
-                setCategory(BOOK_CATEGORIES[0]);
+                setContent('');
+                setMediaUrls([]);
+                setCategory(categories[0] || '');
                 onOpenChange(false);
                 toast.success("Post created!");
                 // Trigger feed refresh
@@ -147,7 +170,8 @@ export function CreatePostDialog({ open, onOpenChange }: CreatePostDialogProps) 
                                 onChange={(e) => setCategory(e.target.value)}
                                 className="mt-1 text-xs h-7 w-fit bg-transparent border-none p-0 focus:ring-0 text-muted-foreground font-normal"
                             >
-                                {BOOK_CATEGORIES.map((cat) => (
+                                <option value="" disabled>Select Category</option>
+                                {categories.map((cat) => (
                                     <option key={cat} value={cat}>
                                         {cat}
                                     </option>

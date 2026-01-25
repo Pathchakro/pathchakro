@@ -61,6 +61,10 @@ const UserSchema = new Schema<IUser>(
             type: Number,
             default: 0,
         },
+        profileCompletion: {
+            type: Number,
+            default: 0,
+        },
         rankTier: {
             type: String,
             enum: ['Beginner', 'Reader', 'Critic', 'Scholar', 'Master'],
@@ -113,8 +117,14 @@ const UserSchema = new Schema<IUser>(
             linkedin: String,
             github: String,
             twitter: String,
+            facebook: String,
         },
 
+
+        savedPosts: [{
+            type: Schema.Types.ObjectId as any,
+            ref: 'Post',
+        }],
         interests: [String],
         languages: [String],
 
@@ -158,6 +168,13 @@ const UserSchema = new Schema<IUser>(
 UserSchema.index({ rank: -1 });
 UserSchema.index({ thana: 1 });
 UserSchema.index({ university: 1 });
+
+// Prevent overwrite warning in development
+if (process.env.NODE_ENV === 'development') {
+    if (mongoose.models.User) {
+        delete mongoose.models.User;
+    }
+}
 
 const User: Model<IUser> = mongoose.models.User || mongoose.model<IUser>('User', UserSchema);
 

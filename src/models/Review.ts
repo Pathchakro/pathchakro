@@ -29,6 +29,9 @@ const ReviewSchema = new Schema<IReview>(
         videoUrl: {
             type: String,
         },
+        image: {
+            type: String,
+        },
         helpful: {
             type: Number,
             default: 0,

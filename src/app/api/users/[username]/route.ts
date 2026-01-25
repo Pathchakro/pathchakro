@@ -50,24 +50,7 @@ export async function GET(
         const reviewsCount = await Review.countDocuments({ user: user._id });
 
         return NextResponse.json({
-            user: {
-                _id: user._id,
-                name: user.name,
-                email: user.email,
-                image: user.image,
-                coverImage: user.coverImage,
-                bio: user.bio,
-                profileType: user.profileType,
-                university: user.university,
-                thana: user.thana,
-                bloodGroup: user.bloodGroup,
-                bookPreferences: user.bookPreferences,
-                rank: user.rank,
-                rankTier: user.rankTier,
-                followers: user.followers,
-                following: user.following,
-                createdAt: user.createdAt,
-            },
+            user,
             stats: {
                 posts: postsCount,
                 reviews: reviewsCount,

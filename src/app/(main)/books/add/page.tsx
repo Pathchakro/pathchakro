@@ -18,6 +18,8 @@ import { Loader2, Upload } from 'lucide-react';
 import { Select } from "@/components/ui/select";
 
 import { BOOK_CATEGORIES, WRITERS_LIST } from '@/lib/constants';
+import { AuthorSearch } from '@/components/books/AuthorSearch';
+import { useDynamicConfig } from '@/hooks/useDynamicConfig';
 
 const CATEGORIES = BOOK_CATEGORIES;
 
@@ -38,6 +40,9 @@ export default function AddBookPage() {
     const [isLoading, setIsLoading] = useState(false);
     const [uploadingPdf, setUploadingPdf] = useState(false);
     const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+
+    // Dynamic config
+    const { categories } = useDynamicConfig();
 
     const {
         register,
@@ -131,18 +136,10 @@ export default function AddBookPage() {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <Label htmlFor="author">Author</Label>
-                                <Select
-                                    id="author"
-                                    {...register('author')}
-                                    disabled={isLoading}
-                                >
-                                    <option value="">Select author</option>
-                                    {WRITERS_LIST.map((writer) => (
-                                        <option key={writer} value={writer}>
-                                            {writer}
-                                        </option>
-                                    ))}
-                                </Select>
+                                <AuthorSearch
+                                    value={watch('author')}
+                                    onSelect={(name) => setValue('author', name, { shouldValidate: true })}
+                                />
                                 {errors.author && (
                                     <p className="text-sm text-red-500">{errors.author.message}</p>
                                 )}
@@ -245,7 +242,7 @@ export default function AddBookPage() {
                         <div className="space-y-2">
                             <Label>Categories</Label>
                             <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                                {CATEGORIES.map((category) => (
+                                {categories.map((category) => (
                                     <button
                                         key={category}
                                         type="button"

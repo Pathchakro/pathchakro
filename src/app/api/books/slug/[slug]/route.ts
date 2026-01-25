@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import dbConnect from '@/lib/mongodb';
 import Book from '@/models/Book';
+import UserLibrary from '@/models/UserLibrary';
 
 export async function GET(
     req: NextRequest,
@@ -27,7 +28,28 @@ export async function GET(
             return NextResponse.json({ error: 'Book not found' }, { status: 404 });
         }
 
-        return NextResponse.json(book);
+        // Fetch reading stats
+        const stats = await UserLibrary.aggregate([
+            { $match: { book: book._id } },
+            {
+                $group: {
+                    _id: null,
+                    reading: { $sum: { $cond: [{ $eq: ['$status', 'reading'] }, 1, 0] } },
+                    completed: { $sum: { $cond: [{ $eq: ['$status', 'completed'] }, 1, 0] } },
+                    wantToRead: { $sum: { $cond: [{ $eq: ['$status', 'want-to-read'] }, 1, 0] } },
+                    inLibrary: { $sum: 1 }
+                }
+            }
+        ]);
+
+        const readingStats = stats.length > 0 ? stats[0] : {
+            reading: 0,
+            completed: 0,
+            wantToRead: 0,
+            inLibrary: 0
+        };
+
+        return NextResponse.json({ ...book, stats: readingStats });
     } catch (error) {
         console.error('Fetch Book Error:', error);
         return NextResponse.json({ error: 'Failed to fetch book' }, { status: 500 });
