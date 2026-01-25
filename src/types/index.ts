@@ -128,6 +128,7 @@ export interface IReview {
     content: string;
     tags?: string[];
     videoUrl?: string;
+    image?: string;
     helpful: number;
     createdAt: Date;
     updatedAt: Date;
