@@ -4,6 +4,7 @@ import dbConnect from '@/lib/mongodb';
 import Review from '@/models/Review';
 import Book from '@/models/Book';
 import User from '@/models/User';
+import slugify from 'slugify';
 
 export async function GET(request: NextRequest) {
     try {
@@ -18,7 +19,7 @@ export async function GET(request: NextRequest) {
         if (userId) filter.user = userId;
 
         const reviews = await Review.find(filter)
-            .populate('book', 'title author coverImage')
+            .populate('book', 'title author coverImage slug')
             .populate('user', 'name image rankTier')
             .sort({ createdAt: -1 })
             .limit(20)
@@ -46,11 +47,18 @@ export async function POST(request: NextRequest) {
         }
 
         const body = await request.json();
-        const { bookId, rating, content, tags } = body;
+        const { bookId, rating, title, content, tags } = body;
 
-        if (!bookId || !rating || !content) {
+        if (!bookId || !rating || !content || !title) {
             return NextResponse.json(
-                { error: 'Book ID, rating, and content are required' },
+                { error: 'Book ID, rating, title, and content are required' },
+                { status: 400 }
+            );
+        }
+
+        if (title.length > 70) {
+            return NextResponse.json(
+                { error: 'Title cannot exceed 70 characters' },
                 { status: 400 }
             );
         }
@@ -77,15 +85,40 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // Create review
-        const review = await Review.create({
-            book: bookId,
-            user: session.user.id,
-            rating,
-            content,
-            tags: tags || [],
-            helpful: 0,
-        });
+        // Generate base slug
+        let baseSlug = slugify(title, { lower: true, strict: true });
+        if (!baseSlug) baseSlug = 'review';
+
+        let slug = baseSlug;
+        let counter = 0;
+        let review;
+
+        while (true) {
+            try {
+                // Create review
+                review = await Review.create({
+                    book: bookId,
+                    user: session.user.id,
+                    rating,
+                    title,
+                    slug,
+                    content,
+                    tags: tags || [],
+                    helpful: 0,
+                });
+                break;
+            } catch (error: any) {
+                // E11000 duplicate key error
+                if (error.code === 11000 && (error.keyPattern?.slug || error.keyValue?.slug)) {
+                    counter++;
+                    // Prevent infinite loops
+                    if (counter > 15) throw error;
+                    slug = `${baseSlug}-${counter}`;
+                } else {
+                    throw error;
+                }
+            }
+        }
 
         // Update book's average rating
         const allReviews = await Review.find({ book: bookId });
@@ -103,7 +136,7 @@ export async function POST(request: NextRequest) {
         });
 
         const populatedReview = await Review.findById(review._id)
-            .populate('book', 'title author coverImage')
+            .populate('book', 'title author coverImage slug')
             .populate('user', 'name image rankTier')
             .lean();
 

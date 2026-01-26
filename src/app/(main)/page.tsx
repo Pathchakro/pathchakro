@@ -148,7 +148,11 @@ export default function HomePage() {
                                 initialIsBookmarked={myBookmarkedIds.includes(item._id)}
                             />;
                         case 'review':
-                            return <ReviewCard key={item._id} review={item} />;
+                            return <ReviewCard
+                                key={item._id}
+                                review={item}
+                                currentUserId={session?.user?.id}
+                            />;
                         case 'event':
                             return <EventCard key={item._id} event={item} />;
                         case 'course':

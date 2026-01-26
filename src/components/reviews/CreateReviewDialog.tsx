@@ -44,6 +44,7 @@ export function CreateReviewDialog({ open, onOpenChange }: CreateReviewDialogPro
         }
     }, [open, checkBasicAccess]);
     const [hoveredRating, setHoveredRating] = useState(0);
+    const [title, setTitle] = useState('');
     const [content, setContent] = useState('');
     const [imageUrl, setImageUrl] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -59,6 +60,7 @@ export function CreateReviewDialog({ open, onOpenChange }: CreateReviewDialogPro
                 const parsed = JSON.parse(savedDraft);
                 if (parsed.selectedBook) setSelectedBook(parsed.selectedBook);
                 if (parsed.rating) setRating(parsed.rating);
+                if (parsed.title) setTitle(parsed.title);
                 if (parsed.content) setContent(parsed.content);
                 if (parsed.imageUrl) setImageUrl(parsed.imageUrl);
             } catch (e) {
@@ -73,11 +75,12 @@ export function CreateReviewDialog({ open, onOpenChange }: CreateReviewDialogPro
         const draft = {
             selectedBook,
             rating,
+            title,
             content,
             imageUrl
         };
         localStorage.setItem(STORAGE_KEY, JSON.stringify(draft));
-    }, [selectedBook, rating, content, imageUrl]);
+    }, [selectedBook, rating, title, content, imageUrl]);
 
     const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -125,7 +128,7 @@ export function CreateReviewDialog({ open, onOpenChange }: CreateReviewDialogPro
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        if (!selectedBook || rating === 0 || !content) return;
+        if (!selectedBook || rating === 0 || !title || !content) return;
 
         setIsLoading(true);
 
@@ -139,6 +142,7 @@ export function CreateReviewDialog({ open, onOpenChange }: CreateReviewDialogPro
                 body: JSON.stringify({
                     bookId: selectedBook._id,
                     rating,
+                    title,
                     content,
                     image: imageUrl || undefined, // Send image if provided
                 }),
@@ -147,6 +151,7 @@ export function CreateReviewDialog({ open, onOpenChange }: CreateReviewDialogPro
             if (reviewResponse.ok) {
                 setSelectedBook(null);
                 setRating(0);
+                setTitle('');
                 setContent('');
                 setImageUrl('');
                 localStorage.removeItem('draft_review'); // Clear draft
@@ -205,6 +210,22 @@ export function CreateReviewDialog({ open, onOpenChange }: CreateReviewDialogPro
                     </div>
 
                     <div className="space-y-2">
+                        <div className="flex justify-between items-center">
+                            <Label htmlFor="title">Review Title *</Label>
+                            <span className="text-xs text-muted-foreground">
+                                {title.length}/70
+                            </span>
+                        </div>
+                        <Input
+                            id="title"
+                            value={title}
+                            onChange={(e) => setTitle(e.target.value)}
+                            placeholder="Enter a short title for your review"
+                            maxLength={70}
+                            required
+                        />
+                    </div>
+                    <div className="space-y-2">
                         <Label htmlFor="content">Your Review *</Label>
                         <NovelEditor
                             initialValue={content ? JSON.parse(content) : undefined}
@@ -259,7 +280,7 @@ export function CreateReviewDialog({ open, onOpenChange }: CreateReviewDialogPro
                         </Button>
                         <Button
                             type="submit"
-                            disabled={!selectedBook || rating === 0 || !content || isLoading || !canPublish}
+                            disabled={!selectedBook || rating === 0 || !title || !content || isLoading || !canPublish}
                             className="flex-1"
                         >
                             {isLoading ? 'Publishing...' : 'Publish Review'}

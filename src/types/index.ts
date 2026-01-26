@@ -125,6 +125,8 @@ export interface IReview {
     book: string | IBook;
     user: string | IUser;
     rating: number;
+    title: string;
+    slug: string;
     content: string;
     tags?: string[];
     videoUrl?: string;

@@ -42,15 +42,13 @@ export async function GET(request: NextRequest) {
             Review.find(query)
                 .sort({ createdAt: -1 })
                 .limit(limit)
-                .populate('user', 'name image')
-                .populate('book', 'title coverImage')
-                .lean(),
-            Event.find(query)
-                .sort({ createdAt: -1 })
-                .limit(limit)
-                .populate('organizer', 'name image')
-                .populate('team', 'name')
-                .lean(),
+                .populate('user', 'name image rankTier')
+                .populate('book', 'title author coverImage slug')
+                .lean(),                .sort({ createdAt: -1 })
+                    .limit(limit)
+                    .populate('organizer', 'name image')
+                    .populate('team', 'name')
+                    .lean(),
             Course.find(query)
                 .sort({ createdAt: -1 })
                 .limit(limit)
@@ -64,7 +62,11 @@ export async function GET(request: NextRequest) {
 
         // Tag them with types
         const typedPosts = posts.map(p => ({ ...p, type: 'post' }));
-        const typedReviews = reviews.map(r => ({ ...r, type: 'review' }));
+        const typedReviews = reviews.map(r => {
+            if (r.title) console.log('Found review with title:', r.title);
+            else console.log('Review missing title:', r._id);
+            return { ...r, type: 'review' };
+        });
         const typedEvents = events.map(e => ({ ...e, type: 'event' }));
         const typedCourses = courses.map(c => ({ ...c, type: 'course' }));
         const typedTours = tours.map(t => ({ ...t, type: 'tour' }));

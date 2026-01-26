@@ -1,9 +1,13 @@
 'use client';
 
-import { Star, ThumbsUp, MoreHorizontal, MessageCircle, Share2, Command } from 'lucide-react';
+import { Star, ThumbsUp, MoreHorizontal, MessageCircle, Share2, Command, Trash2, Pencil } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { PostContent } from '@/components/feed/PostContent';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
+import Swal from 'sweetalert2';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -19,6 +23,7 @@ interface ReviewCardProps {
             title: string;
             author: string;
             coverImage?: string;
+            slug: string;
         };
         user: {
             _id: string;
@@ -27,14 +32,55 @@ interface ReviewCardProps {
             rankTier: string;
         };
         rating: number;
+        title?: string;
+        slug?: string;
         content: string;
         tags?: string[];
         helpful: number;
         createdAt: string;
     };
+    currentUserId?: string;
+    onDelete?: (reviewId: string) => void;
 }
 
-export function ReviewCard({ review }: ReviewCardProps) {
+export function ReviewCard({ review, currentUserId, onDelete }: ReviewCardProps) {
+    const router = useRouter();
+    const isOwner = currentUserId === review.user._id;
+
+    const handleDelete = async () => {
+        const result = await Swal.fire({
+            title: 'Are you sure?',
+            text: "You won't be able to revert this!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Yes, delete it!'
+        });
+
+        if (!result.isConfirmed) return;
+
+        try {
+            const response = await fetch(`/api/reviews/${review._id}`, {
+                method: 'DELETE',
+            });
+
+            if (response.ok) {
+                toast.success('Review deleted successfully');
+                if (onDelete) {
+                    onDelete(review._id);
+                } else {
+                    window.location.reload();
+                }
+            } else {
+                toast.error('Failed to delete review');
+            }
+        } catch (error) {
+            console.error('Error deleting review:', error);
+            toast.error('Error deleting review');
+        }
+    };
+
     return (
         <div className="bg-card rounded-lg shadow-sm border p-4 mb-4">
             {/* Header */}
@@ -69,8 +115,22 @@ export function ReviewCard({ review }: ReviewCardProps) {
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                         <DropdownMenuItem>
-                            <Link href={`/reviews/${review._id}`} className="w-full">View Review</Link>
+                            <Link href={`/reviews/${review.slug || review._id}`} className="w-full">View Review</Link>
                         </DropdownMenuItem>
+                        {isOwner && (
+                            <>
+                                <DropdownMenuItem>
+                                    <Link href={`/reviews/${review._id}/edit`} className="w-full flex items-center">
+                                        <Pencil className="h-4 w-4 mr-2" />
+                                        Edit Review
+                                    </Link>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={handleDelete} className="text-red-600 focus:text-red-600">
+                                    <Trash2 className="h-4 w-4 mr-2" />
+                                    Delete
+                                </DropdownMenuItem>
+                            </>
+                        )}
                     </DropdownMenuContent>
                 </DropdownMenu>
             </div>
@@ -78,7 +138,7 @@ export function ReviewCard({ review }: ReviewCardProps) {
             {/* Body */}
             <div className="flex gap-4 mb-4">
                 {/* Book Cover */}
-                <div className="w-24 h-32 bg-muted rounded flex-shrink-0 flex items-center justify-center border">
+                <Link href={`/books/${review.book.slug || review.book._id}`} className="w-24 h-32 bg-muted rounded flex-shrink-0 flex items-center justify-center border hover:opacity-90 transition-opacity">
                     {review.book.coverImage ? (
                         <img
                             src={review.book.coverImage}
@@ -88,10 +148,12 @@ export function ReviewCard({ review }: ReviewCardProps) {
                     ) : (
                         <span className="text-4xl">📚</span>
                     )}
-                </div>
+                </Link>
 
                 <div className="flex-1">
-                    <h3 className="font-bold text-lg">{review.book.title}</h3>
+                    <Link href={`/books/${review.book.slug || review.book._id}`} className="hover:underline hover:text-primary transition-colors block w-fit">
+                        <h3 className="font-bold text-lg">{review.book.title}</h3>
+                    </Link>
                     <p className="text-sm text-muted-foreground mb-2">by {review.book.author}</p>
 
                     {/* Rating */}
@@ -110,7 +172,18 @@ export function ReviewCard({ review }: ReviewCardProps) {
                         </span>
                     </div>
 
-                    <p className="text-sm leading-relaxed line-clamp-3">{review.content}</p>
+                    {review.title && (
+                        <Link href={`/reviews/${review.slug || review._id}`} className="block">
+                            <h4 className="font-bold text-base mb-2 hover:text-primary transition-colors inline-flex items-center gap-1">
+                                {review.title}
+                                <span className="text-xs font-normal text-muted-foreground hover:underline ml-2">(Read more)</span>
+                            </h4>
+                        </Link>
+                    )}
+
+                    <div className="text-sm leading-relaxed line-clamp-3">
+                        <PostContent content={review.content} />
+                    </div>
 
                     {/* Tags */}
                     {review.tags && review.tags.length > 0 && (

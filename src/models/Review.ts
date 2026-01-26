@@ -1,7 +1,7 @@
 import mongoose, { Schema, Model } from 'mongoose';
 import { IReview } from '@/types';
 
-const ReviewSchema = new Schema<IReview>(
+const ReviewSchema = new Schema(
     {
         book: {
             type: Schema.Types.ObjectId as any,
@@ -18,6 +18,17 @@ const ReviewSchema = new Schema<IReview>(
             required: [true, 'Rating is required'],
             min: 1,
             max: 5,
+        },
+        title: {
+            type: String,
+            required: [true, 'Review title is required'],
+            maxlength: [70, 'Title cannot be more than 70 characters'],
+            trim: true,
+        },
+        slug: {
+            type: String,
+            required: true,
+            unique: true,
         },
         content: {
             type: String,
