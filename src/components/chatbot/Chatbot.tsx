@@ -7,8 +7,10 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/componen
 import { HelpCircle, X, Send, Bot, User, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
-import { getChatResponse, ChatMessage } from '@/services/geminiService';
+import { ChatMessage } from '@/services/geminiService';
 import { useSession } from 'next-auth/react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 export function Chatbot() {
     const { data: session } = useSession();
@@ -46,8 +48,25 @@ export function Chatbot() {
         setIsLoading(true);
 
         try {
-            const responseText = await getChatResponse(userMessage, messages);
-            setMessages(prev => [...prev, { role: 'model', parts: responseText }]);
+            // Call the API route instead of the service directly
+            const response = await fetch('/api/chat', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    message: userMessage,
+                    history: messages
+                })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Failed to get response');
+            }
+
+            const data = await response.json();
+            setMessages(prev => [...prev, { role: 'model', parts: data.response }]);
         } catch (error: any) {
             console.error('Chat error:', error);
             setMessages(prev => [...prev, { role: 'model', parts: `Error: ${error.message || 'Something went wrong. Please try again.'}` }]);
@@ -116,7 +135,25 @@ export function Chatbot() {
                                                 ? "bg-primary text-primary-foreground rounded-tr-none"
                                                 : "bg-muted text-muted-foreground rounded-tl-none"
                                         )}>
-                                            {msg.parts}
+                                            <div
+                                                className={cn(
+                                                    "prose prose-sm max-w-none break-words dark:prose-invert",
+                                                    msg.role === 'user' ? "text-primary-foreground prose-p:text-primary-foreground prose-a:text-primary-foreground" : "text-muted-foreground"
+                                                )}
+                                            >
+                                                <ReactMarkdown
+                                                    remarkPlugins={[remarkGfm]}
+                                                    components={{
+                                                        p: ({ node, ...props }) => <p className="mb-2 last:mb-0" {...props} />,
+                                                        a: ({ node, ...props }) => <a target="_blank" rel="noopener noreferrer" className="underline font-bold" {...props} />,
+                                                        ul: ({ node, ...props }) => <ul className="list-disc pl-4 mb-2" {...props} />,
+                                                        ol: ({ node, ...props }) => <ol className="list-decimal pl-4 mb-2" {...props} />,
+                                                        li: ({ node, ...props }) => <li className="mb-0.5" {...props} />,
+                                                    }}
+                                                >
+                                                    {msg.parts}
+                                                </ReactMarkdown>
+                                            </div>
                                         </div>
                                     </div>
                                 ))}

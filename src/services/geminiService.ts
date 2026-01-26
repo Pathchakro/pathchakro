@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { GoogleGenAI } from "@google/genai";
 
 // Interface defined here to avoid import cycles
 export interface ChatMessage {
@@ -6,7 +7,7 @@ export interface ChatMessage {
     parts: string;
 }
 
-const apiKey = process.env.NEXT_PUBLIC_OPENROUTER_API_KEY;
+const apiKey = process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY;
 
 const SYSTEM_INSTRUCTION = `You are the helpful AI assistant for Pathchakro.
 **Identity & Persona:**
@@ -24,18 +25,18 @@ Pathchakro is a community-driven platform for book lovers, where users can share
 **Key Team Members:**
 Under the leadership of Shahadat Hossain, many others are working here:
 - **Nahar apu**
-- **G A Sabbir**
-- **Taharima Jaman Pia**
+- **G A Sabbir**: A great presenter.
+- **Taharima Jaman Pia**: A great presenter.
 - **Tanjin Tonny**
-- **Saifullah Al Mansur**
-- **Sarna Binte Shafiq**
+- **Saifullah Al Mansur**: International politics expert, future American president.
+- **Sarna Binte Shafiq**: Recites beautiful self-written poems.
 - **Titash Islam**
 - **Md Saimun Hossain**
 - **Md Abu Rayhan Shanto**
 - **Md Riyonul Islam Riyon**
 
 **Platform Development:**
-- **Md. Imran Hossen** took the initiative to build this platform.
+- **Md. Imran Hossen** took the initiative to build this www.pathchakro.com platform.
 
 **Mission & Vision:**
 - **Goal**: To create **1 Crore (10 Million) readers** in Bangladesh.
@@ -57,144 +58,61 @@ Key Features to know about:
 
 If you don't know the specific answer to a platform-specific technical question, suggest they check the "Settings" or "Help" section (if applicable) or ask an admin.`;
 
-const MODELS = [
-    "google/gemini-2.0-flash-exp:free",       // Primary: Best for Bengali/English mix
-    "z-ai/glm-4.5-air:free",                  // Backup: User recommended, reliable
-    "google/gemini-2.0-flash-thinking-exp:free", // Backup: Reasoning
-    "meta-llama/llama-3.3-70b-instruct:free", // Backup: High performance
-    "mistralai/mistral-7b-instruct:free",     // Backup: Reliable
-    "google/gemini-flash-1.5-8b",             // Backup: Fast but weak on Bengali
-    "microsoft/phi-3-medium-128k-instruct:free", // Backup: Context
-    "meta-llama/llama-3-8b-instruct:free"     // Backup: Fallback
-];
+// Initialize the client only if the key is present
+const ai = apiKey ? new GoogleGenAI({ apiKey }) : null;
 
-const googleApiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
-
-// Function to call Google's Gemini API directly
-const callGoogleGemini = async (message: string, history: ChatMessage[]) => {
-    if (!googleApiKey) return null;
+export const getChatResponse = async (message: string, history: ChatMessage[]): Promise<string> => {
+    if (!ai) {
+        console.error("❌ Google Gemini API Key is missing. Please check .env.local for GEMINI_API_KEY.");
+        return "I'm sorry, I can't connect to the AI assistant right now. (Server Error: Missing Google API Key).";
+    }
 
     try {
-        console.log("Attempting direct Google Gemini API call...");
-        // Convert history to Google's format
-        const googleContents = history.map(msg => ({
+        const model = "gemini-2.5-flash";
+        console.log(`🚀 Sending request to Google Gemini (SDK: @google/genai)... Key ends in: ...${apiKey?.slice(-4)}`);
+
+        // Filter history to ensure it starts with 'user'
+        // The API requires the first message to be from the user.
+        // Usually the first message in UI history is the "Welcome" message from 'model'.
+        let validHistory = history.filter(msg => msg.role === 'user' || msg.role === 'model');
+
+        // Remove the first message if it's from 'model' (often the welcome greeting)
+        if (validHistory.length > 0 && validHistory[0].role === 'model') {
+            validHistory = validHistory.slice(1);
+        }
+
+        // Convert to SDK format
+        // The @google/genai SDK generateContent accepts 'contents' which can be a list of Content objects
+        // Format: { role: 'user' | 'model', parts: [{ text: string }] }
+        const contents = validHistory.map(msg => ({
             role: msg.role === 'user' ? 'user' : 'model',
             parts: [{ text: msg.parts }]
         }));
 
-        // Add system instruction as the first part if supported, or prepend to first message
-        // For simplicity with this endpoint, we'll strict structure or Just use the user message + history
-        // Google v1beta/models/gemini-pro:generateContent
-
-        // Proper structure for Gemini 1.5/2.0
-        const contents = [
-            ...googleContents,
-            { role: 'user', parts: [{ text: message }] }
-        ];
-
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${googleApiKey}`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                contents: contents,
-                systemInstruction: {
-                    parts: [{ text: SYSTEM_INSTRUCTION }]
-                }
-            })
+        // Add the current new message
+        contents.push({
+            role: 'user',
+            parts: [{ text: message }]
         });
 
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.warn("Direct Google API failed:", response.status, errorText);
-            throw new Error(`Google API Error: ${response.status}`);
-        }
-
-        const data = await response.json();
-        const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-
-        if (text) return text;
-        throw new Error("No text in Google response");
-
-    } catch (error) {
-        console.warn("Direct Google Gemini call failed, falling back to OpenRouter...", error);
-        return null;
-    }
-};
-
-export const getChatResponse = async (message: string, history: ChatMessage[]): Promise<string> => {
-    // 1. Try Direct Google Gemini Key first
-    const googleResponse = await callGoogleGemini(message, history);
-    if (googleResponse) {
-        return googleResponse;
-    }
-
-    // 2. Fallback to OpenRouter
-    if (!apiKey) {
-        return "I'm sorry, but I can't connect to the AI assistant right now (Missing API Keys).";
-    }
-
-    // Construct messages for OpenAI format
-    const messages: any[] = [
-        { role: 'system', content: SYSTEM_INSTRUCTION }
-    ];
-
-    history.forEach(msg => {
-        messages.push({
-            role: msg.role === 'user' ? 'user' : 'assistant',
-            content: msg.parts
+        const response = await ai.models.generateContent({
+            model,
+            contents,
+            config: {
+                systemInstruction: SYSTEM_INSTRUCTION,
+            }
         });
-    });
 
-    messages.push({ role: 'user', content: message });
+        const responseText = response.text;
 
-    let lastError: any = null;
-
-    for (const model of MODELS) {
-        try {
-            console.log(`Sending request to OpenRouter (Model: ${model})...`);
-
-            // Using raw fetch for better error visibility than the SDK
-            const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-                method: "POST",
-                headers: {
-                    "Authorization": `Bearer ${apiKey}`,
-                    "HTTP-Referer": "https://pathchakro.com",
-                    "X-Title": "Pathchakro",
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    "model": model,
-                    "messages": messages,
-                    "stream": false
-                })
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => null);
-                console.warn(`OpenRouter Rate Limit/Error (${model}):`, response.status); // Reduced noise
-                // Throw to catch block to try next model
-                throw new Error(`Status ${response.status}: ${JSON.stringify(errorData) || response.statusText}`);
-            }
-
-            const data = await response.json();
-            const content = data.choices?.[0]?.message?.content;
-
-            if (content) {
-                return content;
-            } else {
-                throw new Error("Empty response content from OpenRouter");
-            }
-
-        } catch (error: any) {
-            console.warn(`Fallback: Failed with model ${model}, trying next in 2s...`); // Warn instead of Error
-            lastError = error;
-            await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2s to clear rate limits
+        if (responseText) {
+            return responseText;
+        } else {
+            throw new Error("Empty response from Google Gemini SDK");
         }
-    }
 
-    // If we get here, all models failed
-    console.error("All AI models failed.");
-    return `I'm currently receiving high traffic. Please try again in 30 seconds. (All models busy)`;
+    } catch (error: any) {
+        console.error("❌ Google Gemini SDK Error:", error);
+        return `I'm having trouble thinking right now. Error: ${error.message}`;
+    }
 };
