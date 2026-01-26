@@ -73,7 +73,7 @@ export const getChatResponse = async (message: string, history: ChatMessage[]): 
     }
 
     try {
-        const model = "gemini-1.5-flash";
+        const model = "gemini-1.5-flash-001";
         console.log(`🚀 Sending request to Google Gemini (SDK: @google/genai)... Key ends in: ...${apiKey?.slice(-4)}`);
 
         // Filter history to ensure it starts with 'user'
