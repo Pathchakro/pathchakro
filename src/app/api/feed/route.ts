@@ -44,11 +44,13 @@ export async function GET(request: NextRequest) {
                 .limit(limit)
                 .populate('user', 'name image rankTier')
                 .populate('book', 'title author coverImage slug')
-                .lean(),                .sort({ createdAt: -1 })
-                    .limit(limit)
-                    .populate('organizer', 'name image')
-                    .populate('team', 'name')
-                    .lean(),
+                .lean(),
+            Event.find(query)
+                .sort({ createdAt: -1 })
+                .limit(limit)
+                .populate('organizer', 'name image')
+                .populate('team', 'name')
+                .lean(),
             Course.find(query)
                 .sort({ createdAt: -1 })
                 .limit(limit)
