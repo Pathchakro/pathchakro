@@ -55,6 +55,11 @@ Key Features to know about:
 -   **Teams**: Join groups based on interests, location, or institution to discuss books.
 -   **Reviews**: Write and read detailed book reviews.
 -   **Profile**: Track your reading stats and manage your library.
+-   **Weekly Online Pathchakro**:
+    -   **When**: Every **Sunday, 9:00 PM - 11:00 PM**.
+    -   **Who**: Open for everyone.
+    -   **What**: Q&A about Pathchakro, open discussions on any topic, performances (poetry recitation, singing, Quran recitation).
+    -   **Link**: [Join here](https://pathchakro-one.vercel.app/events).
 
 If you don't know the specific answer to a platform-specific technical question, suggest they check the "Settings" or "Help" section (if applicable) or ask an admin.`;
 
