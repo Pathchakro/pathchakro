@@ -8,6 +8,7 @@ import { NotificationDropdown } from '@/components/notifications/NotificationDro
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
+import { Chatbot } from '@/components/chatbot/Chatbot';
 
 export function Navbar() {
     const pathname = usePathname();
@@ -66,13 +67,8 @@ export function Navbar() {
                     {/* Actions */}
                     <div className="flex items-center gap-2">
                         {session && <NotificationDropdown />}
-                        <Button variant="ghost" size="icon">
-                            <MessageCircle className="h-5 w-5" />
-                        </Button>
-                        <Button variant="default" size="sm" className="hidden md:flex gap-2">
-                            <PlusCircle className="h-4 w-4" />
-                            Create Post
-                        </Button>
+
+                        <Chatbot />
 
                         {/* User Menu */}
                         <div className="relative" ref={dropdownRef}>
