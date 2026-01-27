@@ -27,8 +27,7 @@ export function LeftSidebar() {
         <aside className="hidden lg:block w-64 sticky top-16 h-[calc(100vh-4rem)] overflow-y-auto p-4">
 
             {/* Quick Links */}
-            <div className="bg-card rounded-lg p-4 mb-4 shadow-sm border">
-                <h3 className="font-semibold mb-3 text-sm">Quick Links</h3>
+            <div className="bg-transparent rounded-lg p-4 mb-4 shadow-sm">
                 <nav className="space-y-1">
                     {QUICK_LINKS.map((link) => (
                         <Link
