@@ -12,6 +12,7 @@ export interface IEvent {
     startTime: Date;
     endTime: Date;
     banner?: string;
+    slug: string;
     status: 'upcoming' | 'ongoing' | 'completed' | 'cancelled';
 
     // Role-based participants
@@ -94,6 +95,12 @@ const EventSchema = new Schema<IEvent>(
         banner: {
             type: String,
         },
+        slug: {
+            type: String,
+            unique: true,
+            sparse: true,
+            index: true,
+        },
         status: {
             type: String,
             enum: ['upcoming', 'ongoing', 'completed', 'cancelled'],
@@ -164,23 +171,27 @@ const EventSchema = new Schema<IEvent>(
                 },
             ],
         },
-        listeners: [
-            {
-                user: {
-                    type: Schema.Types.ObjectId as any,
-                    ref: 'User',
-                },
-                joinedAt: {
-                    type: Date,
-                    default: Date.now,
-                },
-            },
-        ],
     },
     {
         timestamps: true,
     }
 );
+
+// Pre-save hook to generate slug
+EventSchema.pre('save', async function () {
+    if (this.isModified('title') || this.isModified('startTime') || !this.slug) {
+        // Manual slug generation
+        const titleSlug = this.title
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/(^-|-$)+/g, '');
+
+        const dateStr = new Date(this.startTime).toISOString().split('T')[0];
+
+        // Final slug: title-date
+        this.slug = `${titleSlug}-${dateStr}`;
+    }
+});
 
 // Indexes for efficient querying
 EventSchema.index({ startTime: 1, status: 1 });

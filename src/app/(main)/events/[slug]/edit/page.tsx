@@ -8,7 +8,7 @@ import { toast } from 'sonner';
 import { EventForm, EventData } from '@/components/events/EventForm';
 
 interface Props {
-    params: Promise<{ id: string }>;
+    params: Promise<{ slug: string }>;
 }
 
 export default function EditEventPage({ params }: Props) {
@@ -17,26 +17,21 @@ export default function EditEventPage({ params }: Props) {
     const [isSaving, setIsSaving] = useState(false);
     const [uploadingBanner, setUploadingBanner] = useState(false);
     const [initialData, setInitialData] = useState<any>(null);
-    const [eventId, setEventId] = useState<string>('');
-
-    // Unwrap params using useEffect or use hook if in React 19, but here simple useEffect pattern
-    // Actually, Next.js 15 params are async. We can use `use` or just await in server component and pass to client.
-    // But since this is a client component ('use client'), we receive the promise.
-    // Let's resolve in useEffect.
+    const [slug, setSlug] = useState<string>('');
 
     useEffect(() => {
         const resolveParams = async () => {
             const resolvedParams = await params;
-            setEventId(resolvedParams.id);
-            fetchEvent(resolvedParams.id);
+            setSlug(resolvedParams.slug);
+            fetchEvent(resolvedParams.slug);
         };
         resolveParams();
     }, [params]);
 
 
-    const fetchEvent = async (id: string) => {
+    const fetchEvent = async (eventSlug: string) => {
         try {
-            const response = await fetch(`/api/events/${id}`);
+            const response = await fetch(`/api/events/${eventSlug}`);
             const data = await response.json();
 
             if (data.event) {
@@ -79,7 +74,7 @@ export default function EditEventPage({ params }: Props) {
                 setUploadingBanner(false);
             }
 
-            const response = await fetch(`/api/events/${eventId}`, {
+            const response = await fetch(`/api/events/${slug}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -98,7 +93,8 @@ export default function EditEventPage({ params }: Props) {
             }
 
             toast.success('Event updated successfully!');
-            router.push(`/events/${eventId}`);
+            // Redirect to the new slug if it changed, or the same one if not
+            router.push(`/events/${result.event.slug}`);
         } catch (err: any) {
             toast.error(err.message || 'An error occurred. Please try again.');
         } finally {

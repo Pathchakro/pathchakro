@@ -15,7 +15,11 @@ export async function GET(
         await dbConnect();
 
         console.log('GET /api/events/[id] ID:', params.id);
-        const event = await Event.findById(params.id)
+
+        const isObjectId = /^[0-9a-fA-F]{24}$/.test(params.id);
+        let query = isObjectId ? { _id: params.id } : { slug: params.id };
+
+        const event = await Event.findOne(query)
             .populate('organizer', 'name image rankTier')
             .populate('team', 'name')
             .populate('roles.host.user', 'name image')
@@ -60,7 +64,11 @@ export async function PUT(
         }
 
         await dbConnect();
-        const event = await Event.findById(params.id);
+
+        const isObjectId = /^[0-9a-fA-F]{24}$/.test(params.id);
+        const query = isObjectId ? { _id: params.id } : { slug: params.id };
+
+        const event = await Event.findOne(query);
 
         if (!event) {
             return NextResponse.json({ error: 'Event not found' }, { status: 404 });
@@ -77,7 +85,7 @@ export async function PUT(
         } = body;
 
         const updatedEvent = await Event.findByIdAndUpdate(
-            params.id,
+            event._id, // Use the resolved ID
             {
                 title, description, eventType, location,
                 meetingLink, startTime, endTime, banner
@@ -105,7 +113,11 @@ export async function DELETE(
         }
 
         await dbConnect();
-        const event = await Event.findById(params.id);
+
+        const isObjectId = /^[0-9a-fA-F]{24}$/.test(params.id);
+        const query = isObjectId ? { _id: params.id } : { slug: params.id };
+
+        const event = await Event.findOne(query);
 
         if (!event) {
             return NextResponse.json({ error: 'Event not found' }, { status: 404 });
@@ -115,7 +127,7 @@ export async function DELETE(
             return NextResponse.json({ error: 'Not authorized to delete this event' }, { status: 403 });
         }
 
-        await Event.findByIdAndDelete(params.id);
+        await Event.findByIdAndDelete(event._id);
 
         return NextResponse.json({ message: 'Event deleted successfully' });
     } catch (error: any) {

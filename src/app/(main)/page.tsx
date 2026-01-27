@@ -89,6 +89,10 @@ export default function HomePage() {
         }
     };
 
+    const handleDeleteItem = (id: string) => {
+        setItems(prev => prev.filter(item => item._id !== id));
+    };
+
     return (
         <div className="max-w-2xl mx-auto pb-8 p-4">
             {/* Create Content Section (only if logged in) */}
@@ -154,7 +158,7 @@ export default function HomePage() {
                                 currentUserId={session?.user?.id}
                             />;
                         case 'event':
-                            return <EventCard key={item._id} event={item} />;
+                            return <EventCard key={item._id} event={item} onDelete={handleDeleteItem} />;
                         case 'course':
                             return <CourseCard key={item._id} course={item} />;
                         case 'tour':

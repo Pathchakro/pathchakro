@@ -48,7 +48,7 @@ interface Event {
     createdAt: string;
 }
 
-export default function EventDetailClient({ eventId }: { eventId: string }) {
+export default function EventDetailClient({ slug }: { slug: string }) {
     const [event, setEvent] = useState<Event | null>(null);
     const [loading, setLoading] = useState(true);
     const [isJoining, setIsJoining] = useState(false);
@@ -58,11 +58,19 @@ export default function EventDetailClient({ eventId }: { eventId: string }) {
 
     useEffect(() => {
         fetchEvent();
-    }, [eventId]);
+    }, [slug]);
 
     const fetchEvent = async () => {
         try {
-            const response = await fetch(`/api/events/${eventId}`, { cache: 'no-store' });
+            // We use the same API endpoint, but pass the slug. The API should handle it.
+            // Or we should update API to handle slug if it doesn't already.
+            const response = await fetch(`/api/events/${slug}`, { cache: 'no-store' });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.error || `Error ${response.status}: ${response.statusText}`);
+            }
+
             const data = await response.json();
 
             if (data.event) {
@@ -76,6 +84,8 @@ export default function EventDetailClient({ eventId }: { eventId: string }) {
     };
 
     const handleJoinRole = async () => {
+        if (!event) return;
+
         if (!selectedRole) {
             alert('Please select a role');
             return;
@@ -88,7 +98,7 @@ export default function EventDetailClient({ eventId }: { eventId: string }) {
 
         setIsJoining(true);
         try {
-            const response = await fetch(`/api/events/${eventId}/join`, {
+            const response = await fetch(`/api/events/${event._id}/join`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -113,6 +123,7 @@ export default function EventDetailClient({ eventId }: { eventId: string }) {
             }
         } catch (error) {
             console.error('Error joining event:', error);
+            alert('Failed to register. Please try again.');
         } finally {
             setIsJoining(false);
         }
@@ -344,9 +355,11 @@ export default function EventDetailClient({ eventId }: { eventId: string }) {
                                         min="1"
                                         max="10"
                                         value={lectureDuration}
-                                        onChange={(e) => setLectureDuration(parseInt(e.target.value) || 2)}
-                                    />
-                                </div>
+                                        onChange={(e) => {
+                                            const val = parseInt(e.target.value) || 2;
+                                            setLectureDuration(Math.min(10, Math.max(1, val)));
+                                        }}
+                                    />                                </div>
                             </>
                         )}
 

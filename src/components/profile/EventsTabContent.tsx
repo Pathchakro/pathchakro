@@ -16,6 +16,7 @@ interface Event {
     eventType: string;
     location?: string;
     status: string;
+    slug?: string;
     roles: {
         lecturers: any[];
     };
@@ -113,7 +114,7 @@ export function EventsTabContent({ userId, isOwnProfile }: EventsTabContentProps
                 <div key={event._id} className="bg-card border rounded-lg p-4 hover:shadow-md transition-shadow">
                     <div className="flex items-start justify-between mb-3">
                         <div className="flex-1">
-                            <Link href={`/events/${event._id}`} className="hover:underline">
+                            <Link href={`/events/${event.slug || event._id}`} className="hover:underline">
                                 <h3 className="font-semibold text-lg mb-1 line-clamp-1">{event.title}</h3>
                             </Link>
                             <p className="text-sm text-muted-foreground line-clamp-2">
@@ -126,7 +127,7 @@ export function EventsTabContent({ userId, isOwnProfile }: EventsTabContentProps
                             </span>
                             {isOwnProfile && (
                                 <div className="flex items-center gap-1">
-                                    <Link href={`/events/${event._id}/edit`}>
+                                    <Link href={`/events/${event.slug || event._id}/edit`}>
                                         <Button
                                             variant="ghost"
                                             size="sm"

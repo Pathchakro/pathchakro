@@ -1,6 +1,9 @@
 import Link from 'next/link';
 import { Calendar, Clock, MapPin, Users, Video, MoreHorizontal, Heart, MessageCircle, Share2, Bookmark } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
+import { toast } from 'sonner';
+import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -12,13 +15,17 @@ interface EventCardProps {
     event: {
         _id: string;
         title: string;
+        slug?: string;
         description: string;
         status: string;
         startTime: string | Date;
         endTime: string | Date;
         eventType: string;
         location?: string;
+        meetingLink?: string;
+        banner?: string;
         organizer: {
+            _id: string;
             name: string;
             image?: string;
         };
@@ -30,9 +37,66 @@ interface EventCardProps {
         };
         listeners: any[];
     };
+    onDelete?: (id: string) => void;
 }
 
-export function EventCard({ event }: EventCardProps) {
+export function EventCard({ event, onDelete }: EventCardProps) {
+    const { data: session } = useSession();
+    const router = useRouter();
+    const isOwner = session?.user?.id === event.organizer._id;
+    const isAdmin = session?.user?.role === 'admin';
+    const canEdit = isOwner || isAdmin;
+    const eventUrl = event.slug ? `/events/${event.slug}` : `/events/${event._id}`;
+
+    const handleJoin = async () => {
+        if (!session) {
+            toast.error("Please login to join the event");
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/events/${event._id}/join`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ role: 'listener' }),
+            });
+
+            if (!response.ok) {
+                const data = await response.json();
+                throw new Error(data.error || 'Failed to join event');
+            }
+
+            toast.success("Successfully joined the event!");
+            router.refresh();
+        } catch (error: any) {
+            toast.error(error.message);
+        }
+    };
+
+    const handleDelete = async () => {
+        if (!confirm('Are you sure you want to delete this event? This action cannot be undone.')) return;
+
+        try {
+            const response = await fetch(`/api/events/${event._id}`, {
+                method: 'DELETE',
+            });
+
+            if (!response.ok) {
+                const data = await response.json();
+                throw new Error(data.error || 'Failed to delete event');
+            }
+
+            toast.success('Event deleted successfully');
+            if (onDelete) {
+                onDelete(event._id);
+            } else {
+                router.refresh();
+            }
+        } catch (error: any) {
+            toast.error(error.message || 'An error occurred while deleting');
+        }
+    };
+
     const getStatusColor = (status: string) => {
         switch (status) {
             case 'upcoming': return 'bg-blue-100 text-blue-700';
@@ -77,15 +141,38 @@ export function EventCard({ event }: EventCardProps) {
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                         <DropdownMenuItem>
-                            <Link href={`/events/${event._id}`} className="w-full">View Details</Link>
+                            <Link href={eventUrl} className="w-full">View Details</Link>
                         </DropdownMenuItem>
+                        {canEdit && (
+                            <>
+                                <DropdownMenuItem>
+                                    <Link href={`${eventUrl}/edit`} className="w-full">Edit Event</Link>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                    className="text-red-600 focus:text-red-600 cursor-pointer"
+                                    onClick={handleDelete}
+                                >
+                                    Delete Event
+                                </DropdownMenuItem>
+                            </>
+                        )}
                     </DropdownMenuContent>
                 </DropdownMenu>
             </div>
 
             {/* Content Body */}
+            {/* Content Body */}
             <div className="mb-4">
-                <Link href={`/events/${event._id}`}>
+                <Link href={eventUrl}>
+                    {event.banner && (
+                        <div className="mb-3 rounded-lg overflow-hidden relative aspect-video w-full">
+                            <img
+                                src={event.banner}
+                                alt={event.title}
+                                className="object-cover w-full h-full hover:scale-105 transition-transform duration-300"
+                            />
+                        </div>
+                    )}
                     <div className="flex items-center justify-between mb-2">
                         <h3 className="text-xl font-bold hover:text-primary transition-colors">
                             {event.title}
@@ -139,13 +226,17 @@ export function EventCard({ event }: EventCardProps) {
             </div>
 
             {/* Actions (Mocked to match PostCard visual) */}
+            {/* Actions */}
             <div className="flex items-center justify-between mb-3">
                 <div className="flex gap-2">
-                    <button className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-muted transition-colors">
-                        <Heart className="h-5 w-5" />
-                        <span className="text-sm font-medium">Interested</span>
+                    <button
+                        onClick={handleJoin}
+                        className="flex items-center gap-2 px-3 py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+                    >
+                        <Users className="h-5 w-5" />
+                        <span className="text-sm font-medium">Join</span>
                     </button>
-                    <Link href={`/events/${event._id}`} className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-muted transition-colors">
+                    <Link href={eventUrl} className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-muted transition-colors">
                         <MessageCircle className="h-5 w-5" />
                         <span className="text-sm font-medium">Discussion</span>
                     </Link>

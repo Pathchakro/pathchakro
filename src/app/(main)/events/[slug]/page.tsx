@@ -4,14 +4,23 @@ import dbConnect from '@/lib/mongodb';
 import Event from '@/models/Event';
 
 interface Props {
-    params: Promise<{ id: string }>;
+    params: Promise<{ slug: string }>;
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-    const { id } = await params;
+    const { slug } = await params;
 
     await dbConnect();
-    const event = await Event.findById(id).select('title description banner').lean();
+
+    // Check if slug is a valid ObjectId (backward compatibility)
+    const isObjectId = /^[0-9a-fA-F]{24}$/.test(slug);
+    let event;
+
+    if (isObjectId) {
+        event = await Event.findById(slug).select('title description banner').lean();
+    } else {
+        event = await Event.findOne({ slug: slug }).select('title description banner').lean();
+    }
 
     if (!event) {
         return {
@@ -38,5 +47,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function EventPage(props: Props) {
     const params = await props.params;
-    return <EventDetailClient eventId={params.id} />;
+    const slug = params.slug;
+
+    return <EventDetailClient slug={slug} />;
 }
