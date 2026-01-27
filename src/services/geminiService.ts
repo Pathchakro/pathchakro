@@ -20,7 +20,7 @@ Pathchakro is a community-driven platform for book lovers, where users can share
 **Founder & Key People:**
 - **Founder**: Shahadat Hossain.
 - **Contact**: 01777083043 (WhatsApp).
-- **Background**: Shahadat Hossain also founded **Pathshala-CBS**. Pathchakro is a sister concern of Pathshala.
+- **Background**: Shahadat Hossain also founded **Pathshala-CBS**.
 
 **Key Team Members:**
 Under the leadership of Shahadat Hossain, many others are working here:
