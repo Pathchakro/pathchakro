@@ -13,7 +13,12 @@ export async function GET(
 
         await dbConnect();
 
-        const project = await WritingProject.findById(params.id)
+        const id = params.id;
+        const query = (id.match(/^[0-9a-fA-F]{24}$/))
+            ? { _id: id }
+            : { slug: id };
+
+        const project = await WritingProject.findOne(query)
             .populate('author', 'name image rankTier')
             .lean();
 
@@ -59,8 +64,13 @@ export async function DELETE(
 
         await dbConnect();
 
+        const id = params.id;
+        const query = (id.match(/^[0-9a-fA-F]{24}$/))
+            ? { _id: id }
+            : { slug: id };
+
         const result = await WritingProject.deleteOne({
-            _id: params.id,
+            ...query,
             author: session.user.id,
         });
 
@@ -100,8 +110,13 @@ export async function PUT(
 
         await dbConnect();
 
+        const id = params.id;
+        const query = (id.match(/^[0-9a-fA-F]{24}$/))
+            ? { _id: id }
+            : { slug: id };
+
         const project = await WritingProject.findOne({
-            _id: params.id,
+            ...query,
             author: session.user.id,
         });
 

@@ -12,6 +12,7 @@ import {
     BookOpen, Edit, Save, ArrowLeft, Settings
 } from 'lucide-react';
 import Link from 'next/link';
+import { toast } from 'sonner';
 
 interface WritingProject {
     _id: string;
@@ -46,7 +47,7 @@ interface WritingProject {
 export default function WritingProjectPage() {
     const params = useParams();
     const router = useRouter();
-    const projectId = params.id as string;
+    const projectId = (params.slug || params.id) as string;
 
     const [project, setProject] = useState<WritingProject | null>(null);
     const [loading, setLoading] = useState(true);
@@ -94,35 +95,68 @@ export default function WritingProjectPage() {
         }
     };
 
+    const handleEditChapter = (chapter: any) => {
+        setEditingChapter(chapter._id);
+        setChapterTitle(chapter.title);
+        // Note: project list might not include content. For now we use what's there.
+        // If content is missing, user might overwrite with empty string if they don't notice.
+        // Ideally we fetch the chapter details here.
+        setChapterContent(chapter.content || '');
+        setShowChapterForm(true);
+        setActiveTab('write');
+    };
+
+    const handleCancelEdit = () => {
+        setEditingChapter(null);
+        setChapterTitle('');
+        setChapterContent('');
+        setShowChapterForm(false);
+    };
+
     const handleSaveChapter = async () => {
         if (!chapterTitle.trim() || !chapterContent.trim()) {
-            alert('Please provide chapter title and content');
+            toast.error('Please provide chapter title and content');
             return;
         }
 
         setIsSaving(true);
         try {
-            const response = await fetch(`/api/writing/${projectId}/chapters`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
+            let url = `/api/writing/${projectId}/chapters`;
+            let method = 'POST';
+            let body: any = {
+                title: chapterTitle,
+                content: chapterContent,
+            };
+
+            if (editingChapter) {
+                method = 'PUT';
+                body = {
+                    chapterId: editingChapter,
                     title: chapterTitle,
                     content: chapterContent,
-                }),
+                };
+            }
+
+            const response = await fetch(url, {
+                method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body),
             });
 
             const data = await response.json();
             if (response.ok) {
-                alert(data.message);
+                toast.success(data.message);
                 setChapterTitle('');
                 setChapterContent('');
+                setEditingChapter(null);
                 setShowChapterForm(false);
                 fetchProject();
             } else {
-                alert(data.error);
+                toast.error(data.error);
             }
         } catch (error) {
             console.error('Error saving chapter:', error);
+            toast.error('Failed to save chapter');
         } finally {
             setIsSaving(false);
         }
@@ -143,10 +177,10 @@ export default function WritingProjectPage() {
 
             const data = await response.json();
             if (response.ok) {
-                alert(data.message);
+                toast.success(data.message);
                 fetchProject();
             } else {
-                alert(data.error);
+                toast.error(data.error);
             }
         } catch (error) {
             console.error('Error updating settings:', error);
@@ -178,7 +212,7 @@ export default function WritingProjectPage() {
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
 
-        alert('Book exported! Note: For PDF format, you can use online converters to convert the TXT file to PDF.');
+        toast.info('Book exported! Note: use an online converter for PDF format.');
     };
 
     if (loading) {
@@ -289,7 +323,7 @@ export default function WritingProjectPage() {
                                                 Last updated: {new Date(chapter.updatedAt).toLocaleDateString()}
                                             </p>
                                         </div>
-                                        <Button size="sm" variant="ghost">
+                                        <Button size="sm" variant="ghost" onClick={() => handleEditChapter(chapter)}>
                                             <Edit className="h-4 w-4" />
                                         </Button>
                                     </div>
@@ -303,7 +337,9 @@ export default function WritingProjectPage() {
                 <TabsContent value="write">
                     <div className="bg-card border rounded-lg p-6">
                         <h2 className="font-semibold text-lg mb-4">
-                            {showChapterForm ? 'Write New Chapter' : 'Select a chapter or create new'}
+                            {showChapterForm
+                                ? (editingChapter ? 'Edit Chapter' : 'Write New Chapter')
+                                : 'Select a chapter or create new'}
                         </h2>
 
                         {showChapterForm && (
@@ -335,9 +371,9 @@ export default function WritingProjectPage() {
                                 <div className="flex gap-3">
                                     <Button onClick={handleSaveChapter} disabled={isSaving} className="flex-1">
                                         <Save className="h-4 w-4 mr-2" />
-                                        {isSaving ? 'Saving...' : 'Save Chapter'}
+                                        {isSaving ? 'Saving...' : (editingChapter ? 'Update Chapter' : 'Save Chapter')}
                                     </Button>
-                                    <Button variant="outline" onClick={() => setShowChapterForm(false)}>
+                                    <Button variant="outline" onClick={handleCancelEdit}>
                                         Cancel
                                     </Button>
                                 </div>

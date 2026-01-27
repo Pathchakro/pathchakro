@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import dbConnect from '@/lib/mongodb';
 import WritingProject from '@/models/WritingProject';
+import slugify from 'slugify';
 
 export async function GET(request: NextRequest) {
     try {
@@ -15,6 +16,7 @@ export async function GET(request: NextRequest) {
         }
 
         const { searchParams } = new URL(request.url);
+        const authorId = searchParams.get('author');
         const onlyMine = searchParams.get('mine') === 'true';
 
         await dbConnect();
@@ -23,8 +25,15 @@ export async function GET(request: NextRequest) {
 
         if (onlyMine) {
             filter.author = session.user.id;
+        } else if (authorId) {
+            filter.author = authorId;
+            // If fetching another user's projects, show only public & published
+            if (authorId !== session.user.id) {
+                filter.visibility = 'public';
+                filter.status = 'published';
+            }
         } else {
-            // Public projects only for browsing
+            // Public projects only for browsing (general feed)
             filter.visibility = 'public';
             filter.status = 'published';
         }
@@ -34,7 +43,18 @@ export async function GET(request: NextRequest) {
             .sort({ updatedAt: -1 })
             .lean();
 
-        return NextResponse.json({ projects });
+        const responsePayload: any = { projects };
+
+        if (process.env.NODE_ENV === 'development') {
+            responsePayload.debug = {
+                filter,
+                authorParam: authorId,
+                sessionUser: session?.user?.id,
+                isMatch: authorId === session?.user?.id
+            };
+        }
+
+        return NextResponse.json(responsePayload);
     } catch (error: any) {
         console.error('Error fetching writing projects:', error);
         return NextResponse.json(
@@ -66,9 +86,22 @@ export async function POST(request: NextRequest) {
 
         await dbConnect();
 
+        // Generate generic slug
+        let slug = slugify(title, { lower: true, strict: true });
+
+        // Ensure uniqueness
+        let slugExists = await WritingProject.findOne({ slug });
+        let counter = 1;
+        while (slugExists) {
+            slug = `${slugify(title, { lower: true, strict: true })}-${counter}`;
+            slugExists = await WritingProject.findOne({ slug });
+            counter++;
+        }
+
         const project = await WritingProject.create({
             author: session.user.id,
             title,
+            slug,
             coverImage,
             introduction,
             description,

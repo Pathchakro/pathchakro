@@ -7,6 +7,7 @@ import { ProfileTabs } from '@/components/profile/ProfileTabs';
 import { EventsTabContent } from '@/components/profile/EventsTabContent';
 import { LibraryTabContent } from '@/components/profile/LibraryTabContent';
 import { BookmarksTabContent } from '@/components/profile/BookmarksTabContent';
+import { MyBooksTabContent } from '@/components/profile/MyBooksTabContent';
 import { MapPin, Calendar, Edit, Trash2, Briefcase, GraduationCap, Globe, Github, Linkedin, Facebook, Twitter, Phone, Mail, Bookmark } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 import { useSession } from 'next-auth/react';
@@ -505,6 +506,10 @@ export default function ProfilePage() {
 
                 {activeTab === 'bookmarks' && isOwnProfile && (
                     <BookmarksTabContent userId={user._id} currentUserId={session?.user?.id} />
+                )}
+
+                {activeTab === 'my-books' && (
+                    <MyBooksTabContent userId={user._id} isOwnProfile={isOwnProfile} />
                 )}
             </div>
         </div>

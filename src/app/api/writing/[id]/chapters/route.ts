@@ -20,8 +20,13 @@ export async function GET(
 
         await dbConnect();
 
+        const id = params.id;
+        const query = (id.match(/^[0-9a-fA-F]{24}$/))
+            ? { _id: id }
+            : { slug: id };
+
         const project = await WritingProject.findOne({
-            _id: params.id,
+            ...query,
             author: session.user.id,
         }).select('-chapters.content'); // Exclude chapter content for list view
 
@@ -68,8 +73,13 @@ export async function POST(
 
         await dbConnect();
 
+        const id = params.id;
+        const query = (id.match(/^[0-9a-fA-F]{24}$/))
+            ? { _id: id }
+            : { slug: id };
+
         const project = await WritingProject.findOne({
-            _id: params.id,
+            ...query,
             author: session.user.id,
         });
 
@@ -137,8 +147,13 @@ export async function PUT(
 
         await dbConnect();
 
+        const id = params.id;
+        const query = (id.match(/^[0-9a-fA-F]{24}$/))
+            ? { _id: id }
+            : { slug: id };
+
         const project = await WritingProject.findOne({
-            _id: params.id,
+            ...query,
             author: session.user.id,
         });
 

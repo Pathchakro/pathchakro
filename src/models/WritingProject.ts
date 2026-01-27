@@ -4,6 +4,7 @@ export interface IWritingProject {
     _id: string;
     author: string;
     title: string;
+    slug?: string;
     coverImage?: string;
     introduction?: string;
     description?: string;
@@ -42,16 +43,25 @@ const WritingProjectSchema = new Schema<IWritingProject>(
             required: [true, 'Book title is required'],
             trim: true,
         },
+        slug: {
+            type: String,
+            unique: true,
+            sparse: true, // Allows null/missing for existing docs
+            trim: true,
+            index: true,
+            validate: {
+                validator: function (v: string) {
+                    return /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(v);
+                },
+                message: (props: any) => `${props.value} is not a valid URL slug!`
+            }
+        },
         coverImage: String,
         introduction: String,
         description: String,
         category: [{
             type: String,
-            enum: [
-                'Fiction', 'Non-Fiction', 'Science', 'Technology', 'History',
-                'Biography', 'Self-Help', 'Business', 'Academic', 'Literature',
-                'Poetry', 'Religion', 'Philosophy', 'Children',
-            ],
+            trim: true,
         }],
         status: {
             type: String,

@@ -15,6 +15,7 @@ import Link from 'next/link';
 import { ImageUploader } from '@/components/uploads/ImageUploader';
 import { BOOK_CATEGORIES } from '@/lib/constants';
 import NovelEditor from '@/components/editor/NovelEditor';
+import { toast } from 'sonner';
 
 const projectSchema = z.object({
     title: z.string().min(1, 'Title is required'),
@@ -87,8 +88,12 @@ export default function NewWritingProjectPage() {
                 return;
             }
 
-            alert(result.message);
-            router.push(`/writing/${result.project._id}`);
+            toast.success(result.message);
+            if (result.project) {
+                router.push(`/writing/${result.project.slug || result.project._id}`);
+            } else {
+                router.push('/writing');
+            }
         } catch (err) {
             setError('An error occurred. Please try again.');
         } finally {

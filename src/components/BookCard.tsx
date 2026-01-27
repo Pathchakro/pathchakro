@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Star, Download, Upload, Library, Edit, PenLine, Heart, Trash2, BookOpen, CheckCircle, Box, MoreVertical } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { toast } from 'sonner';
+import { BookCover } from './books/BookCover';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -45,25 +46,7 @@ interface BookCardProps {
     showRemoveOption?: boolean;
 }
 
-const BookCover = ({ src, alt }: { src?: string; alt: string }) => {
-    const [imgSrc, setImgSrc] = useState(src || '/assets/demobook.webp');
-    const [hasError, setHasError] = useState(false);
 
-    useEffect(() => {
-        setImgSrc(src?.trim() ? src : '/assets/demobook.webp');
-        setHasError(false);
-    }, [src]);
-
-    return (
-        <Image
-            src={hasError ? '/assets/demobook.webp' : imgSrc}
-            alt={alt}
-            fill
-            className="object-cover"
-            onError={() => setHasError(true)}
-        />
-    );
-};
 
 export function BookCard({
     book,

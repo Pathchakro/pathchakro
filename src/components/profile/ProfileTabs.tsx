@@ -15,7 +15,8 @@ const TABS = [
     { id: 'about', label: 'About' },
     { id: 'reviews', label: 'Reviews' },
     { id: 'tours', label: 'Tours' },
-    { id: 'library', label: 'Library' },
+    { id: 'library', label: 'Reading List' },
+    { id: 'my-books', label: 'My Books' },
 ];
 
 export function ProfileTabs({ activeTab, onTabChange, isOwnProfile }: ProfileTabsProps) {
