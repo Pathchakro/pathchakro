@@ -120,11 +120,9 @@ function ReadingStatusContent() {
                 <div>
                     <h1 className="text-3xl font-bold flex items-center gap-2 mb-2">
                         <BarChart3 className="h-8 w-8 text-indigo-500" />
-                        Reading Global Status
+                        Reading Status
                     </h1>
-                    <p className="text-muted-foreground">
-                        Real-time statistics on what the community is reading
-                    </p>
+
                 </div>
 
                 {/* Date Range Filter - Reverted to Top Right */}
