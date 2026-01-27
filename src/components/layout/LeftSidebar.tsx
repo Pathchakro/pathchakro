@@ -7,7 +7,8 @@ import { useSession } from 'next-auth/react';
 const QUICK_LINKS = [
     { icon: Home, label: 'News Feed', href: '/' },
     { icon: Library, label: 'Posts', href: '/posts' },
-    { icon: Library, label: 'My Library', href: '/library' },
+    { icon: Library, label: 'Library', href: '/library' },
+    { icon: Library, label: 'Books', href: '/books' },
     { icon: BarChart2, label: 'Reading Status', href: '/reading-status' },
     { icon: PenTool, label: 'My Writings', href: '/writing' },
     { icon: Calendar, label: 'Pathchakro Events', href: '/events' },
