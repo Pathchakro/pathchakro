@@ -73,7 +73,7 @@ export default function CompleteProfilePage() {
                 return;
             }
 
-            router.push('/feed');
+            router.push('/');
         } catch (err) {
             setError('An error occurred. Please try again.');
         } finally {
@@ -194,7 +194,7 @@ export default function CompleteProfilePage() {
                                 type="button"
                                 variant="outline"
                                 className="flex-1"
-                                onClick={() => router.push('/feed')}
+                                onClick={() => router.push('/')}
                                 disabled={isLoading}
                             >
                                 Skip for now

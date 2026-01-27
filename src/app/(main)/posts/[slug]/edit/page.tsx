@@ -55,7 +55,7 @@ export default function EditPostPage() {
             if (!response.ok) {
                 if (response.status === 404) {
                     toast.error("Post not found");
-                    router.push('/feed');
+                    router.push('/');
                 }
                 return;
             }
@@ -83,7 +83,7 @@ export default function EditPostPage() {
                 // Verify ownership
                 if (session?.user?.id && data.post.author._id !== session.user.id) {
                     toast.error("You are not authorized to edit this post");
-                    router.push('/feed');
+                    router.push('/');
                 }
             }
         } catch (error) {

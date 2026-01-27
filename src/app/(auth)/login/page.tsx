@@ -40,7 +40,7 @@ export default function LoginPage() {
             if (result?.error) {
                 setError('Invalid email or password');
             } else {
-                router.push('/feed');
+                router.push('/');
                 router.refresh();
             }
         } catch (err) {
@@ -52,7 +52,7 @@ export default function LoginPage() {
 
     const handleGoogleSignIn = async () => {
         setIsLoading(true);
-        await signIn('google', { callbackUrl: '/feed' });
+        await signIn('google', { callbackUrl: '/' });
     };
 
     return (
