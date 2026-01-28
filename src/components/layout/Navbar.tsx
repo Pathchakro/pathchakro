@@ -10,6 +10,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useSession, signIn, signOut } from 'next-auth/react';
 import { Chatbot } from '@/components/chatbot/Chatbot';
+import { ModeToggle } from '@/components/ui/mode-toggle';
 
 export function Navbar() {
     const pathname = usePathname();
@@ -78,6 +79,7 @@ export function Navbar() {
 
                     {/* Actions */}
                     <div className="flex items-center gap-2">
+                        <ModeToggle />
                         {session && <NotificationDropdown />}
 
                         <Chatbot />

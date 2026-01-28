@@ -7,8 +7,6 @@ export interface ChatMessage {
     parts: string;
 }
 
-const apiKey = process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY;
-
 const SYSTEM_INSTRUCTION = `You are the helpful AI assistant for Pathchakro.
 **Identity & Persona:**
 - **Who are you:** You are the **Pathchakro Assistant**, created by the **Pathchakro Team**.
@@ -63,18 +61,44 @@ Key Features to know about:
 
 If you don't know the specific answer to a platform-specific technical question, suggest they check the "Settings" or "Help" section (if applicable) or ask an admin.`;
 
-// Initialize the client only if the key is present
-const ai = apiKey ? new GoogleGenAI({ apiKey }) : null;
+// Parse API keys from environment variables
+// Supports GEMINI_API_KEYS (comma separated) or fallback to GEMINI_API_KEY
+const getApiKeys = (): string[] => {
+    const keysStr = process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY || "";
+    if (!keysStr) return [];
+
+    // Split by comma and clean up whitespace
+    return keysStr.split(',').map(key => key.trim()).filter(key => key.length > 0);
+};
+
+const apiKeys = getApiKeys();
+
+// Helper to get a random key and initialize client
+const getRandomClient = () => {
+    if (apiKeys.length === 0) return { client: null, key: null };
+
+    const randomIndex = Math.floor(Math.random() * apiKeys.length);
+    const selectedKey = apiKeys[randomIndex];
+
+    return {
+        client: new GoogleGenAI({ apiKey: selectedKey }),
+        key: selectedKey
+    };
+};
+
 
 export const getChatResponse = async (message: string, history: ChatMessage[]): Promise<string> => {
-    if (!ai) {
-        console.error("❌ Google Gemini API Key is missing. Please check .env.local for GEMINI_API_KEY.");
+    // Get a fresh client with a random key for each request
+    const { client: ai, key: currentKey } = getRandomClient();
+
+    if (!ai || !currentKey) {
+        console.error("❌ Google Gemini API Key is missing. Please check .env.local for GEMINI_API_KEY (comma separated for multiple keys).");
         return "I'm sorry, I can't connect to the AI assistant right now. (Server Error: Missing Google API Key).";
     }
 
     try {
         const model = "gemini-2.5-flash";
-        console.log(`🚀 Sending request to Google Gemini (SDK: @google/genai)... Key ends in: ...${apiKey?.slice(-4)}`);
+        console.log(`🚀 Sending request to Google Gemini (SDK: @google/genai)... Key ends in: ...${currentKey.slice(-4)}`);
 
         // Filter history to ensure it starts with 'user'
         // The API requires the first message to be from the user.

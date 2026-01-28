@@ -25,6 +25,16 @@ interface Team {
     createdAt: string;
 }
 
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from "@/components/ui/table";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+
 export default function TeamsPage() {
     const [teams, setTeams] = useState<Team[]>([]);
     const [loading, setLoading] = useState(true);
@@ -103,7 +113,7 @@ export default function TeamsPage() {
                 </div>
             </div>
 
-            {/* Teams Grid */}
+            {/* Teams Table */}
             {loading ? (
                 <div className="text-center py-12 text-muted-foreground">
                     Loading teams...
@@ -120,47 +130,48 @@ export default function TeamsPage() {
                     </Link>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {teams.map((team) => (
-                        <Link
-                            key={team._id}
-                            href={`/teams/${team._id}`}
-                            className="bg-card rounded-lg shadow-sm border p-4 hover:shadow-md transition-shadow"
-                        >
-                            <div className="flex items-start gap-3 mb-3">
-                                <div className="h-12 w-12 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center flex-shrink-0">
-                                    <Users className="h-6 w-6 text-white" />
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                    <h3 className="font-semibold truncate">{team.name}</h3>
-                                    <p className="text-xs text-muted-foreground">
-                                        {team.type} • {team.privacy}
-                                    </p>
-                                </div>
-                            </div>
-
-                            <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
-                                {team.description}
-                            </p>
-
-                            <div className="flex items-center justify-between text-xs text-muted-foreground">
-                                <div className="flex items-center gap-1">
-                                    <Users className="h-3 w-3" />
-                                    <span>{team.members.length} members</span>
-                                </div>
-                                {(team.university || team.location) && (
-                                    <div className="flex items-center gap-1">
-                                        {team.type === 'University' ? (
-                                            <Building2 className="h-3 w-3" />
-                                        ) : (
-                                            <MapPin className="h-3 w-3" />
-                                        )}
-                                        <span className="truncate">{team.university || team.location}</span>
-                                    </div>
-                                )}
-                            </div>
-                        </Link>
-                    ))}
+                <div className="rounded-md border">
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Team Name</TableHead>
+                                <TableHead>Team Leader</TableHead>
+                                <TableHead>Total Members</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {teams.map((team) => (
+                                <TableRow key={team._id}>
+                                    <TableCell>
+                                        <Link
+                                            href={`/teams/${team._id}`}
+                                            className="font-medium hover:underline"
+                                        >
+                                            {team.name}
+                                        </Link>
+                                        <div className="text-sm text-muted-foreground">
+                                            {team.type} • {team.privacy}
+                                        </div>
+                                    </TableCell>
+                                    <TableCell>
+                                        <div className="flex items-center gap-2">
+                                            <Avatar className="h-8 w-8">
+                                                <AvatarImage src={team.leader.image} alt={team.leader.name} />
+                                                <AvatarFallback>{team.leader.name?.charAt(0) || 'U'}</AvatarFallback>
+                                            </Avatar>
+                                            <span>{team.leader.name}</span>
+                                        </div>
+                                    </TableCell>
+                                    <TableCell>
+                                        <div className="flex items-center gap-2">
+                                            <Users className="h-4 w-4 text-muted-foreground" />
+                                            {team.members.length}
+                                        </div>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
                 </div>
             )}
         </div>

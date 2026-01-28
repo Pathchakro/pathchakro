@@ -99,7 +99,6 @@ const EventSchema = new Schema<IEvent>(
             type: String,
             unique: true,
             sparse: true,
-            index: true,
         },
         status: {
             type: String,
