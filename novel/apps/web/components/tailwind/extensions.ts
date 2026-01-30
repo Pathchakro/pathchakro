@@ -35,6 +35,8 @@ const tiptapLink = TiptapLink.configure({
     class: cx(
       "text-muted-foreground underline underline-offset-[3px] hover:text-primary transition-colors cursor-pointer",
     ),
+    target: null,
+    rel: null,
   },
 });
 

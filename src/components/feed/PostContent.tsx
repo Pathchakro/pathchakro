@@ -41,7 +41,7 @@ export const PostContent = ({ content }: PostContentProps) => {
                 editable={false}
                 editorProps={{
                     attributes: {
-                        class: "prose prose-lg dark:prose-invert prose-headings:font-title font-default focus:outline-none max-w-full",
+                        class: "prose prose-lg dark:prose-invert prose-headings:font-title font-sans leading-normal focus:outline-none max-w-full text-[16px]",
                     },
                 }}
             />

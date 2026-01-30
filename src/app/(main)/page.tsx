@@ -150,6 +150,7 @@ export default function HomePage() {
                                 initialPost={item}
                                 currentUserId={session?.user?.id}
                                 initialIsBookmarked={myBookmarkedIds.includes(item._id)}
+                                onDelete={handleDeleteItem}
                             />;
                         case 'review':
                             return <ReviewCard

@@ -14,10 +14,10 @@ const QUICK_LINKS = [
     { icon: Calendar, label: 'Pathchakro Events', href: '/events' },
     { icon: GraduationCap, label: 'Courses', href: '/courses' },
     { icon: ShoppingCart, label: 'Marketplace', href: '/marketplace' },
-    { icon: Heart, label: 'Blood Donation', href: '/blood-donation' },
+    { icon: Heart, label: 'Blood Bank', href: '/blood-bank' },
     { icon: DollarSign, label: 'Fund Account', href: '/fund' },
     { icon: Plane, label: 'Tour Planning', href: '/tours' },
-    { icon: Users, label: 'My Teams', href: '/teams' },
+    { icon: Users, label: 'Teams', href: '/teams' },
 ];
 
 

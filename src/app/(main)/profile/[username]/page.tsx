@@ -119,6 +119,12 @@ export default function ProfilePage() {
         }
     };
 
+    const handleDeletePost = (postId: string) => {
+        setPosts(prev => prev.filter(p => p._id !== postId));
+        // Also update stats if needed, or just let refresh handle it
+        setStats(prev => prev ? { ...prev, posts: prev.posts - 1 } : null);
+    };
+
     const isOwnProfile = session?.user?.id === user?._id;
 
     if (loading) {
@@ -167,6 +173,7 @@ export default function ProfilePage() {
                                     initialPost={post}
                                     currentUserId={session?.user?.id}
                                     initialIsBookmarked={myBookmarkedIds.includes(post._id)}
+                                    onDelete={handleDeletePost}
                                 />
                             ))
                         )}

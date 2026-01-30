@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import dbConnect from '@/lib/mongodb';
 import Post from '@/models/Post';
+import { revalidatePath } from 'next/cache';
 
 export async function GET(
     request: NextRequest,
@@ -59,6 +60,10 @@ export async function DELETE(
         }
 
         await Post.findByIdAndDelete(post._id);
+
+        revalidatePath('/');
+        revalidatePath(`/posts/${params.slug}`);
+        revalidatePath('/api/feed');
 
         return NextResponse.json({ message: 'Post deleted successfully' });
     } catch (error) {

@@ -1,6 +1,35 @@
 .ProseMirror {
-  @apply p-4;
-  --novel-highlight-blue: #dbeafe;
+    @apply p-4 font-sans leading-normal;
+    font-size: 14px;
+    --novel-highlight-blue: #dbeafe;
+}
+
+.ProseMirror p {
+    @apply my-2;
+}
+
+.ProseMirror h1,
+.ProseMirror h2,
+.ProseMirror h3,
+.ProseMirror h4 {
+    @apply mt-6 mb-2;
+}
+
+.ProseMirror ul,
+.ProseMirror ol {
+    @apply my-2;
+}
+
+.ProseMirror li {
+    @apply my-0;
+}
+
+.ProseMirror li p {
+    @apply my-0;
+}
+
+.ProseMirror li::marker {
+    @apply text-muted-foreground;
 }
 
 .ProseMirror .is-editor-empty:first-child::before {

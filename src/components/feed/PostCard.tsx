@@ -169,9 +169,10 @@ export function PostCard({ initialPost, currentUserId, onDelete, initialIsBookma
                 if (onDelete) {
                     onDelete(post._id);
                 } else {
-                    // Otherwise just refresh or hide locally (reloading for now simpler)
-                    window.location.reload();
+                    // Redirect to home if on a single post page
+                    router.push('/');
                 }
+                router.refresh();
             } else {
                 toast.error('Failed to delete post');
             }

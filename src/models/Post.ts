@@ -17,7 +17,6 @@ const PostSchema = new Schema<IPost>(
             type: String,
             required: true,
             unique: true,
-            index: true,
         },
         content: {
             type: String,
@@ -64,7 +63,6 @@ const PostSchema = new Schema<IPost>(
 // Indexes
 PostSchema.index({ author: 1, createdAt: -1 });
 PostSchema.index({ type: 1 });
-PostSchema.index({ slug: 1 });
 PostSchema.index({ createdAt: -1 });
 
 const Post: Model<IPost> = mongoose.models.Post || mongoose.model<IPost>('Post', PostSchema);
