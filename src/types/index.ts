@@ -148,7 +148,7 @@ export interface ITeam {
     privacy: 'public' | 'private';
     coverImage?: string;
     logo?: string;
-    leader: string | IUser;
+    leader?: string | IUser | null;
     members: Array<{
         user: string | IUser;
         role: 'leader' | 'deputy' | 'member';
