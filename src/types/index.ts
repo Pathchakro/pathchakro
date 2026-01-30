@@ -140,6 +140,7 @@ export interface ITeam {
     _id: string;
     name: string;
     description: string;
+    slug?: string;
     type: 'University' | 'Thana' | 'Special';
     university?: string;
     location?: string;

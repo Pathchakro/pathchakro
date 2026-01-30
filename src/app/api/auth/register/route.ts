@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import dbConnect from '@/lib/mongodb';
 import User from '@/models/User';
+import { syncUserTeams } from '@/lib/team-sync';
 
 export async function POST(request: NextRequest) {
     try {
@@ -41,6 +42,14 @@ export async function POST(request: NextRequest) {
             thana,
             isEmailVerified: false,
         });
+
+        // Auto-sync teams based on registration data
+        try {
+            await syncUserTeams(user._id.toString());
+        } catch (syncError) {
+            console.error('Error syncing teams during registration:', syncError);
+            // Don't fail registration if sync fails
+        }
 
         // Return user without password
         const { password: _, ...userWithoutPassword } = user.toObject();

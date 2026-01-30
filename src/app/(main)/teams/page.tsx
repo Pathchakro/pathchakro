@@ -12,6 +12,7 @@ interface Team {
     name: string;
     description: string;
     type: string;
+    category: string;
     privacy: string;
     university?: string;
     location?: string;
@@ -23,6 +24,7 @@ interface Team {
     };
     members: any[];
     createdAt: string;
+    slug?: string;
 }
 
 import {
@@ -41,21 +43,51 @@ export default function TeamsPage() {
     const [searchQuery, setSearchQuery] = useState('');
     const [typeFilter, setTypeFilter] = useState('all');
 
+    // Pagination and Sort State
+    const [page, setPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    // Sort logic handled implicitly by API default (createdAt desc) or kept as internal default if needed, 
+    // but reducing state here since UI is gone. 
+    // Actually, let's keep sortBy state default to 'createdAt' so the fetch call works without change, 
+    // but remove the other unused filters.
+
+    // Unused filters removed from state to clean up
+    const categoryFilter = 'all';
+    const universityFilter = '';
+    const locationFilter = '';
+    const sortBy = 'createdAt';
+
     useEffect(() => {
         fetchTeams();
-    }, [typeFilter]);
+    }, [typeFilter, page]); // Removed other deps
+
+    // Reset page when filters change
+    useEffect(() => {
+        setPage(1);
+    }, [typeFilter, searchQuery]); // Removed other deps
 
     const fetchTeams = async () => {
         try {
             const params = new URLSearchParams();
             if (typeFilter !== 'all') params.append('type', typeFilter);
+            if (categoryFilter !== 'all') params.append('category', categoryFilter);
+            if (universityFilter) params.append('university', universityFilter);
+            if (locationFilter) params.append('location', locationFilter);
             if (searchQuery) params.append('q', searchQuery);
+
+            params.append('page', page.toString());
+            params.append('limit', '10'); // Or 20, keeping it manageable
+            params.append('sortBy', sortBy);
+            params.append('order', 'desc'); // Default to desc for now, can make dynamic if needed
 
             const response = await fetch(`/api/teams?${params}`);
             const data = await response.json();
 
             if (data.teams) {
                 setTeams(data.teams);
+            }
+            if (data.pagination) {
+                setTotalPages(data.pagination.totalPages);
             }
         } catch (error) {
             console.error('Error fetching teams:', error);
@@ -77,12 +109,7 @@ export default function TeamsPage() {
                         <h1 className="text-3xl font-bold">Teams & Groups</h1>
                         <p className="text-muted-foreground">Join communities and connect with others</p>
                     </div>
-                    <Link href="/teams/create">
-                        <Button className="gap-2">
-                            <Plus className="h-4 w-4" />
-                            Create Team
-                        </Button>
-                    </Link>
+
                 </div>
 
                 {/* Search and Filters */}
@@ -91,7 +118,7 @@ export default function TeamsPage() {
                         <div className="relative flex-1">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                             <Input
-                                placeholder="Search teams..."
+                                placeholder="Search by name..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 className="pl-10"
@@ -100,16 +127,18 @@ export default function TeamsPage() {
                         <Button type="submit">Search</Button>
                     </form>
 
-                    <Select
-                        value={typeFilter}
-                        onChange={(e) => setTypeFilter(e.target.value)}
-                        className="md:w-48"
-                    >
-                        <option value="all">All Types</option>
-                        <option value="University">University</option>
-                        <option value="Thana">Thana/Location</option>
-                        <option value="Special">Special Interest</option>
-                    </Select>
+                    <div className="flex flex-wrap gap-2">
+                        <Select
+                            value={typeFilter}
+                            onChange={(e) => setTypeFilter(e.target.value)}
+                            className="w-40"
+                        >
+                            <option value="all">All Types</option>
+                            <option value="University">University</option>
+                            <option value="Thana">Thana/Location</option>
+                            <option value="Special">Special Interest</option>
+                        </Select>
+                    </div>
                 </div>
             </div>
 
@@ -125,9 +154,7 @@ export default function TeamsPage() {
                     <p className="text-muted-foreground mb-4">
                         {searchQuery ? 'Try a different search term' : 'Be the first to create a team!'}
                     </p>
-                    <Link href="/teams/create">
-                        <Button>Create Team</Button>
-                    </Link>
+
                 </div>
             ) : (
                 <div className="rounded-md border">
@@ -144,7 +171,7 @@ export default function TeamsPage() {
                                 <TableRow key={team._id}>
                                     <TableCell>
                                         <Link
-                                            href={`/teams/${team._id}`}
+                                            href={`/teams/${team.slug || team._id}`}
                                             className="font-medium hover:underline"
                                         >
                                             {team.name}
@@ -154,13 +181,17 @@ export default function TeamsPage() {
                                         </div>
                                     </TableCell>
                                     <TableCell>
-                                        <div className="flex items-center gap-2">
-                                            <Avatar className="h-8 w-8">
-                                                <AvatarImage src={team.leader.image} alt={team.leader.name} />
-                                                <AvatarFallback>{team.leader.name?.charAt(0) || 'U'}</AvatarFallback>
-                                            </Avatar>
-                                            <span>{team.leader.name}</span>
-                                        </div>
+                                        {team.leader ? (
+                                            <div className="flex items-center gap-2">
+                                                <Avatar className="h-8 w-8">
+                                                    <AvatarImage src={team.leader.image} alt={team.leader.name} />
+                                                    <AvatarFallback>{team.leader.name?.charAt(0) || 'U'}</AvatarFallback>
+                                                </Avatar>
+                                                <span>{team.leader.name}</span>
+                                            </div>
+                                        ) : (
+                                            <span className="text-muted-foreground italic">System</span>
+                                        )}
                                     </TableCell>
                                     <TableCell>
                                         <div className="flex items-center gap-2">
@@ -172,6 +203,29 @@ export default function TeamsPage() {
                             ))}
                         </TableBody>
                     </Table>
+                </div>
+            )}
+
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+                <div className="flex justify-center items-center gap-4 mt-8">
+                    <Button
+                        variant="outline"
+                        onClick={() => setPage(p => Math.max(1, p - 1))}
+                        disabled={page === 1}
+                    >
+                        Previous
+                    </Button>
+                    <span className="text-sm text-muted-foreground">
+                        Page {page} of {totalPages}
+                    </span>
+                    <Button
+                        variant="outline"
+                        onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                        disabled={page === totalPages}
+                    >
+                        Next
+                    </Button>
                 </div>
             )}
         </div>

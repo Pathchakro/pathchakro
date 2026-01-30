@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import mongoose from 'mongoose';
 import { auth } from '@/auth';
 import dbConnect from '@/lib/mongodb';
 import User from '@/models/User';
-import Group from '@/models/Group';
+import { syncUserTeams } from '@/lib/team-sync';
 
 export async function PUT(request: NextRequest) {
     try {
@@ -95,129 +94,11 @@ export async function PUT(request: NextRequest) {
         if (body.image !== undefined) updateData.image = body.image;
 
         // Interests
-        // Interests & Groups Logic
-        if (session.user.id) {
-            // Get current user to compare for sync
-            const currentUser = await User.findById(session.user.id).select('address academic');
+        if (interests !== undefined) updateData.interests = interests;
 
-            // --- Interest Groups Sync ---
-            if (interests !== undefined && Array.isArray(interests)) {
-                updateData.interests = interests;
-
-                // 1. Remove from old interest groups (those NOT in new list)
-                await Group.updateMany(
-                    {
-                        type: 'interest',
-                        members: session.user.id,
-                        name: { $nin: interests }
-                    },
-                    { $pull: { members: session.user.id } }
-                );
-
-                // 2. Add to new interest groups
-                if (interests.length > 0) {
-                    for (const interestName of interests) {
-                        let group = await Group.findOne({ name: interestName, type: 'interest' });
-                        if (!group) {
-                            group = await Group.create({
-                                name: interestName,
-                                type: 'interest',
-                                members: [new mongoose.Types.ObjectId(session.user.id)]
-                            });
-                        } else {
-                            if (!group.members.includes(session.user.id as any)) {
-                                await Group.findByIdAndUpdate(group._id, {
-                                    $addToSet: { members: new mongoose.Types.ObjectId(session.user.id) }
-                                });
-                            }
-                        }
-                    }
-                }
-            }
-
-            // --- Institution Group Sync ---
-            if (institution !== undefined) {
-                updateData['academic.institution'] = institution;
-
-                // 1. Remove from old institution groups
-                await Group.updateMany(
-                    {
-                        type: 'institution',
-                        members: session.user.id,
-                        name: { $ne: institution } // Remove from any group that is NOT the new institution
-                    },
-                    { $pull: { members: session.user.id } }
-                );
-
-                // 2. Add to new institution group
-                if (institution && institution.trim().length > 0) {
-                    let group = await Group.findOne({ name: institution, type: 'institution' });
-                    if (!group) {
-                        group = await Group.create({
-                            name: institution,
-                            type: 'institution',
-                            members: [new mongoose.Types.ObjectId(session.user.id)]
-                        });
-                    } else {
-                        if (!group.members.includes(session.user.id as any)) {
-                            await Group.findByIdAndUpdate(group._id, {
-                                $addToSet: { members: new mongoose.Types.ObjectId(session.user.id) }
-                            });
-                        }
-                    }
-                }
-            }
-
-            // --- Thana (Location) Groups Sync ---
-            // Only run if address is updated, merging with existing data to prevent partial data loss
-            if (body.presentAddress || body.permanentAddress) {
-                // Update User Profile Data
-                if (body.presentAddress !== undefined) updateData['address.present'] = body.presentAddress;
-                if (body.permanentAddress !== undefined) updateData['address.permanent'] = body.permanentAddress;
-
-                const newPresentThana = body.presentAddress?.thana || (body.presentAddress === undefined ? currentUser?.address?.present?.thana : undefined);
-                // Logic: if body.presentAddress is passed (even empty), use it/its thana. If undefined, keep old. 
-                // Better: if body.presentAddress is defined, retrieve thana from it. If it is NOT defined, retrieve from currentUser.
-
-                const finalPresentThana = body.presentAddress !== undefined
-                    ? body.presentAddress.thana
-                    : currentUser?.address?.present?.thana;
-
-                const finalPermanentThana = body.permanentAddress !== undefined
-                    ? body.permanentAddress.thana
-                    : currentUser?.address?.permanent?.thana;
-
-                const correctThanas = [finalPresentThana, finalPermanentThana].filter(t => t && t.trim().length > 0);
-
-                // 1. Remove from All Thana groups NOT in the correct list
-                await Group.updateMany(
-                    {
-                        type: 'thana',
-                        members: session.user.id,
-                        name: { $nin: correctThanas }
-                    },
-                    { $pull: { members: session.user.id } }
-                );
-
-                // 2. Add to correct Thana groups
-                for (const thanaName of correctThanas) {
-                    let group = await Group.findOne({ name: thanaName, type: 'thana' });
-                    if (!group) {
-                        group = await Group.create({
-                            name: thanaName,
-                            type: 'thana',
-                            members: [new mongoose.Types.ObjectId(session.user.id)]
-                        });
-                    } else {
-                        if (!group.members.includes(session.user.id as any)) {
-                            await Group.findByIdAndUpdate(group._id, {
-                                $addToSet: { members: new mongoose.Types.ObjectId(session.user.id) }
-                            });
-                        }
-                    }
-                }
-            }
-        }
+        // Address Updates
+        if (body.presentAddress !== undefined) updateData['address.present'] = body.presentAddress;
+        if (body.permanentAddress !== undefined) updateData['address.permanent'] = body.permanentAddress;
 
         // Verification
         if (body.verificationDocuments && body.verificationDocuments.length > 0) {
@@ -227,17 +108,10 @@ export async function PUT(request: NextRequest) {
         }
 
         // Calculate Profile Completion
-        // Based on fields present in updateData (merged with existing would be better, but we don't have full user here easily without extra fetch)
-        // Better approach: User is fetched in next-auth session or we can fetch only needed fields if we want perfection.
-        // For now, let's use what we have in updateData + assume untouched fields didn't change status.
-        // Actually, to do this accurately on server side, we should fetch the current user data first.
-        // We already have currentUser fetched for groups sync logic if session.user.id exists.
-
         if (session.user.id) {
-            const userForCalc = await User.findById(session.user.id); // Re-fetch to be sure or reuse currentUser if fields are sufficient
+            const userForCalc = await User.findById(session.user.id);
 
             if (userForCalc) {
-                // Create a temporary object merging current user data with updateData
                 const mergedData = { ...userForCalc.toObject(), ...updateData };
 
                 // Handle nested updates for calculation
@@ -274,6 +148,9 @@ export async function PUT(request: NextRequest) {
             { $set: updateData },
             { new: true, runValidators: true }
         ).select('-password');
+
+        // Sync Teams after update
+        await syncUserTeams(session.user.id);
 
         return NextResponse.json({ user, message: 'Profile updated successfully' });
     } catch (error: any) {

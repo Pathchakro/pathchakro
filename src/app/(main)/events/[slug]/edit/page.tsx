@@ -17,6 +17,7 @@ export default function EditEventPage({ params }: Props) {
     const [isSaving, setIsSaving] = useState(false);
     const [uploadingBanner, setUploadingBanner] = useState(false);
     const [initialData, setInitialData] = useState<any>(null);
+    const [fetchError, setFetchError] = useState(false);
     const [slug, setSlug] = useState<string>('');
 
     useEffect(() => {
@@ -31,17 +32,25 @@ export default function EditEventPage({ params }: Props) {
 
     const fetchEvent = async (eventSlug: string) => {
         try {
+            setFetchError(false);
             const response = await fetch(`/api/events/${eventSlug}`);
+
+            if (!response.ok) {
+                throw new Error('Failed to fetch event');
+            }
+
             const data = await response.json();
 
             if (data.event) {
                 setInitialData(data.event);
             } else {
+                setFetchError(true);
                 toast.error('Event not found');
                 router.push('/events');
             }
         } catch (error) {
             console.error('Error fetching event:', error);
+            setFetchError(true);
             toast.error('Failed to load event details');
         } finally {
             setIsLoading(false);
@@ -104,7 +113,31 @@ export default function EditEventPage({ params }: Props) {
     };
 
     if (isLoading) {
-        return <div className="p-8 text-center">Loading event details...</div>;
+        return (
+            <div className="flex flex-col items-center justify-center min-h-[400px] p-8 space-y-4">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+                <p className="text-muted-foreground animate-pulse">Loading event details...</p>
+            </div>
+        );
+    }
+
+    if (fetchError || !initialData) {
+        return (
+            <div className="max-w-3xl mx-auto p-4 text-center space-y-6 py-20">
+                <div className="p-12 border-2 border-dashed rounded-3xl bg-muted/30">
+                    <h1 className="text-2xl font-bold text-foreground mb-2">Event Not Found</h1>
+                    <p className="text-muted-foreground mb-6">
+                        We couldn't find the event you're looking for or there was an error loading it.
+                    </p>
+                    <Link
+                        href="/profile/me"
+                        className="inline-flex items-center justify-center px-6 py-3 bg-primary text-primary-foreground rounded-xl font-semibold transition-all hover:scale-[1.02] active:scale-[0.98]"
+                    >
+                        Return to Profile
+                    </Link>
+                </div>
+            </div>
+        );
     }
 
     return (

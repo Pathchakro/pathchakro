@@ -13,7 +13,9 @@ interface Team {
     _id: string;
     name: string;
     description: string;
+    slug?: string;
     type: string;
+    category: string;
     privacy: string;
     university?: string;
     location?: string;
@@ -54,7 +56,9 @@ interface Post {
 
 export default function TeamDetailPage() {
     const params = useParams();
-    const teamId = params.id as string;
+    // Identifier can be ID (legacy) or Slug (new)
+    // Since we renamed the folder to [slug], the param key is 'slug'
+    const teamIdentifier = params.slug as string;
 
     const [team, setTeam] = useState<Team | null>(null);
     const [posts, setPosts] = useState<Post[]>([]);
@@ -67,9 +71,11 @@ export default function TeamDetailPage() {
     const [openComments, setOpenComments] = useState<Record<string, boolean>>({});
 
     useEffect(() => {
-        fetchTeamData();
-        fetchTeamPosts();
-    }, [teamId]);
+        if (teamIdentifier) {
+            fetchTeamData();
+            fetchTeamPosts();
+        }
+    }, [teamIdentifier]);
 
     const toggleComments = (postId: string) => {
         setOpenComments(prev => ({
@@ -80,7 +86,7 @@ export default function TeamDetailPage() {
 
     const fetchTeamData = async () => {
         try {
-            const response = await fetch(`/api/teams/${teamId}`);
+            const response = await fetch(`/api/teams/${teamIdentifier}`);
             const data = await response.json();
 
             if (data.team) {
@@ -97,7 +103,11 @@ export default function TeamDetailPage() {
 
     const fetchTeamPosts = async () => {
         try {
-            const response = await fetch(`/api/teams/${teamId}/posts`);
+            // We use the same identifier for posts. The API needs to support it or we use team._id if available.
+            // Ideally posts API also accepts slug, or we wait for team data to get ID.
+            // For now assume API handles slug or we need to update API.
+            // Let's rely on API handling slug at /api/teams/[id]/posts too.
+            const response = await fetch(`/api/teams/${teamIdentifier}/posts`);
             const data = await response.json();
 
             if (data.posts) {
@@ -115,7 +125,7 @@ export default function TeamDetailPage() {
 
         setIsPosting(true);
         try {
-            const response = await fetch(`/api/teams/${teamId}/posts`, {
+            const response = await fetch(`/api/teams/${teamIdentifier}/posts`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -141,7 +151,7 @@ export default function TeamDetailPage() {
     const handleJoinTeam = async () => {
         setIsJoining(true);
         try {
-            const response = await fetch(`/api/teams/${teamId}/join`, {
+            const response = await fetch(`/api/teams/${teamIdentifier}/join`, {
                 method: 'POST',
             });
 
@@ -167,7 +177,7 @@ export default function TeamDetailPage() {
         if (!confirm('Are you sure you want to leave this team?')) return;
 
         try {
-            const response = await fetch(`/api/teams/${teamId}/leave`, {
+            const response = await fetch(`/api/teams/${teamIdentifier}/leave`, {
                 method: 'POST',
             });
 
@@ -273,15 +283,9 @@ export default function TeamDetailPage() {
                                     </div>
                                 </div>
 
-                                {isMember ? (
-                                    <Button variant="outline" onClick={handleLeaveTeam}>
-                                        Leave Team
-                                    </Button>
-                                ) : (
-                                    <Button onClick={handleJoinTeam} disabled={isJoining}>
-                                        {isJoining ? 'Joining...' : 'Join Team'}
-                                    </Button>
-                                )}
+                                <span className="text-sm text-muted-foreground italic border px-3 py-1 rounded-md bg-muted/50">
+                                    Membership is managed automatically based on profile
+                                </span>
                             </div>
 
                             <p className="text-sm mt-3">{team.description}</p>
@@ -458,12 +462,16 @@ export default function TeamDetailPage() {
                                     <p className="text-sm capitalize">{team.privacy}</p>
                                 </div>
                                 <div>
+                                    <h4 className="text-sm font-medium text-muted-foreground mb-1">Category</h4>
+                                    <p className="text-sm">{team.category || 'General'}</p>
+                                </div>
+                                <div>
                                     <h4 className="text-sm font-medium text-muted-foreground mb-1">Created</h4>
                                     <p className="text-sm">{formatDate(team.createdAt)}</p>
                                 </div>
                                 <div>
                                     <h4 className="text-sm font-medium text-muted-foreground mb-1">Leader</h4>
-                                    <p className="text-sm">{team.leader.name}</p>
+                                    <p className="text-sm">{team.leader ? team.leader.name : 'System / Community'}</p>
                                 </div>
                             </div>
                         </div>

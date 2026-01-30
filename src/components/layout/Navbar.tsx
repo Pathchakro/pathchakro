@@ -26,11 +26,14 @@ export function Navbar() {
         if (searchParams?.get('login') === 'success') {
             toast.success("Welcome back! Login successful.");
             // Clean up URL
-            const newUrl = window.location.pathname;
+            const params = new URLSearchParams(searchParams.toString());
+            params.delete('login');
+            const newUrl = params.toString()
+                ? `${window.location.pathname}?${params.toString()}`
+                : window.location.pathname;
             window.history.replaceState({}, '', newUrl);
         }
     }, [searchParams]);
-
     // Close on click outside
     useEffect(() => {
         function handleClickOutside(event: MouseEvent) {

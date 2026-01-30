@@ -31,9 +31,15 @@ export async function POST(
         await dbConnect();
 
         const isObjectId = /^[0-9a-fA-F]{24}$/.test(params.id);
-        const query = isObjectId ? { _id: params.id } : { slug: params.id };
+        let event = null;
 
-        const event = await Event.findOne(query);
+        if (isObjectId) {
+            event = await Event.findOne({ _id: params.id });
+        }
+
+        if (!event) {
+            event = await Event.findOne({ slug: params.id });
+        }
 
         if (!event) {
             return NextResponse.json(

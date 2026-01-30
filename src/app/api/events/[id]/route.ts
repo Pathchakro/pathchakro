@@ -17,19 +17,35 @@ export async function GET(
         console.log('GET /api/events/[id] ID:', params.id);
 
         const isObjectId = /^[0-9a-fA-F]{24}$/.test(params.id);
-        let query = isObjectId ? { _id: params.id } : { slug: params.id };
+        let event = null;
 
-        const event = await Event.findOne(query)
-            .populate('organizer', 'name image rankTier')
-            .populate('team', 'name')
-            .populate('roles.host.user', 'name image')
-            .populate('roles.anchor.user', 'name image')
-            .populate('roles.summarizer.user', 'name image')
-            .populate('roles.opener.user', 'name image')
-            .populate('roles.closer.user', 'name image')
-            .populate('roles.lecturers.user', 'name image')
-            .populate('listeners.user', 'name image')
-            .lean();
+        if (isObjectId) {
+            event = await Event.findOne({ _id: params.id })
+                .populate('organizer', 'name image rankTier')
+                .populate('team', 'name')
+                .populate('roles.host.user', 'name image')
+                .populate('roles.anchor.user', 'name image')
+                .populate('roles.summarizer.user', 'name image')
+                .populate('roles.opener.user', 'name image')
+                .populate('roles.closer.user', 'name image')
+                .populate('roles.lecturers.user', 'name image')
+                .populate('listeners.user', 'name image')
+                .lean();
+        }
+
+        if (!event) {
+            event = await Event.findOne({ slug: params.id })
+                .populate('organizer', 'name image rankTier')
+                .populate('team', 'name')
+                .populate('roles.host.user', 'name image')
+                .populate('roles.anchor.user', 'name image')
+                .populate('roles.summarizer.user', 'name image')
+                .populate('roles.opener.user', 'name image')
+                .populate('roles.closer.user', 'name image')
+                .populate('roles.lecturers.user', 'name image')
+                .populate('listeners.user', 'name image')
+                .lean();
+        }
 
         console.log('Event found:', !!event);
 
@@ -66,9 +82,15 @@ export async function PUT(
         await dbConnect();
 
         const isObjectId = /^[0-9a-fA-F]{24}$/.test(params.id);
-        const query = isObjectId ? { _id: params.id } : { slug: params.id };
+        let event = null;
 
-        const event = await Event.findOne(query);
+        if (isObjectId) {
+            event = await Event.findOne({ _id: params.id });
+        }
+
+        if (!event) {
+            event = await Event.findOne({ slug: params.id });
+        }
 
         if (!event) {
             return NextResponse.json({ error: 'Event not found' }, { status: 404 });
@@ -115,9 +137,15 @@ export async function DELETE(
         await dbConnect();
 
         const isObjectId = /^[0-9a-fA-F]{24}$/.test(params.id);
-        const query = isObjectId ? { _id: params.id } : { slug: params.id };
+        let event = null;
 
-        const event = await Event.findOne(query);
+        if (isObjectId) {
+            event = await Event.findOne({ _id: params.id });
+        }
+
+        if (!event) {
+            event = await Event.findOne({ slug: params.id });
+        }
 
         if (!event) {
             return NextResponse.json({ error: 'Event not found' }, { status: 404 });

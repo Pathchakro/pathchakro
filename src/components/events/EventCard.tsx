@@ -54,6 +54,19 @@ export function EventCard({ event, onDelete }: EventCardProps) {
             return;
         }
 
+        if (event.status === 'cancelled' || event.status === 'completed') {
+            toast.error("This event is no longer accepting participants");
+            return;
+        }
+
+        const alreadyJoined = event.listeners.some(
+            (listener: any) => listener._id === session.user?.id || listener === session.user?.id
+        );
+        if (alreadyJoined) {
+            toast.info("You have already joined this event");
+            return;
+        }
+
         try {
             const response = await fetch(`/api/events/${event._id}/join`, {
                 method: 'POST',
@@ -72,7 +85,6 @@ export function EventCard({ event, onDelete }: EventCardProps) {
             toast.error(error.message);
         }
     };
-
     const handleDelete = async () => {
         if (!confirm('Are you sure you want to delete this event? This action cannot be undone.')) return;
 

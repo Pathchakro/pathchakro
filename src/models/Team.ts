@@ -12,6 +12,12 @@ const TeamSchema = new Schema<ITeam>(
             type: String,
             required: [true, 'Team description is required'],
         },
+        slug: {
+            type: String,
+            unique: true,
+            sparse: true, // Allow older docs to lack it for now or handle migration
+            trim: true,
+        },
         type: {
             type: String,
             enum: ['University', 'Thana', 'Special'],
@@ -45,7 +51,7 @@ const TeamSchema = new Schema<ITeam>(
         leader: {
             type: Schema.Types.ObjectId as any,
             ref: 'User',
-            required: true,
+            required: false, // System created teams might wait for admin to assign leader
         },
         members: [{
             user: {

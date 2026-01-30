@@ -179,11 +179,16 @@ const EventSchema = new Schema<IEvent>(
 // Pre-save hook to generate slug
 EventSchema.pre('save', async function () {
     if (this.isModified('title') || this.isModified('startTime') || !this.slug) {
-        // Manual slug generation
-        const titleSlug = this.title
+        // Manual slug generation with fallback for Unicode titles
+        let titleSlug = this.title
             .toLowerCase()
             .replace(/[^a-z0-9]+/g, '-')
             .replace(/(^-|-$)+/g, '');
+
+        // If titleSlug is empty (e.g., non-ASCII title), use 'event' as fallback
+        if (!titleSlug) {
+            titleSlug = 'event';
+        }
 
         const dateStr = new Date(this.startTime).toISOString().split('T')[0];
 
