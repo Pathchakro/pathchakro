@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { auth } from '@/auth';
 import dbConnect from '@/lib/mongodb';
 import Course from '@/models/Course';
@@ -53,6 +54,8 @@ export async function POST(req: NextRequest) {
             instructor: session.user.id,
             students: []
         });
+
+        revalidatePath('/', 'layout');
 
         return NextResponse.json(course, { status: 201 });
     } catch (error) {

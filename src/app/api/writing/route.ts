@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { auth } from '@/auth';
 import dbConnect from '@/lib/mongodb';
 import WritingProject from '@/models/WritingProject';
@@ -117,6 +118,8 @@ export async function POST(request: NextRequest) {
         const populatedProject = await WritingProject.findById(project._id)
             .populate('author', 'name image')
             .lean();
+
+        revalidatePath('/', 'layout');
 
         return NextResponse.json(
             { project: populatedProject, message: 'Writing project created successfully' },

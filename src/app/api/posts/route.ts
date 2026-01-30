@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidatePath, revalidateTag } from 'next/cache';
 import { auth } from '@/auth';
 import dbConnect from '@/lib/mongodb';
 import Post from '@/models/Post';
@@ -121,6 +122,9 @@ export async function POST(request: NextRequest) {
         const populatedPost = await Post.findById(post._id)
             .populate('author', 'name image rankTier')
             .lean();
+
+        // Revalidate the entire site cache for posts
+        revalidatePath('/', 'layout');
 
         return NextResponse.json(
             { post: populatedPost },

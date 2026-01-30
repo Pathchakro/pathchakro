@@ -1,125 +1,95 @@
-'use client';
+import { Metadata } from 'next';
+import { auth } from '@/auth';
+import PostsContent from '@/components/posts/PostsContent';
+import dbConnect from '@/lib/mongodb';
+import Post from '@/models/Post';
 
-import { useState, useEffect } from 'react';
-import { PostCard, Post } from '@/components/feed/PostCard';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Select } from '@/components/ui/select';
-import { Loader2, Search } from 'lucide-react';
-import { BOOK_CATEGORIES } from '@/lib/constants';
-// import { useDebounce } from '@/hooks/use-debounce';
-import { useSession } from 'next-auth/react';
+export const metadata: Metadata = {
+    title: 'Explore Posts | Pathchakro',
+    description: 'Read and discover the latest posts, book reviews, and educational content on Pathchakro. Join our community of readers and learners.',
+    alternates: {
+        canonical: 'https://pathchakro.vercel.app/posts',
+    },
+    openGraph: {
+        title: 'Explore Posts | Pathchakro',
+        description: 'Read and discover the latest posts and book reviews on Pathchakro.',
+        url: 'https://pathchakro.vercel.app/posts',
+        siteName: 'Pathchakro',
+        type: 'website',
+    },
+    twitter: {
+        card: 'summary_large_image',
+        title: 'Explore Posts | Pathchakro',
+        description: 'Read and discover the latest posts and book reviews on Pathchakro.',
+    },
+};
 
-export default function PostsPage() {
-    const { data: session } = useSession();
-    const [posts, setPosts] = useState<Post[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [search, setSearch] = useState('');
-    const [category, setCategory] = useState('All');
+async function getInitialData() {
+    const session = await auth();
+    const userId = session?.user?.id;
 
-    // Simple debounce implementation if hook doesn't exist
-    const [debouncedSearch, setDebouncedSearch] = useState(search);
+    // Direct database call or fetch with cache
+    // Using fetch to demonstrate revalidatePath/Tag if the API is internal but called via URL
+    // However, since it's a server component, direct DB access is often preferred for initial load
+    await dbConnect();
 
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            setDebouncedSearch(search);
-        }, 500);
-        return () => clearTimeout(timer);
-    }, [search]);
+    const posts = await Post.find({})
+        .populate('author', 'name image rankTier')
+        .sort({ createdAt: -1 })
+        .limit(10)
+        .lean();
 
-    const [myBookmarkedIds, setMyBookmarkedIds] = useState<string[]>([]);
-
-    useEffect(() => {
-        if (session?.user?.id) {
-            fetchMyBookmarks();
-        }
-    }, [session?.user?.id]);
-
-    const fetchMyBookmarks = async () => {
+    let bookmarkedIds: string[] = [];
+    if (userId) {
         try {
-            const response = await fetch(`/api/users/bookmarks?userId=${session?.user?.id}`);
+            // We can call an internal API or direct DB for bookmarks too
+            const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
+            const response = await fetch(`${baseUrl}/api/users/bookmarks?userId=${userId}`, {
+                cache: 'force-cache',
+                next: { tags: ['bookmarks', `bookmarks-${userId}`] }
+            });
             const data = await response.json();
             if (data.bookmarks) {
-                setMyBookmarkedIds(data.bookmarks.map((b: any) => b._id));
+                bookmarkedIds = data.bookmarks.map((b: any) => b._id);
             }
         } catch (error) {
-            console.error('Error fetching bookmarks:', error);
+            console.error('Error fetching bookmarks on server:', error);
         }
+    }
+
+    return {
+        posts: JSON.parse(JSON.stringify(posts)),
+        userId,
+        bookmarkedIds
     };
+}
 
-    useEffect(() => {
-        fetchPosts();
-    }, [debouncedSearch, category]);
+export default async function PostsPage() {
+    const { posts, userId, bookmarkedIds } = await getInitialData();
 
-    const fetchPosts = async () => {
-        setLoading(true);
-        try {
-            const queryParams = new URLSearchParams();
-            if (debouncedSearch) queryParams.set('search', debouncedSearch);
-            if (category && category !== 'All') queryParams.set('category', category);
-
-            const response = await fetch(`/api/posts?${queryParams.toString()}`);
-            const data = await response.json();
-
-            if (data.posts) {
-                setPosts(data.posts);
-            }
-        } catch (error) {
-            console.error('Error fetching posts:', error);
-        } finally {
-            setLoading(false);
-        }
+    // Structured Data (JSON-LD)
+    const jsonLd = {
+        '@context': 'https://schema.org',
+        '@type': 'CollectionPage',
+        name: 'Explore Posts | Pathchakro',
+        description: 'A collection of posts and book reviews from the Pathchakro community.',
+        url: 'https://pathchakro.vercel.app/posts',
     };
 
     return (
         <div className="max-w-2xl mx-auto p-4 min-h-screen pb-20">
+            <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+            />
+
             <h1 className="text-2xl font-bold mb-6">Posts</h1>
 
-            {/* Search and Filter */}
-            <div className="flex flex-col sm:flex-row gap-4 mb-6 sticky top-20 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 py-2">
-                <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                        placeholder="Search posts..."
-                        value={search}
-                        onChange={(e) => setSearch(e.target.value)}
-                        className="pl-9"
-                    />
-                </div>
-                <Select
-                    value={category}
-                    onChange={(e) => setCategory(e.target.value)}
-                    className="w-full sm:w-[180px]"
-                >
-                    <option value="All">All Categories</option>
-                    {BOOK_CATEGORIES.map((cat) => (
-                        <option key={cat} value={cat}>{cat}</option>
-                    ))}
-                </Select>
-            </div>
-
-            {/* Posts Grid/List */}
-            {loading ? (
-                <div className="flex justify-center py-10">
-                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                </div>
-            ) : posts.length > 0 ? (
-                <div className="space-y-4">
-                    {posts.map((post) => (
-                        <PostCard
-                            key={post._id}
-                            initialPost={post}
-                            currentUserId={session?.user?.id}
-                            initialIsBookmarked={myBookmarkedIds.includes(post._id)}
-                            onDelete={(id) => setPosts(prev => prev.filter(p => p._id !== id))}
-                        />
-                    ))}
-                </div>
-            ) : (
-                <div className="text-center py-10 text-muted-foreground">
-                    No posts found matching your criteria.
-                </div>
-            )}
+            <PostsContent
+                initialPosts={posts}
+                currentUserId={userId}
+                initialBookmarks={bookmarkedIds}
+            />
         </div>
     );
 }

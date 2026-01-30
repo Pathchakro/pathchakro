@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { auth } from '@/auth';
 import dbConnect from '@/lib/mongodb';
 import Assignment from '@/models/Assignment';
@@ -86,6 +87,8 @@ export async function POST(request: NextRequest) {
             .populate('teacher', 'name image rankTier')
             .populate('team', 'name')
             .lean();
+
+        revalidatePath('/', 'layout');
 
         return NextResponse.json(
             { assignment: populatedAssignment },

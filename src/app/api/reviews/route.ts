@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { auth } from '@/auth';
 import dbConnect from '@/lib/mongodb';
 import Review from '@/models/Review';
@@ -139,6 +140,8 @@ export async function POST(request: NextRequest) {
             .populate('book', 'title author coverImage slug')
             .populate('user', 'name image rankTier')
             .lean();
+
+        revalidatePath('/', 'layout');
 
         return NextResponse.json(
             { review: populatedReview },

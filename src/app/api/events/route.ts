@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { auth } from '@/auth';
 import dbConnect from '@/lib/mongodb';
 import Event from '@/models/Event';
@@ -144,6 +145,8 @@ export async function POST(request: NextRequest) {
             .populate('organizer', 'name image rankTier')
             .populate('team', 'name')
             .lean();
+
+        revalidatePath('/', 'layout');
 
         return NextResponse.json(
             { event: populatedEvent },

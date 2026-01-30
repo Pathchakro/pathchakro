@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { auth } from '@/auth';
 import dbConnect from '@/lib/mongodb';
 import Tour from '@/models/Tour';
@@ -131,6 +132,8 @@ export async function POST(request: NextRequest) {
             .populate('organizer', 'name image university rankTier')
             .populate('participants.user', 'name image')
             .lean();
+
+        revalidatePath('/', 'layout');
 
         return NextResponse.json(
             { tour: popularTour },

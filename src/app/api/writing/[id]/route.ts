@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { auth } from '@/auth';
 import dbConnect from '@/lib/mongodb';
 import WritingProject from '@/models/WritingProject';
@@ -81,6 +82,8 @@ export async function DELETE(
             );
         }
 
+        revalidatePath('/', 'layout');
+
         return NextResponse.json({ message: 'Project deleted successfully' });
     } catch (error: any) {
         console.error('Error deleting project:', error);
@@ -140,6 +143,8 @@ export async function PUT(
         if (body.saleType) project.saleType = body.saleType;
 
         await project.save();
+
+        revalidatePath('/', 'layout');
 
         return NextResponse.json({
             project,

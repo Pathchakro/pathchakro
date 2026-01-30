@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { auth } from '@/auth';
 import dbConnect from '@/lib/mongodb';
 import Event from '@/models/Event';
@@ -115,6 +116,8 @@ export async function PUT(
             { new: true }
         );
 
+        revalidatePath('/', 'layout');
+
         return NextResponse.json({ event: updatedEvent });
     } catch (error: any) {
         console.error('Error updating event:', error);
@@ -156,6 +159,8 @@ export async function DELETE(
         }
 
         await Event.findByIdAndDelete(event._id);
+
+        revalidatePath('/', 'layout');
 
         return NextResponse.json({ message: 'Event deleted successfully' });
     } catch (error: any) {
