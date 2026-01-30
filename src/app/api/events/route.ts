@@ -112,7 +112,7 @@ export async function POST(request: NextRequest) {
         // Check if user is team leader (if team event)
         if (teamId) {
             const team = await Team.findById(teamId);
-            if (!team || team.leader.toString() !== session.user.id) {
+            if (!team || team.leader?.toString() !== session.user.id) {
                 return NextResponse.json(
                     { error: 'Only team leaders can create team events' },
                     { status: 403 }
