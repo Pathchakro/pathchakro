@@ -5,7 +5,7 @@ import { ReviewCard } from '@/components/reviews/ReviewCard';
 import { Input } from '@/components/ui/input';
 import { Loader2, Search, BookOpen, Star, Heart } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Review } from '@/types'; // Assuming Review is exported or I'll define it locally since I can't import IReview easily if it's not exported properly or clashes. I'll stick to local interface if safer.
+
 
 interface ReviewType {
     _id: string;
@@ -157,10 +157,8 @@ export default function ReviewsContent({
                         </TabsTrigger>
                         <TabsTrigger value="favorites" className="flex items-center gap-2" disabled={!currentUserId}>
                             <Heart className="h-4 w-4" />
-                            <TabsTrigger value="favorites" className="flex items-center gap-2" disabled={!currentUserId}>
-                                <Heart className="h-4 w-4" />
-                                Favorites
-                            </TabsTrigger>                        </TabsTrigger>
+                            Favorites
+                        </TabsTrigger>
                     </TabsList>
                 </Tabs>
             </div>
