@@ -11,7 +11,6 @@ import { MyBooksTabContent } from '@/components/profile/MyBooksTabContent';
 import { MapPin, Calendar, Edit, Trash2, Briefcase, GraduationCap, Globe, Github, Linkedin, Facebook, Twitter, Phone, Mail, Bookmark } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 import { useSession } from 'next-auth/react';
-import { PostCard, Post } from '@/components/feed/PostCard';
 
 import { IUser } from '@/types';
 
@@ -29,8 +28,7 @@ export default function ProfilePage() {
 
     const [user, setUser] = useState<IUser | null>(null);
     const [stats, setStats] = useState<Stats | null>(null);
-    const [activeTab, setActiveTab] = useState('posts');
-    const [posts, setPosts] = useState<Post[]>([]);
+    const [activeTab, setActiveTab] = useState('about');
     const [tours, setTours] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const router = useRouter();
@@ -67,13 +65,6 @@ export default function ProfilePage() {
             if (data.user) {
                 setUser(data.user);
                 setStats(data.stats);
-
-                // Fetch user's posts
-                const postsResponse = await fetch(`/api/posts?author=${data.user._id}`);
-                const postsData = await postsResponse.json();
-                if (postsData.posts) {
-                    setPosts(postsData.posts);
-                }
             }
         } catch (error) {
             console.error('Error fetching user data:', error);
@@ -119,12 +110,6 @@ export default function ProfilePage() {
         }
     };
 
-    const handleDeletePost = (postId: string) => {
-        setPosts(prev => prev.filter(p => p._id !== postId));
-        // Also update stats if needed, or just let refresh handle it
-        setStats(prev => prev ? { ...prev, posts: prev.posts - 1 } : null);
-    };
-
     const isOwnProfile = session?.user?.id === user?._id;
 
     if (loading) {
@@ -158,26 +143,6 @@ export default function ProfilePage() {
             <div className="space-y-4">
                 {activeTab === 'events' && (
                     <EventsTabContent userId={user._id} isOwnProfile={isOwnProfile} />
-                )}
-
-                {activeTab === 'posts' && (
-                    <>
-                        {posts.length === 0 ? (
-                            <div className="bg-card rounded-lg p-8 text-center text-muted-foreground">
-                                No posts yet
-                            </div>
-                        ) : (
-                            posts.map((post) => (
-                                <PostCard
-                                    key={post._id}
-                                    initialPost={post}
-                                    currentUserId={session?.user?.id}
-                                    initialIsBookmarked={myBookmarkedIds.includes(post._id)}
-                                    onDelete={handleDeletePost}
-                                />
-                            ))
-                        )}
-                    </>
                 )}
 
                 {activeTab === 'about' && (
@@ -418,12 +383,6 @@ export default function ProfilePage() {
                                 </div>
                             )}
                         </div>
-                    </div>
-                )}
-
-                {activeTab === 'reviews' && (
-                    <div className="bg-card rounded-lg p-8 text-center text-muted-foreground">
-                        No reviews yet. Book review system coming soon!
                     </div>
                 )}
 

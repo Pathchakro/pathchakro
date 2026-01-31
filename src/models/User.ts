@@ -125,6 +125,18 @@ const UserSchema = new Schema<IUser>(
             type: Schema.Types.ObjectId as any,
             ref: 'Post',
         }],
+        savedReviews: [{
+            type: Schema.Types.ObjectId as any,
+            ref: 'Review',
+        }],
+        savedTours: [{
+            type: Schema.Types.ObjectId as any,
+            ref: 'Tour',
+        }],
+        savedCourses: [{
+            type: Schema.Types.ObjectId as any,
+            ref: 'Course',
+        }],
         interests: [String],
         languages: [String],
 

@@ -29,9 +29,11 @@ interface CourseCardProps {
         } | string;
     };
     currentUserId?: string;
+    isBookmarked?: boolean;
+    onToggleBookmark?: () => void;
 }
 
-export function CourseCard({ course, currentUserId }: CourseCardProps) {
+export function CourseCard({ course, currentUserId, isBookmarked = false, onToggleBookmark }: CourseCardProps) {
     const instructorName = typeof course.instructor === 'object' && course.instructor?.name ? course.instructor.name : "Instructor";
     const instructorImage = typeof course.instructor === 'object' && course.instructor?.image ? course.instructor.image : null;
     const instructorId = typeof course.instructor === 'object' ? course.instructor?._id : course.instructor;
@@ -161,9 +163,12 @@ export function CourseCard({ course, currentUserId }: CourseCardProps) {
             {/* Footer Actions */}
             <div className="flex items-center justify-between pt-3 border-t mt-auto">
                 <div className="flex gap-2">
-                    <button className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-muted transition-colors">
-                        <Heart className="h-5 w-5" />
-                        <span className="text-sm font-medium">Like</span>
+                    <button
+                        onClick={onToggleBookmark}
+                        className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-muted transition-colors"
+                    >
+                        <Heart className={`h-5 w-5 ${isBookmarked ? 'fill-red-500 text-red-500' : ''}`} />
+                        <span className="text-sm font-medium">{isBookmarked ? 'Saved' : 'Save'}</span>
                     </button>
                     <Link href={linkHref} className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-muted transition-colors">
                         <MessageCircle className="h-5 w-5" />

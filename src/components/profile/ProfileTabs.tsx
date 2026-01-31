@@ -10,10 +10,8 @@ interface ProfileTabsProps {
 }
 
 const TABS = [
-    { id: 'posts', label: 'Posts' },
-    { id: 'events', label: 'Events' },
     { id: 'about', label: 'About' },
-    { id: 'reviews', label: 'Reviews' },
+    { id: 'events', label: 'Events' },
     { id: 'tours', label: 'Tours' },
     { id: 'library', label: 'Reading List' },
     { id: 'my-books', label: 'My Books' },

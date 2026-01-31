@@ -10,12 +10,38 @@ export async function GET(request: NextRequest) {
         await dbConnect();
 
         const { searchParams } = new URL(request.url);
+        const filterParam = searchParams.get('filter'); // 'mine' or 'favorites'
         const userId = searchParams.get('userId');
         const destination = searchParams.get('destination');
         const status = searchParams.get('status');
-        const upcoming = searchParams.get('upcoming') === 'true';
+        const upcoming = searchParams.get('upcoming');
 
         let filter: any = { privacy: { $in: ['public', 'team'] } };
+
+        if (filterParam === 'mine') {
+            const session = await auth();
+            if (session?.user?.id) {
+                // My tours: Created by me OR I am a confirmed participant
+                // But typically "My Tours" implies managed by me or joined by me.
+                // Let's stick to the logic: organizer OR participant
+                filter = {
+                    $or: [
+                        { organizer: session.user.id },
+                        { 'participants.user': session.user.id }
+                    ]
+                };
+            }
+        } else if (filterParam === 'favorites') {
+            const session = await auth();
+            if (session?.user?.id) {
+                const user = await dbConnect().then(() => import('@/models/User').then(m => m.default.findById(session.user.id).select('savedTours')));
+                if (user?.savedTours && user.savedTours.length > 0) {
+                    filter = { _id: { $in: user.savedTours } };
+                } else {
+                    return NextResponse.json({ tours: [] });
+                }
+            }
+        }
 
         if (userId) {
             // If viewing specific user's tours (created or joined), show all public/team tours

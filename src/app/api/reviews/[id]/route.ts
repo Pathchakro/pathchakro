@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { auth } from '@/auth';
 import dbConnect from '@/lib/mongodb';
 import Review from '@/models/Review';
 import Book from '@/models/Book';
 import User from '@/models/User';
+import { validateAndSanitizeImage } from '@/lib/utils';
 
 export async function DELETE(
     request: NextRequest,
@@ -58,6 +60,8 @@ export async function DELETE(
             $inc: { rank: -10 },
         });
 
+        revalidatePath('/', 'layout');
+
         return NextResponse.json({ message: 'Review deleted successfully' });
     } catch (error: any) {
         console.error('Error deleting review:', error);
@@ -83,7 +87,7 @@ export async function PATCH(
         }
 
         const body = await request.json();
-        const { rating, content, tags } = body;
+        const { rating, content, tags, image } = body;
 
         await dbConnect();
 
@@ -104,9 +108,19 @@ export async function PATCH(
         }
 
         // Update fields
-        if (rating) review.rating = rating;
-        if (content) review.content = content;
-        if (tags) review.tags = tags;
+        if (rating !== undefined) review.rating = rating;
+        if (content !== undefined) review.content = content;
+        if (tags !== undefined) review.tags = tags;
+        if (image !== undefined) {
+            try {
+                review.image = validateAndSanitizeImage(image);
+            } catch (error: any) {
+                return NextResponse.json(
+                    { error: error.message },
+                    { status: 400 }
+                );
+            }
+        }
 
         await review.save();
 
@@ -122,9 +136,11 @@ export async function PATCH(
         }
 
         const updatedReview = await Review.findById(id)
-            .populate('book', 'title author coverImage')
+            .populate('book', 'title author coverImage slug')
             .populate('user', 'name image rankTier')
             .lean();
+
+        revalidatePath('/', 'layout');
 
         return NextResponse.json({ review: updatedReview });
     } catch (error: any) {

@@ -15,7 +15,40 @@ export async function GET(request: NextRequest) {
         const category = searchParams.get('category') || '';
         const skip = (page - 1) * limit;
 
+        const filterParam = searchParams.get('filter');
+
         const query: any = {};
+
+        if (filterParam === 'mine') {
+            const session = await auth();
+            if (session?.user?.id) {
+                query.author = session.user.id;
+            } else {
+                return NextResponse.json({
+                    posts: [],
+                    pagination: { page: 1, limit: 10, total: 0, pages: 0 },
+                });
+            }
+        } else if (filterParam === 'favorites') {
+            const session = await auth();
+            if (session?.user?.id) {
+                // Fetch user to get savedPosts
+                const user = await dbConnect().then(() => import('@/models/User').then(m => m.default.findById(session.user.id).select('savedPosts')));
+                if (user?.savedPosts && user.savedPosts.length > 0) {
+                    query._id = { $in: user.savedPosts };
+                } else {
+                    return NextResponse.json({
+                        posts: [],
+                        pagination: { page: 1, limit: 10, total: 0, pages: 0 },
+                    });
+                }
+            } else {
+                return NextResponse.json({
+                    posts: [],
+                    pagination: { page: 1, limit: 10, total: 0, pages: 0 },
+                });
+            }
+        }
 
         if (search) {
             query.$or = [

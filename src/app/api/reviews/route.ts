@@ -6,6 +6,7 @@ import Review from '@/models/Review';
 import Book from '@/models/Book';
 import User from '@/models/User';
 import slugify from 'slugify';
+import { validateAndSanitizeImage } from '@/lib/utils';
 
 export async function GET(request: NextRequest) {
     try {
@@ -14,10 +15,45 @@ export async function GET(request: NextRequest) {
         const { searchParams } = new URL(request.url);
         const bookId = searchParams.get('bookId');
         const userId = searchParams.get('userId');
+        const search = searchParams.get('search');
+
+        const filterParam = searchParams.get('filter');
 
         let filter: any = {};
         if (bookId) filter.book = bookId;
         if (userId) filter.user = userId;
+
+        if (filterParam === 'mine') {
+            const session = await auth();
+            if (session?.user?.id) {
+                filter.user = session.user.id;
+            }
+        } else if (filterParam === 'favorites') {
+            const session = await auth();
+            if (session?.user?.id) {
+                const user = await User.findById(session.user.id).select('savedReviews');
+                if (user?.savedReviews && user.savedReviews.length > 0) {
+                    filter._id = { $in: user.savedReviews };
+                } else {
+                    return NextResponse.json({ reviews: [] });
+                }
+            }
+        }
+
+        if (search) {
+            // Find books that match the search term
+            const matchingBooks = await Book.find({
+                title: { $regex: search, $options: 'i' }
+            }).select('_id');
+            const bookIds = matchingBooks.map(b => b._id);
+
+            filter.$or = [
+                { title: { $regex: search, $options: 'i' } },
+                { content: { $regex: search, $options: 'i' } },
+                { tags: { $regex: search, $options: 'i' } },
+                { book: { $in: bookIds } }
+            ];
+        }
 
         const reviews = await Review.find(filter)
             .populate('book', 'title author coverImage slug')
@@ -48,7 +84,7 @@ export async function POST(request: NextRequest) {
         }
 
         const body = await request.json();
-        const { bookId, rating, title, content, tags } = body;
+        const { bookId, rating, title, content, tags, image } = body;
 
         if (!bookId || !rating || !content || !title) {
             return NextResponse.json(
@@ -67,6 +103,17 @@ export async function POST(request: NextRequest) {
         if (rating < 1 || rating > 5) {
             return NextResponse.json(
                 { error: 'Rating must be between 1 and 5' },
+                { status: 400 }
+            );
+        }
+
+        let sanitizedImage: string | undefined;
+        try {
+            sanitizedImage = validateAndSanitizeImage(image);
+        } catch (error: any) {
+            console.error('Image validation error:', error);
+            return NextResponse.json(
+                { error: 'Invalid image input. Please ensure it is a valid URL or base64 string.' },
                 { status: 400 }
             );
         }
@@ -104,6 +151,7 @@ export async function POST(request: NextRequest) {
                     title,
                     slug,
                     content,
+                    image: sanitizedImage,
                     tags: tags || [],
                     helpful: 0,
                 });

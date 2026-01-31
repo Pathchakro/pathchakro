@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { auth } from '@/auth';
 import dbConnect from '@/lib/mongodb';
 import Tour from '@/models/Tour';
@@ -57,6 +58,8 @@ export async function PUT(
         const body = await request.json();
         const updatedTour = await Tour.findByIdAndUpdate(params.id, body, { new: true, runValidators: true });
 
+        revalidatePath('/', 'layout');
+
         return NextResponse.json({ tour: updatedTour });
     } catch (error: any) {
         console.error('Error updating tour:', error);
@@ -85,6 +88,8 @@ export async function DELETE(
         }
 
         await Tour.findByIdAndDelete(params.id);
+
+        revalidatePath('/', 'layout');
 
         return NextResponse.json({ message: 'Tour deleted successfully' });
     } catch (error: any) {

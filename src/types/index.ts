@@ -23,6 +23,9 @@ export interface IUser {
     rankTier?: 'Beginner' | 'Reader' | 'Critic' | 'Scholar' | 'Master';
     followers?: string[] | IUser[];
     savedPosts?: string[] | IPost[];
+    savedReviews?: string[] | IReview[];
+    savedTours?: string[] | ITour[];
+    savedCourses?: string[] | ICourse[];
     following?: string[] | IUser[];
     role?: 'user' | 'admin';
     title?: string;
@@ -132,6 +135,47 @@ export interface IReview {
     videoUrl?: string;
     image?: string;
     helpful: number;
+    createdAt: Date;
+    updatedAt: Date;
+}
+
+export interface ITour {
+    _id: string;
+    organizer: string | IUser;
+    title: string;
+    slug: string;
+    destination: string;
+    departureLocation: string;
+    bannerUrl?: string;
+    description: string;
+    startDate: Date;
+    endDate: Date;
+    budget: number;
+    participants: {
+        user: string | IUser;
+        status: 'confirmed' | 'pending' | 'cancelled';
+        joinedAt: Date;
+    }[];
+    status: 'planning' | 'confirmed' | 'ongoing' | 'completed' | 'cancelled';
+    privacy: 'public' | 'private' | 'team';
+    team?: string | ITeam;
+    createdAt: Date;
+    updatedAt: Date;
+}
+
+export interface ICourse {
+    _id: string;
+    title: string;
+    slug: string;
+    description: string;
+    banner: string;
+    fee: number;
+    lastDateRegistration: Date;
+    classStartDate: Date;
+    mode: 'online' | 'offline';
+    totalClasses: number;
+    instructor: string | IUser;
+    students: string[] | IUser[]; // In model it's ObjectIds
     createdAt: Date;
     updatedAt: Date;
 }

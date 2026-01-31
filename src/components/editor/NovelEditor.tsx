@@ -51,6 +51,7 @@ export default function NovelEditor({ initialValue, onChange }: NovelEditorProps
                 <EditorContent
                     initialContent={initialValue}
                     extensions={extensions as any}
+                    immediatelyRender={false}
                     className="min-h-[200px] max-h-[500px] overflow-y-auto sm:min-h-[300px] w-full"
                     editorProps={{
                         handleDOMEvents: {

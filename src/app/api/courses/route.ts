@@ -11,8 +11,36 @@ export const dynamic = 'force-dynamic';
 export async function GET(req: NextRequest) {
     try {
         await dbConnect();
+        const { searchParams } = new URL(req.url);
+        const filterParam = searchParams.get('filter'); // 'mine', 'favorites', 'enrolled'
+
+        let filter: any = {};
+
+        const session = await auth();
+
+        if (['mine', 'favorites', 'enrolled'].includes(filterParam || '')) {
+            if (!session?.user?.id) {
+                return NextResponse.json([]);
+            }
+
+            if (filterParam === 'mine') {
+                // My courses: Created by me (instructor)
+                filter = { instructor: session.user.id };
+            } else if (filterParam === 'favorites') {
+                const user = await User.findById(session.user.id).select('savedCourses');
+                if (user?.savedCourses && user.savedCourses.length > 0) {
+                    filter = { _id: { $in: user.savedCourses } };
+                } else {
+                    return NextResponse.json([]); // Return empty array if no favorites
+                }
+            } else if (filterParam === 'enrolled') {
+                // Enrolled courses: User is in students array
+                filter = { students: session.user.id };
+            }
+        }
+
         // Fetch courses and populate students to show count/avatars
-        const courses = await Course.find({})
+        const courses = await Course.find(filter)
             .populate('instructor', 'name image')
             .populate('students', 'name image') // Limit this if too many students
             .sort({ createdAt: -1 });

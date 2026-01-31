@@ -21,6 +21,7 @@ const notoSansBengali = Noto_Sans_Bengali({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXTAUTH_URL || "http://localhost:3000"),
   title: "Pathchakro - Social Learning Platform",
   description: "Connect, share, and learn with Pathchakro - a social media platform for book lovers, students, and educators",
 };

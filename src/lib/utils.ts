@@ -45,3 +45,50 @@ export function calculateProfileCompletion(user: any): number {
   const filledFields = fields.filter(field => field && field.toString().length > 0).length;
   return Math.round((filledFields / fields.length) * 100);
 }
+
+export function validateAndSanitizeImage(image: any): string | undefined {
+  if (!image) return undefined;
+
+  if (typeof image !== 'string') {
+    throw new Error('Image must be a string');
+  }
+
+  // Data URI validation
+  if (image.startsWith('data:')) {
+    // Check max size (approx 5MB)
+    // Base64 is ~1.33x larger than binary. 5MB binary ~= 6.65MB base64
+    if (image.length > 7 * 1024 * 1024) {
+      throw new Error('Image is too large. Maximum size is 5MB.');
+    }
+
+    // Validate MIME type and format
+    // Allow commonly supported web image formats
+    const dataUriPattern = /^data:image\/(png|jpeg|jpg|gif|webp);base64,[A-Za-z0-9+/=]+$/;
+    if (!dataUriPattern.test(image)) {
+      throw new Error('Invalid image format. Only PNG, JPEG, GIF, and WebP are allowed.');
+    }
+
+    return image;
+  }
+
+  // URL validation
+  if (image.startsWith('http')) {
+    if (image.length > 2048) {
+      throw new Error('Image URL is too long');
+    }
+
+    try {
+      const url = new URL(image);
+      if (url.protocol !== 'https:') {
+        throw new Error('Image URL must use HTTPS');
+      }
+      return image;
+    } catch (e) {
+      if (e instanceof Error) throw e;
+      throw new Error('Invalid image URL');
+    }
+  }
+
+  // Reject unsupported formats
+  throw new Error('Invalid image source. Must be a valid HTTPS URL or Data URI.');
+}
