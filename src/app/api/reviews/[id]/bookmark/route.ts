@@ -48,12 +48,12 @@ export async function POST(
 
         if (isBookmarked) {
             // Remove from bookmarks
-            user.savedReviews = user.savedReviews.filter(
+            user.savedReviews = (user.savedReviews as any[]).filter(
                 (reviewId: any) => reviewId.toString() !== id
-            );
+            ) as any;
         } else {
             // Add to bookmarks
-            user.savedReviews.push(review._id);
+            (user.savedReviews as any[]).push(review._id);
         }
 
         await user.save();
