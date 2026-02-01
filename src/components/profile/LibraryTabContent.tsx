@@ -8,7 +8,7 @@ import { Select } from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Search, Library } from 'lucide-react';
 import { BookCard } from '@/components/BookCard';
-import { BOOK_CATEGORIES } from '@/lib/constants';
+import { CATEGORIES } from '@/lib/constants';
 
 interface LibraryItem {
     _id: string;
@@ -166,7 +166,7 @@ export function LibraryTabContent({ userId, isOwnProfile }: LibraryTabContentPro
                             className="w-full h-9"
                         >
                             <option value="">All Categories</option>
-                            {BOOK_CATEGORIES.map((cat) => (
+                            {CATEGORIES.map((cat) => (
                                 <option key={cat} value={cat}>{cat}</option>
                             ))}
                         </Select>

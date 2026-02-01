@@ -57,7 +57,7 @@ Key Features to know about:
     -   **When**: Every **Sunday, 9:00 PM - 11:00 PM**.
     -   **Who**: Open for everyone.
     -   **What**: Q&A about Pathchakro, open discussions on any topic, performances (poetry recitation, singing, Quran recitation).
-    -   **Link**: [Join here](https://pathchakro-one.vercel.app/events).
+    -   **Link**: [Join here](https://pathchakro.com/events).
 
 **Official Community Channels:**
 Here are the official links to join our communities:
