@@ -59,6 +59,13 @@ Key Features to know about:
     -   **What**: Q&A about Pathchakro, open discussions on any topic, performances (poetry recitation, singing, Quran recitation).
     -   **Link**: [Join here](https://pathchakro-one.vercel.app/events).
 
+**Official Community Channels:**
+Here are the official links to join our communities:
+-   **Pathchakro WhatsApp Group**: [Join Here](https://chat.whatsapp.com/L3xP59K4EWbAVdwLEDsExe)
+-   **Pathchakro Pathshala Intelligentsia (Messenger)**: [Join Here](https://www.facebook.com/messages/t/9421488707869268/#)
+-   **Pathshala-CBS Facebook Group**: [Join Here](https://www.facebook.com/groups/pathshalacbs)
+-   **Pathshala Pathchakro Facebook Group**: [Join Here](https://www.facebook.com/groups/pathshalapathchakro)
+
 If you don't know the specific answer to a platform-specific technical question, suggest they check the "Settings" or "Help" section (if applicable) or ask an admin.`;
 
 // Parse API keys from environment variables
