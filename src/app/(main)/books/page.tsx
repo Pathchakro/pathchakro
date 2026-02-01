@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Book, Search, Plus, Star } from 'lucide-react';
 import Link from 'next/link';
-import { BOOK_CATEGORIES } from '@/lib/constants';
+import { CATEGORIES } from '@/lib/constants';
 
 import { BookCard, BookItem } from '@/components/BookCard';
 
@@ -157,7 +157,7 @@ export default function BooksPage() {
                         onChange={(e) => setCategoryFilter(e.target.value)}
                     >
                         <option value="">All Categories</option>
-                        {BOOK_CATEGORIES.map((cat) => (
+                        {CATEGORIES.map((cat) => (
                             <option key={cat} value={cat}>{cat}</option>
                         ))}
                     </Select>
