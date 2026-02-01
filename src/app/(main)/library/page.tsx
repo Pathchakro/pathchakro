@@ -10,7 +10,7 @@ import { Book, Search, Star, BookOpen, Trash2, Library } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { BookCard } from '@/components/BookCard';
-import { BOOK_CATEGORIES } from '@/lib/constants';
+import { CATEGORIES } from '@/lib/constants';
 
 interface LibraryItem {
     _id: string;
@@ -171,7 +171,7 @@ export default function MyLibraryPage() {
                         onChange={(e) => setCategoryFilter(e.target.value)}
                     >
                         <option value="">All Categories</option>
-                        {BOOK_CATEGORIES.map((cat) => (
+                        {CATEGORIES.map((cat) => (
                             <option key={cat} value={cat}>{cat}</option>
                         ))}
                     </Select>

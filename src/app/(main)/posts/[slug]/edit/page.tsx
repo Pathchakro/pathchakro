@@ -8,7 +8,7 @@ import NovelEditor from '@/components/editor/NovelEditor';
 import { Select } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { Image as ImageIcon, X, Loader2, ArrowLeft } from 'lucide-react';
-import { BOOK_CATEGORIES } from '@/lib/constants';
+import { CATEGORIES } from '@/lib/constants';
 import { toast } from 'sonner';
 
 interface Post {
@@ -35,7 +35,7 @@ export default function EditPostPage() {
     const [title, setTitle] = useState('');
     const [content, setContent] = useState('');
     const [mediaUrls, setMediaUrls] = useState<string[]>([]);
-    const [category, setCategory] = useState(BOOK_CATEGORIES[0]);
+    const [category, setCategory] = useState(CATEGORIES[0]);
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [isUploading, setIsUploading] = useState(false);
@@ -78,7 +78,7 @@ export default function EditPostPage() {
                 }
 
                 setMediaUrls(data.post.media || []);
-                setCategory(data.post.category || BOOK_CATEGORIES[0]);
+                setCategory(data.post.category || CATEGORIES[0]);
 
                 // Verify ownership
                 if (session?.user?.id && data.post.author._id !== session.user.id) {
@@ -230,7 +230,7 @@ export default function EditPostPage() {
                                 onChange={(e) => setCategory(e.target.value)}
                                 className="mt-1 text-xs h-7 w-fit bg-transparent border-none p-0 focus:ring-0 text-muted-foreground font-normal"
                             >
-                                {BOOK_CATEGORIES.map((cat) => (
+                                {CATEGORIES.map((cat) => (
                                     <option key={cat} value={cat}>
                                         {cat}
                                     </option>

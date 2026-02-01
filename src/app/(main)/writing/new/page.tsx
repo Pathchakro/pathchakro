@@ -13,7 +13,7 @@ import { PenTool, ArrowLeft } from 'lucide-react';
 import { z } from 'zod';
 import Link from 'next/link';
 import { ImageUploader } from '@/components/uploads/ImageUploader';
-import { BOOK_CATEGORIES } from '@/lib/constants';
+import { CATEGORIES } from '@/lib/constants';
 import NovelEditor from '@/components/editor/NovelEditor';
 import { toast } from 'sonner';
 
@@ -183,7 +183,7 @@ export default function NewWritingProjectPage() {
                         <div className="space-y-2">
                             <Label>Categories *</Label>
                             <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                                {BOOK_CATEGORIES.map((category) => (
+                                {CATEGORIES.map((category) => (
                                     <button
                                         key={category}
                                         type="button"
