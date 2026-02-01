@@ -7,12 +7,13 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Trash2, Star, ArrowLeft, Video, Download, Upload, ShoppingCart, FileText, Plus, Library, BookOpen, CheckCircle, Bookmark, Users } from 'lucide-react';
+import { Trash2, Star, ArrowLeft, Video, Download, Upload, ShoppingCart, FileText, Plus, Library, BookOpen, CheckCircle, Bookmark, Users, Edit } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 import { YouTubeEmbed } from '@/components/media/YouTubeEmbed';
 import { isValidYouTubeUrl } from '@/lib/youtube';
 import Link from 'next/link';
 import Image from 'next/image';
+import { BookCover } from '@/components/books/BookCover';
 import { useSession } from 'next-auth/react';
 import { toast } from 'sonner';
 
@@ -317,14 +318,10 @@ export default function BookDetailPage() {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
                 <div className="md:col-span-1">
                     <div className="bg-card rounded-lg overflow-hidden border sticky top-4">
-                        <div className="relative h-96 bg-muted">
-                            {book.coverImage ? (
-                                <Image src={book.coverImage} alt={book.title} fill className="object-cover" />
-                            ) : (
-                                <div className="absolute inset-0 flex items-center justify-center">
-                                    <span className="text-8xl">📚</span>
-                                </div>
-                            )}
+                        <div className="relative h-96 bg-muted p-4">
+                            <div className="relative w-full h-full shadow-md rounded overflow-hidden">
+                                <BookCover src={book.coverImage} alt={book.title} />
+                            </div>
                         </div>
                         <div className="p-4 space-y-2">
                             <Button onClick={handleAddToLibrary} className="w-full" variant="outline">
@@ -332,43 +329,7 @@ export default function BookDetailPage() {
                                 Add to My Library
                             </Button>
 
-                            {/* Stats Section */}
-                            {book.stats && (
-                                <div className="grid grid-cols-2 gap-2 pt-2">
-                                    <Link
-                                        href={`/books/${slug}/users?status=reading`}
-                                        className="bg-blue-50 hover:bg-blue-100 p-2 rounded text-center transition-colors cursor-pointer border border-blue-100"
-                                    >
-                                        <BookOpen className="h-4 w-4 text-blue-500 mx-auto mb-1" />
-                                        <div className="font-bold text-blue-700 leading-none">{book.stats.reading}</div>
-                                        <div className="text-[10px] text-blue-600 uppercase tracking-wide">Reading</div>
-                                    </Link>
-                                    <Link
-                                        href={`/books/${slug}/users?status=completed`}
-                                        className="bg-green-50 hover:bg-green-100 p-2 rounded text-center transition-colors cursor-pointer border border-green-100"
-                                    >
-                                        <CheckCircle className="h-4 w-4 text-green-500 mx-auto mb-1" />
-                                        <div className="font-bold text-green-700 leading-none">{book.stats.completed}</div>
-                                        <div className="text-[10px] text-green-600 uppercase tracking-wide">Completed</div>
-                                    </Link>
-                                    <Link
-                                        href={`/books/${slug}/users?status=want-to-read`}
-                                        className="bg-amber-50 hover:bg-amber-100 p-2 rounded text-center transition-colors cursor-pointer border border-amber-100"
-                                    >
-                                        <Bookmark className="h-4 w-4 text-amber-500 mx-auto mb-1" />
-                                        <div className="font-bold text-amber-700 leading-none">{book.stats.wantToRead}</div>
-                                        <div className="text-[10px] text-amber-600 uppercase tracking-wide">Want to Read</div>
-                                    </Link>
-                                    <Link
-                                        href={`/books/${slug}/users?status=in-library`}
-                                        className="bg-purple-50 hover:bg-purple-100 p-2 rounded text-center transition-colors cursor-pointer border border-purple-100"
-                                    >
-                                        <Users className="h-4 w-4 text-purple-500 mx-auto mb-1" />
-                                        <div className="font-bold text-purple-700 leading-none">{book.stats.inLibrary}</div>
-                                        <div className="text-[10px] text-purple-600 uppercase tracking-wide">Have it</div>
-                                    </Link>
-                                </div>
-                            )}
+
 
                             <Button className="w-full">
                                 <ShoppingCart className="h-4 w-4 mr-2" />
@@ -397,7 +358,15 @@ export default function BookDetailPage() {
                 <div className="md:col-span-3">
                     <div className="bg-card rounded-lg border p-6 mb-4">
                         <h1 className="text-3xl font-bold mb-2">{book.title}</h1>
-                        <p className="text-lg text-muted-foreground mb-4">by {book.author}</p>
+                        {book.author ? (
+                            <p className="text-lg text-muted-foreground mb-4">by {book.author}</p>
+                        ) : (
+                            <Link href={`/books/${slug}/edit`}>
+                                <p className="text-primary/80 font-medium hover:underline flex items-center gap-1 cursor-pointer text-lg mb-4">
+                                    <Edit className="h-4 w-4" /> Add Author
+                                </p>
+                            </Link>
+                        )}
 
                         {book.totalReviews > 0 && (
                             <div className="flex items-center gap-2 mb-4">
@@ -418,12 +387,58 @@ export default function BookDetailPage() {
                         )}
 
                         <div className="flex flex-wrap gap-2 mb-4">
-                            {book.category?.map((cat, idx) => (
-                                <span key={idx} className="px-3 py-1 bg-primary/10 text-primary rounded-full text-sm font-medium">
-                                    {cat}
-                                </span>
-                            ))}
+                            {book.category && book.category.length > 0 ? (
+                                book.category.map((cat, idx) => (
+                                    <span key={idx} className="px-3 py-1 bg-primary/10 text-primary rounded-full text-sm font-medium">
+                                        {cat}
+                                    </span>
+                                ))
+                            ) : (
+                                <Link href={`/books/${slug}/edit`}>
+                                    <span className="px-3 py-1 border border-dashed border-primary/50 text-primary/80 rounded-full text-sm font-medium hover:bg-primary/5 cursor-pointer flex items-center gap-1">
+                                        <Edit className="h-3 w-3" /> Add Category
+                                    </span>
+                                </Link>
+                            )}
                         </div>
+
+                        {/* Stats Section - Moved here */}
+                        {book.stats && (
+                            <div className="flex flex-wrap gap-4 mb-4 border-b pb-4">
+                                <Link
+                                    href={`/books/${slug}/users?status=reading`}
+                                    className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 rounded-full text-sm transition-colors cursor-pointer border border-blue-100 group"
+                                >
+                                    <BookOpen className="h-4 w-4 text-blue-500 group-hover:scale-110 transition-transform" />
+                                    <span className="font-semibold text-blue-700">{book.stats.reading}</span>
+                                    <span className="text-blue-600">Reading</span>
+                                </Link>
+                                <Link
+                                    href={`/books/${slug}/users?status=completed`}
+                                    className="flex items-center gap-2 px-3 py-1.5 bg-green-50 hover:bg-green-100 rounded-full text-sm transition-colors cursor-pointer border border-green-100 group"
+                                >
+                                    <CheckCircle className="h-4 w-4 text-green-500 group-hover:scale-110 transition-transform" />
+                                    <span className="font-semibold text-green-700">{book.stats.completed}</span>
+                                    <span className="text-green-600">Completed</span>
+                                </Link>
+                                <Link
+                                    href={`/books/${slug}/users?status=want-to-read`}
+                                    className="flex items-center gap-2 px-3 py-1.5 bg-amber-50 hover:bg-amber-100 rounded-full text-sm transition-colors cursor-pointer border border-amber-100 group"
+                                >
+                                    <Bookmark className="h-4 w-4 text-amber-500 group-hover:scale-110 transition-transform" />
+                                    <span className="font-semibold text-amber-700">{book.stats.wantToRead}</span>
+                                    <span className="text-amber-600">Want to Read</span>
+                                </Link>
+                                <Link
+                                    href={`/books/${slug}/users?status=in-library`}
+                                    className="flex items-center gap-2 px-3 py-1.5 bg-purple-50 hover:bg-purple-100 rounded-full text-sm transition-colors cursor-pointer border border-purple-100 group"
+                                >
+                                    <Users className="h-4 w-4 text-purple-500 group-hover:scale-110 transition-transform" />
+                                    <span className="font-semibold text-purple-700">{book.stats.inLibrary}</span>
+                                    <span className="text-purple-600">Have it</span>
+                                </Link>
+                            </div>
+                        )}
 
                         {book.description && (
                             <p className="text-muted-foreground mb-4">{book.description}</p>
@@ -557,7 +572,18 @@ export default function BookDetailPage() {
                                     <h3 className="font-semibold mb-2">Book Information</h3>
                                     <dl className="grid grid-cols-2 gap-2 text-sm">
                                         <dt className="font-medium">Title:</dt><dd>{book.title}</dd>
-                                        <dt className="font-medium">Author:</dt><dd>{book.author}</dd>
+                                        <dt className="font-medium">Author:</dt>
+                                        <dd>
+                                            {book.author ? (
+                                                book.author
+                                            ) : (
+                                                <Link href={`/books/${slug}/edit`}>
+                                                    <span className="text-primary/80 font-medium hover:underline flex items-center gap-1 cursor-pointer">
+                                                        <Edit className="h-3 w-3" /> Add Author
+                                                    </span>
+                                                </Link>
+                                            )}
+                                        </dd>
                                         {book.publisher && <><dt className="font-medium">Publisher:</dt><dd>{book.publisher}</dd></>}
                                         {book.isbn && <><dt className="font-medium">ISBN:</dt><dd>{book.isbn}</dd></>}
                                         <dt className="font-medium">Categories:</dt><dd>{book.category.join(', ')}</dd>

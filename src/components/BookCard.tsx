@@ -34,6 +34,7 @@ export interface BookItem {
         name: string;
         image?: string;
     } | string;
+    completedCount?: number;
 }
 
 interface BookCardProps {
@@ -63,6 +64,7 @@ export function BookCard({
     const [currentStatus, setCurrentStatus] = useState(status);
     const [isLibraryOwned, setIsLibraryOwned] = useState(isOwned);
     const [localCopies, setLocalCopies] = useState(book.copies || 0);
+    const [localCompletedCount, setLocalCompletedCount] = useState(book.completedCount || 0);
 
     useEffect(() => {
         setCurrentStatus(status);
@@ -76,7 +78,18 @@ export function BookCard({
         setLocalCopies(book.copies || 0);
     }, [book.copies]);
 
+    useEffect(() => {
+        setLocalCompletedCount(book.completedCount || 0);
+    }, [book.completedCount]);
+
     const handleStatusUpdate = (newStatus: string) => {
+        // Optimistic update for completed count
+        if (currentStatus === 'completed' && newStatus !== 'completed') {
+            setLocalCompletedCount(prev => Math.max(0, prev - 1));
+        } else if (currentStatus !== 'completed' && newStatus === 'completed') {
+            setLocalCompletedCount(prev => prev + 1);
+        }
+
         setCurrentStatus(newStatus);
         onUpdateStatus(book._id, newStatus);
     };
@@ -208,45 +221,46 @@ export function BookCard({
             />
 
             {/* Book Cover */}
-            <div className="relative w-full md:w-48 h-64 md:h-auto shrink-0 bg-muted">
-                <BookCover src={book.coverImage} alt={book.title} />
+            <div className="relative w-full md:w-48 h-64 md:h-auto shrink-0 bg-muted p-4">
+                <div className="relative w-full h-full shadow-sm rounded-sm overflow-hidden">
+                    <BookCover src={book.coverImage} alt={book.title} />
+                </div>
             </div>
 
             {/* Book Info */}
             <div className="flex-1 p-6 flex flex-col justify-between">
                 <div>
-                    {/* User Info & Menu Header */}
-                    <div className="flex justify-between items-start mb-4">
-                        <div className="flex items-center gap-2">
-                            {book.addedBy && typeof book.addedBy !== 'string' && (
-                                <Link href={`/profile/${book.addedBy._id}`} className="flex items-center gap-2 group/user">
-                                    <div className="h-8 w-8 rounded-full overflow-hidden border border-border">
-                                        {book.addedBy.image ? (
-                                            <Image
-                                                src={book.addedBy.image}
-                                                alt={book.addedBy.name}
-                                                width={32}
-                                                height={32}
-                                                className="h-full w-full object-cover"
-                                            />
-                                        ) : (
-                                            <div className="h-full w-full bg-primary/10 flex items-center justify-center text-primary text-xs font-medium">
-                                                {book.addedBy.name?.[0]}
-                                            </div>
-                                        )}
-                                    </div>
-                                    <div className="flex flex-col">
-                                        <span className="text-sm font-medium text-foreground group-hover/user:underline">
-                                            {book.addedBy.name}
-                                        </span>
-                                        <span className="text-xs text-muted-foreground">
-                                            Added this book
-                                        </span>
-                                    </div>
+
+
+                    <div className="flex justify-between items-start mb-2">
+                        <div>
+                            <h3 className="text-xl font-bold mb-1 text-card-foreground">
+                                <Link href={`/books/${book.slug || book._id}`} className="hover:underline">
+                                    {book.title}
+                                </Link>
+                            </h3>
+                            {book.author ? (
+                                <p className="text-muted-foreground font-medium">
+                                    {book.author}
+                                </p>
+                            ) : (
+                                <Link href={`/books/${book.slug || book._id}/edit`}>
+                                    <p className="text-primary/80 font-medium hover:underline flex items-center gap-1 cursor-pointer text-sm">
+                                        <Edit className="h-3 w-3" /> Add Author
+                                    </p>
                                 </Link>
                             )}
+                            {/* Rating Display */}
+                            <div className="flex items-center gap-1 mt-1">
+                                <Star className={`h-4 w-4 ${book.totalReviews > 0 ? 'fill-yellow-400 text-yellow-400' : 'text-gray-400'}`} />
+                                <span className={`font-bold text-sm ${book.totalReviews > 0 ? 'text-yellow-700' : 'text-gray-500'}`}>
+                                    {book.averageRating?.toFixed(1) || "0.0"}
+                                </span>
+                                <span className={`text-xs ${book.totalReviews > 0 ? 'text-yellow-600' : 'text-gray-400'}`}>
+                                    ({book.totalReviews})
+                                </span>
+                            </div>
                         </div>
-
                         {/* 3-Dot Menu for Owner/Admin */}
                         {(
                             (session?.user && (
@@ -283,41 +297,7 @@ export function BookCard({
                             )}
                     </div>
 
-                    <div className="flex justify-between items-start mb-2">
-                        <div>
-                            <h3 className="text-xl font-bold mb-1 text-card-foreground">
-                                <Link href={`/books/${book.slug || book._id}`} className="hover:underline">
-                                    {book.title}
-                                </Link>
-                            </h3>
-                            {book.author ? (
-                                <p className="text-muted-foreground font-medium">
-                                    {book.author}
-                                </p>
-                            ) : (
-                                <Link href={`/books/${book.slug || book._id}/edit`}>
-                                    <p className="text-primary/80 font-medium hover:underline flex items-center gap-1 cursor-pointer text-sm">
-                                        <Edit className="h-3 w-3" /> Add Author
-                                    </p>
-                                </Link>
-                            )}
-                        </div>
-                        {/* Rating Display - Always Show */}
-                        <div className={`flex items-center gap-1 px-2 py-1 rounded-md border ${book.totalReviews > 0 ? 'bg-yellow-50 border-yellow-100' : 'bg-gray-50 border-gray-100'}`}>
-                            <Star className={`h-4 w-4 ${book.totalReviews > 0 ? 'fill-yellow-400 text-yellow-400' : 'text-gray-400'}`} />
-                            <span className={`font-bold ${book.totalReviews > 0 ? 'text-yellow-700' : 'text-gray-500'}`}>
-                                {book.averageRating?.toFixed(1) || "0.0"}
-                            </span>
-                            <span className={`text-xs ${book.totalReviews > 0 ? 'text-yellow-600' : 'text-gray-400'}`}>
-                                ({book.totalReviews})
-                            </span>
-                        </div>
-                    </div>
 
-                    <div className="flex items-center gap-2 mb-2 text-sm text-muted-foreground">
-                        <Box className="h-4 w-4" />
-                        <span>Available: {localCopies}</span>
-                    </div>
 
                     {/* Categories */}
                     <div className="flex flex-wrap gap-2 mb-4">
@@ -337,6 +317,17 @@ export function BookCard({
                                 </span>
                             </Link>
                         )}
+                    </div>
+
+                    <div className="flex items-center gap-4 mb-4 text-sm text-muted-foreground">
+                        <div className="flex items-center gap-1">
+                            <Box className="h-4 w-4" />
+                            <span>Available: {localCopies}</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                            <CheckCircle className="h-4 w-4" />
+                            <span>Completed: {localCompletedCount}</span>
+                        </div>
                     </div>
 
                     {book.description && (
