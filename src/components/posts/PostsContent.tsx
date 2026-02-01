@@ -5,7 +5,7 @@ import { PostCard, Post } from '@/components/feed/PostCard';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Loader2, Search, BookOpen, Star, Heart } from 'lucide-react';
-import { BOOK_CATEGORIES } from '@/lib/constants';
+import { CATEGORIES } from '@/lib/constants';
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface PostsContentProps {
@@ -90,7 +90,7 @@ export default function PostsContent({
                         className="w-full sm:w-[180px]"
                     >
                         <option value="All">All Categories</option>
-                        {BOOK_CATEGORIES.map((cat) => (
+                        {CATEGORIES.map((cat) => (
                             <option key={cat} value={cat}>{cat}</option>
                         ))}
                     </Select>
