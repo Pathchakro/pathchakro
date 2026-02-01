@@ -8,18 +8,12 @@ import { Calendar, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'sonner';
 import { EventForm, EventData } from '@/components/events/EventForm';
-import { useAccessControl } from '@/hooks/useAccessControl';
-import { useEffect } from 'react';
+import AuthGuard from '@/components/auth/AuthGuard';
+
 
 export default function CreateEventPage() {
     const router = useRouter();
     const [isLoading, setIsLoading] = useState(false);
-    const { checkVerifiedAccess } = useAccessControl();
-
-    useEffect(() => {
-        checkVerifiedAccess(true);
-    }, [checkVerifiedAccess]);
-
     const [uploadingBanner, setUploadingBanner] = useState(false);
 
     const onSubmit = async (data: EventData, bannerFile: File | null) => {
@@ -77,18 +71,20 @@ export default function CreateEventPage() {
     };
 
     return (
-        <div className="max-w-3xl mx-auto p-4">
-            <Link href="/events" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-4">
-                <ArrowLeft className="h-4 w-4" />
-                Back to Events
-            </Link>
+        <AuthGuard>
+            <div className="max-w-3xl mx-auto p-4">
+                <Link href="/events" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-4">
+                    <ArrowLeft className="h-4 w-4" />
+                    Back to Events
+                </Link>
 
-            <EventForm
-                onSubmit={onSubmit}
-                isLoading={isLoading}
-                uploadingBanner={uploadingBanner}
-                mode="create"
-            />
-        </div>
+                <EventForm
+                    onSubmit={onSubmit}
+                    isLoading={isLoading}
+                    uploadingBanner={uploadingBanner}
+                    mode="create"
+                />
+            </div>
+        </AuthGuard>
     );
 }

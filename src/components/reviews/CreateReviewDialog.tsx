@@ -2,7 +2,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,7 +11,8 @@ import { Star, Image as ImageIcon, X, Loader2 } from 'lucide-react';
 import NovelEditor from '@/components/editor/NovelEditor';
 import { BookSearch } from '@/components/books/BookSearch';
 import { toast } from 'sonner';
-import { useAccessControl } from '@/hooks/useAccessControl';
+import { useAuthProtection } from '@/hooks/useAuthProtection';
+import { ProfileCompletionModal } from '@/components/auth/ProfileCompletionModal';
 
 interface CreateReviewDialogProps {
     open: boolean;
@@ -26,7 +27,10 @@ interface Book {
 }
 
 export function CreateReviewDialog({ open, onOpenChange }: CreateReviewDialogProps) {
-    const { checkBasicAccess } = useAccessControl();
+    const { checkAuth, showProfileModal, setShowProfileModal } = useAuthProtection({
+        requireProfileCompletion: true,
+        requireAuth: true
+    });
 
     const [selectedBook, setSelectedBook] = useState<Book | null>(null);
     const [rating, setRating] = useState(0);
@@ -34,15 +38,12 @@ export function CreateReviewDialog({ open, onOpenChange }: CreateReviewDialogPro
 
     useEffect(() => {
         if (open) {
-            const result = checkBasicAccess(false);
-            if (result === 'loading') return;
-            const allowed = result as boolean;
-            setCanPublish(allowed);
-            if (!allowed) {
-                toast.error("You need 70% profile completion to publish reviews, but you can still add books.");
+            const authorized = checkAuth();
+            if (!authorized) {
+                onOpenChange(false);
             }
         }
-    }, [open, checkBasicAccess]);
+    }, [open, checkAuth, onOpenChange]);
     const [hoveredRating, setHoveredRating] = useState(0);
     const [title, setTitle] = useState('');
     const [content, setContent] = useState('');
@@ -166,128 +167,142 @@ export function CreateReviewDialog({ open, onOpenChange }: CreateReviewDialogPro
     };
 
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-4xl max-h-[80vh] overflow-y-auto">
-                <DialogHeader>
-                    <DialogTitle>Write a Book Review</DialogTitle>
-                </DialogHeader>
+        <>
+            <ProfileCompletionModal
+                open={showProfileModal}
+                onOpenChange={setShowProfileModal}
+            />
+            <Dialog open={open} onOpenChange={onOpenChange}>
+                <DialogContent className="sm:max-w-4xl max-h-[80vh] overflow-y-auto">
+                    <DialogHeader>
+                        <DialogTitle>Write a Book Review</DialogTitle>
+                    </DialogHeader>
 
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    <div className="space-y-2">
-                        <Label>Select Book *</Label>
-                        <BookSearch
-                            selectedBook={selectedBook}
-                            onSelect={(book) => setSelectedBook(book)}
-                        />
-                    </div>
-
-                    <div className="space-y-2">
-                        <Label>Rating *</Label>
-                        <div className="flex gap-2">
-                            {[1, 2, 3, 4, 5].map((star) => (
-                                <button
-                                    key={star}
-                                    type="button"
-                                    onClick={() => setRating(star)}
-                                    onMouseEnter={() => setHoveredRating(star)}
-                                    onMouseLeave={() => setHoveredRating(0)}
-                                    className="transition-transform hover:scale-110"
-                                >
-                                    <Star
-                                        className={`h-8 w-8 ${star <= (hoveredRating || rating)
-                                            ? 'fill-yellow-400 text-yellow-400'
-                                            : 'text-gray-300'
-                                            }`}
-                                    />
-                                </button>
-                            ))}
-                            {rating > 0 && (
-                                <span className="ml-2 text-sm text-muted-foreground self-center">
-                                    {rating} star{rating !== 1 ? 's' : ''}
-                                </span>
-                            )}
+                    <form onSubmit={handleSubmit} className="space-y-4">
+                        {/* Form Body ... */}
+                        <div className="space-y-2">
+                            <Label>Select Book *</Label>
+                            <BookSearch
+                                selectedBook={selectedBook}
+                                onSelect={(book) => setSelectedBook(book)}
+                            />
                         </div>
-                    </div>
 
-                    <div className="space-y-2">
-                        <div className="flex justify-between items-center">
-                            <Label htmlFor="title">Review Title *</Label>
-                            <span className="text-xs text-muted-foreground">
-                                {title.length}/70
-                            </span>
-                        </div>
-                        <Input
-                            id="title"
-                            value={title}
-                            onChange={(e) => setTitle(e.target.value)}
-                            placeholder="Enter a short title for your review"
-                            maxLength={70}
-                            required
-                        />
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="content">Your Review *</Label>
-                        <NovelEditor
-                            initialValue={content ? JSON.parse(content) : undefined}
-                            onChange={(val) => setContent(val)}
-                        />
-                    </div>
-
-                    <div className="space-y-2">
-                        <Label htmlFor="image">Review Image (Optional)</Label>
-                        <div className="flex flex-col gap-2">
-                            {imageUrl ? (
-                                <div className="relative w-full h-48 bg-muted rounded-md overflow-hidden border">
-                                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                                    <img src={imageUrl} alt="Review attachment" className="w-full h-full object-cover" />
-                                    <Button
+                        <div className="space-y-2">
+                            <Label>Rating *</Label>
+                            <div className="flex gap-2">
+                                {[1, 2, 3, 4, 5].map((star) => (
+                                    <button
+                                        key={star}
                                         type="button"
-                                        variant="destructive"
-                                        size="sm"
-                                        className="absolute top-2 right-2 h-8 w-8 p-0"
-                                        onClick={() => setImageUrl('')}
+                                        onClick={() => setRating(star)}
+                                        onMouseEnter={() => setHoveredRating(star)}
+                                        onMouseLeave={() => setHoveredRating(0)}
+                                        className="transition-transform hover:scale-110"
                                     >
-                                        <X className="h-4 w-4" />
-                                    </Button>
-                                </div>
-                            ) : (
-                                <div className="flex items-center gap-2">
-                                    <Input
-                                        id="image"
-                                        type="file"
-                                        accept="image/*"
-                                        onChange={handleImageUpload}
-                                        disabled={isUploadingImage}
-                                        className="cursor-pointer"
-                                    />
-                                    {isUploadingImage && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
-                                </div>
-                            )}
-                            <p className="text-xs text-muted-foreground">
-                                Upload a photo of the book (optional). If empty, we'll use the book cover.
-                            </p>
+                                        <Star
+                                            className={`h-8 w-8 ${star <= (hoveredRating || rating)
+                                                ? 'fill-yellow-400 text-yellow-400'
+                                                : 'text-gray-300'
+                                                }`}
+                                        />
+                                    </button>
+                                ))}
+                                {rating > 0 && (
+                                    <span className="ml-2 text-sm text-muted-foreground self-center">
+                                        {rating} star{rating !== 1 ? 's' : ''}
+                                    </span>
+                                )}
+                            </div>
                         </div>
-                    </div>
 
-                    <div className="flex gap-2 pt-4">
-                        <Button
-                            type="button"
-                            variant="outline"
-                            onClick={() => onOpenChange(false)}
-                            className="flex-1"
-                        >
-                            Cancel
-                        </Button>
-                        <Button
-                            type="submit"
-                            disabled={!selectedBook || rating === 0 || !title || !content || isLoading || !canPublish}
-                            className="flex-1"
-                        >
-                            {isLoading ? 'Publishing...' : 'Publish Review'}
-                        </Button>
-                    </div>
-                </form>
-            </DialogContent>
-        </Dialog>
+                        <div className="space-y-2">
+                            <div className="flex justify-between items-center">
+                                <Label htmlFor="title">Review Title *</Label>
+                                <span className="text-xs text-muted-foreground">
+                                    {title.length}/70
+                                </span>
+                            </div>
+                            <Input
+                                id="title"
+                                value={title}
+                                onChange={(e) => setTitle(e.target.value)}
+                                placeholder="Enter a short title for your review"
+                                maxLength={70}
+                                required
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="content">Your Review *</Label>
+                            <NovelEditor
+                                initialValue={useMemo(() => {
+                                    if (!content) return undefined;
+                                    try {
+                                        return JSON.parse(content);
+                                    } catch (e) {
+                                        return undefined;
+                                    }
+                                }, [content])}
+                                onChange={(val) => setContent(val)}
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="image">Review Image (Optional)</Label>
+                            <div className="flex flex-col gap-2">
+                                {imageUrl ? (
+                                    <div className="relative w-full h-48 bg-muted rounded-md overflow-hidden border">
+                                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                                        <img src={imageUrl} alt="Review attachment" className="w-full h-full object-cover" />
+                                        <Button
+                                            type="button"
+                                            variant="destructive"
+                                            size="sm"
+                                            className="absolute top-2 right-2 h-8 w-8 p-0"
+                                            onClick={() => setImageUrl('')}
+                                        >
+                                            <X className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                ) : (
+                                    <div className="flex items-center gap-2">
+                                        <Input
+                                            id="image"
+                                            type="file"
+                                            accept="image/*"
+                                            onChange={handleImageUpload}
+                                            disabled={isUploadingImage}
+                                            className="cursor-pointer"
+                                        />
+                                        {isUploadingImage && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
+                                    </div>
+                                )}
+                                <p className="text-xs text-muted-foreground">
+                                    Upload a photo of the book (optional). If empty, we'll use the book cover.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="flex gap-2 pt-4">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => onOpenChange(false)}
+                                className="flex-1"
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                type="submit"
+                                disabled={!selectedBook || rating === 0 || !title || !content || isLoading || !canPublish}
+                                className="flex-1"
+                            >
+                                {isLoading ? 'Publishing...' : 'Publish Review'}
+                            </Button>
+                        </div>
+                    </form>
+                </DialogContent>
+            </Dialog>
+        </>
     );
 }

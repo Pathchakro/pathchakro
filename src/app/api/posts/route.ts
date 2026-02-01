@@ -3,6 +3,8 @@ import { revalidatePath, revalidateTag } from 'next/cache';
 import { auth } from '@/auth';
 import dbConnect from '@/lib/mongodb';
 import Post from '@/models/Post';
+import { calculateProfileCompletion } from '@/lib/utils';
+import User from '@/models/User';
 
 export async function GET(request: NextRequest) {
     try {
@@ -131,6 +133,14 @@ export async function POST(request: NextRequest) {
         }
 
         await dbConnect();
+
+        const user = await User.findById(session.user.id);
+        if (!user || calculateProfileCompletion(user) < 70) {
+            return NextResponse.json(
+                { error: 'Please complete your profile (70%) to create posts' },
+                { status: 403 }
+            );
+        }
 
         // Generate slug
         const slug = title

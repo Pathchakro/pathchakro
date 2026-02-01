@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import Category from '@/models/Category';
-import { INTERESTS_LIST } from '@/lib/constants';
+import { CATEGORIES } from '@/lib/constants';
 import { slugify } from '@/lib/utils';
 
 export async function GET(request: NextRequest) {
@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
         const count = await Category.estimatedDocumentCount();
         if (count === 0) {
             console.log('Seeding categories...');
-            const seedData = INTERESTS_LIST.map(name => ({
+            const seedData = CATEGORIES.map(name => ({
                 name,
                 slug: slugify(name),
                 type: 'book_category'
@@ -32,6 +32,13 @@ export async function GET(request: NextRequest) {
             const bdMovieReview = await Category.findOne({ name: 'মুভি রিভিউ' });
             if (!bdMovieReview && !movieReview) {
                 await Category.create({ name: 'মুভি রিভিউ', slug: slugify('মুভি রিভিউ'), type: 'book_category' });
+            }
+
+            // Ensure "অন্যান্য" exists
+            const othersCategory = await Category.findOne({ name: 'অন্যান্য' });
+            if (!othersCategory) {
+                console.log('Adding অন্যান্য category...');
+                await Category.create({ name: 'অন্যান্য', slug: slugify('অন্যান্য'), type: 'book_category' });
             }
         }
 

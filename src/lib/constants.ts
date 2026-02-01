@@ -1,4 +1,4 @@
-export const INTERESTS_LIST = [
+export const CATEGORIES = [
     "বাংলাদেশ",
     "আন্তর্জাতিক",
     "রাজনীতি",
@@ -22,14 +22,10 @@ export const INTERESTS_LIST = [
     "আত্মজীবনী",
     "আত্মউন্নয়নমূলক",
     "ফিকশন",
-    "নন-ফিকশন"
-
-];
-
-export const BOOK_CATEGORIES = [
-    ...INTERESTS_LIST,
+    "নন-ফিকশন",
     "অন্যান্য"
 ];
+
 
 
 

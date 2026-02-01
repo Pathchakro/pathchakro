@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import Book from '@/models/Book';
 import { auth } from '@/auth';
-import { slugify } from '@/lib/utils';
+import { slugify, calculateProfileCompletion } from '@/lib/utils';
+import User from '@/models/User';
 
 export async function GET(request: NextRequest) {
     try {
@@ -44,6 +45,31 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
     try {
+        const session = await auth();
+        if (!session?.user?.id) {
+            return NextResponse.json(
+                { error: 'Unauthorized' },
+                { status: 401 }
+            );
+        }
+
+        await dbConnect();
+
+        const user = await User.findById(session.user.id);
+        if (!user) {
+            return NextResponse.json(
+                { error: 'User not found' },
+                { status: 404 }
+            );
+        }
+
+        if (calculateProfileCompletion(user) < 70) {
+            return NextResponse.json(
+                { error: 'Please complete your profile to perform this action' },
+                { status: 403 }
+            );
+        }
+
         const body = await request.json();
         const { title, author, publisher, isbn, category, coverImage } = body;
 
@@ -53,8 +79,6 @@ export async function POST(request: NextRequest) {
                 { status: 400 }
             );
         }
-
-        await dbConnect();
 
         // Check if book already exists
         const duplicateCheckQuery: any = {
@@ -68,8 +92,7 @@ export async function POST(request: NextRequest) {
         let book = await Book.findOne(duplicateCheckQuery);
 
         if (!book) {
-            const session = await auth(); // Need to import auth
-            const userId = session?.user?.id;
+            const userId = session.user.id;
 
             const baseSlug = slugify(author ? `${title} ${author}` : title);
             // Check if slug exists
