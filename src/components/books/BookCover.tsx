@@ -5,11 +5,11 @@ import Image from 'next/image';
 
 interface BookCoverProps {
     src?: string;
-    alt: string;
+    alt?: string;
     className?: string; // Allow passing className for custom sizing/containers if needed, though mostly handled by parent
 }
 
-export const BookCover = ({ src, alt, className }: BookCoverProps) => {
+export const BookCover = ({ src, alt = "Book cover", className }: BookCoverProps) => {
     const [imgSrc, setImgSrc] = useState(src?.trim() ? src : '/assets/demobook.webp'); const [hasError, setHasError] = useState(false);
 
     useEffect(() => {

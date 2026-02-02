@@ -76,7 +76,8 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        const { title, coverImage, introduction, description, category, visibility } = await request.json();
+        const requestBody = await request.json();
+        const { title, coverImage, introduction, description, category, visibility } = requestBody;
 
         if (!title) {
             return NextResponse.json(
@@ -88,30 +89,60 @@ export async function POST(request: NextRequest) {
         await dbConnect();
 
         // Generate generic slug
-        let slug = slugify(title, { lower: true, strict: true });
+        let initialSlug = slugify(title, { lower: true, strict: true });
+
+        // Use title as fallback for non-ASCII (e.g. Bengali), replacing spaces
+        if (!initialSlug || initialSlug.length === 0) {
+            initialSlug = title.trim().toLowerCase().replace(/[\s-]+/g, '-').replace(/^-+|-+$/g, '');
+        }
+
+        // Final fallback
+        if (!initialSlug || initialSlug.length === 0) {
+            initialSlug = `untitled-${Date.now()}`;
+        }
+
+        let slug = initialSlug;
 
         // Ensure uniqueness
         let slugExists = await WritingProject.findOne({ slug });
         let counter = 1;
         while (slugExists) {
-            slug = `${slugify(title, { lower: true, strict: true })}-${counter}`;
+            slug = `${initialSlug}-${counter}`;
             slugExists = await WritingProject.findOne({ slug });
             counter++;
         }
 
+        const initialChapters = [];
+        let totalWords = 0;
+        let totalChapters = 0;
+
+        // If initial chapter details are provided, create the first chapter
+        if (requestBody.chapterName) {
+            // Create initial chapter placeholder; content added via chapter editing later
+            initialChapters.push({
+                chapterNumber: 1,
+                title: requestBody.chapterName,
+                content: '',
+                wordCount: 0,
+                status: 'draft',
+                createdAt: new Date(),
+                updatedAt: new Date()
+            });
+            totalChapters = 1;
+        }
         const project = await WritingProject.create({
             author: session.user.id,
             title,
             slug,
             coverImage,
             introduction,
-            description,
+            description, // This remains book description
             category: category || [],
             status: 'draft',
             visibility: visibility || 'private',
-            chapters: [],
-            totalWords: 0,
-            totalChapters: 0,
+            chapters: initialChapters,
+            totalWords: totalWords,
+            totalChapters: totalChapters,
             forSale: false,
         });
 

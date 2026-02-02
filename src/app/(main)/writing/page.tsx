@@ -4,15 +4,20 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { PenTool, Plus, BookOpen, Eye, EyeOff, DollarSign } from 'lucide-react';
 import Link from 'next/link';
+import { WritingProjectCard } from '@/components/writing/WritingProjectCard';
 
 interface WritingProject {
     _id: string;
     title: string;
+    slug?: string;
     coverImage?: string;
-    status: string;
-    visibility: string;
-    totalChapters: number;
+    description?: string;
+    author: any;
+    category: string[];
+    status: 'draft' | 'published';
+    visibility: 'private' | 'public';
     totalWords: number;
+    totalChapters: number;
     forSale: boolean;
     updatedAt: string;
 }
@@ -77,51 +82,13 @@ export default function WritingDashboardPage() {
                     </Link>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 gap-6">
                     {projects.map((project) => (
-                        <Link
+                        <WritingProjectCard
                             key={project._id}
-                            href={`/writing/${project._id}`}
-                            className="bg-card border rounded-lg p-5 hover:shadow-md transition-shadow"
-                        >
-                            <div className="flex items-start justify-between mb-3">
-                                <div className="flex-1">
-                                    <h3 className="font-semibold text-lg mb-1">{project.title}</h3>
-                                    <div className="flex items-center gap-2 mb-2">
-                                        <span className={`text-xs px-2 py-1 rounded-full ${project.status === 'published'
-                                                ? 'bg-green-100 text-green-700'
-                                                : 'bg-gray-100 text-gray-700'
-                                            }`}>
-                                            {project.status.toUpperCase()}
-                                        </span>
-                                        <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                                            {project.visibility === 'public' ? (
-                                                <><Eye className="h-3 w-3" /> Public</>
-                                            ) : (
-                                                <><EyeOff className="h-3 w-3" /> Private</>
-                                            )}
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="space-y-1 text-sm text-muted-foreground mb-3">
-                                <p className="flex items-center gap-2">
-                                    <BookOpen className="h-4 w-4" />
-                                    {project.totalChapters} chapters • {project.totalWords.toLocaleString()} words
-                                </p>
-                                {project.forSale && (
-                                    <p className="flex items-center gap-1 text-green-600">
-                                        <DollarSign className="h-4 w-4" />
-                                        For Sale
-                                    </p>
-                                )}
-                            </div>
-
-                            <p className="text-xs text-muted-foreground">
-                                Last updated: {new Date(project.updatedAt).toLocaleDateString()}
-                            </p>
-                        </Link>
+                            project={project}
+                            isOwnProfile={true}
+                        />
                     ))}
                 </div>
             )}

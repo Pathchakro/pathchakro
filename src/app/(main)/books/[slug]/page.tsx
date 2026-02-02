@@ -586,8 +586,8 @@ export default function BookDetailPage() {
                                         </dd>
                                         {book.publisher && <><dt className="font-medium">Publisher:</dt><dd>{book.publisher}</dd></>}
                                         {book.isbn && <><dt className="font-medium">ISBN:</dt><dd>{book.isbn}</dd></>}
-                                        <dt className="font-medium">Categories:</dt><dd>{book.category.join(', ')}</dd>
-                                        <dt className="font-medium">Rating:</dt><dd>{book.averageRating.toFixed(1)} / 5.0</dd>
+                                        <dt className="font-medium">Categories:</dt><dd>{book.category?.join(', ') || 'Uncategorized'}</dd>
+                                        <dt className="font-medium">Rating:</dt><dd>{(book.averageRating || 0).toFixed(1)} / 5.0</dd>
                                         <dt className="font-medium">Reviews:</dt><dd>{book.totalReviews}</dd>
                                     </dl>
                                 </div>

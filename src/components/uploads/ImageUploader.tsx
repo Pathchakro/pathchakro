@@ -9,12 +9,14 @@ interface ImageUploaderProps {
     onUpload: (url: string) => void;
     currentImage?: string;
     variant?: 'avatar' | 'cover' | 'post';
+    className?: string;
 }
 
 export function ImageUploader({
     onUpload,
     currentImage,
-    variant = 'avatar'
+    variant = 'avatar',
+    className = ''
 }: ImageUploaderProps) {
     const [preview, setPreview] = useState<string | null>(currentImage || null);
     const [isUploading, setIsUploading] = useState(false);
@@ -95,7 +97,7 @@ export function ImageUploader({
 
     return (
         <div className="space-y-2">
-            <div className={`relative ${getContainerClass()} border-2 border-dashed border-muted-foreground/25 overflow-hidden bg-muted/50`}>
+            <div className={`relative ${getContainerClass()} border-2 border-dashed border-muted-foreground/25 overflow-hidden bg-muted/50 ${className}`}>
                 {preview ? (
                     <>
                         <div className="relative w-full h-full">

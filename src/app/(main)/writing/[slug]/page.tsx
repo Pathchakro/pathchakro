@@ -7,12 +7,28 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import {
-    PenTool, Plus, Eye, EyeOff, Download, DollarSign,
-    BookOpen, Edit, Save, ArrowLeft, Settings
-} from 'lucide-react';
-import Link from 'next/link';
+import { PenTool, Plus, Settings, Trash2, Edit, Save, Download, BookOpen, MoreVertical, Eye, DollarSign, EyeOff, ArrowLeft } from 'lucide-react';
+import { useSession } from 'next-auth/react';
 import { toast } from 'sonner';
+import Swal from 'sweetalert2';
+import Link from 'next/link';
+import { formatDate } from '@/lib/utils';
+import { BookCover } from '@/components/books/BookCover';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogFooter,
+} from '@/components/ui/dialog';
+import { ImageUploader } from '@/components/uploads/ImageUploader';
+import { SortableChapterList } from './SortableChapterList';
 
 interface WritingProject {
     _id: string;
@@ -30,6 +46,7 @@ interface WritingProject {
         content: string;
         wordCount: number;
         status: string;
+        slug?: string;
         createdAt: string;
         updatedAt: string;
     }>;
@@ -38,6 +55,7 @@ interface WritingProject {
     forSale: boolean;
     salePrice?: number;
     saleType?: string;
+    slug?: string;
     author: {
         _id: string;
         name: string;
@@ -93,6 +111,24 @@ export default function WritingProjectPage() {
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleAddNewChapter = () => {
+        setEditingChapter(null);
+        setChapterTitle('');
+        setChapterContent('');
+        // console.log('Starting add chapter flow');
+        setShowChapterForm(true);
+        setActiveTab('write');
+        setTimeout(() => {
+            const tabs = document.getElementById('writing-tabs-wrapper');
+            if (tabs) {
+                // console.log('Scrolling to tabs');
+                tabs.scrollIntoView({ behavior: 'smooth' });
+            } else {
+                // console.error('Tabs wrapper not found');
+            }
+        }, 100);
     };
 
     const handleEditChapter = (chapter: any) => {
@@ -162,6 +198,69 @@ export default function WritingProjectPage() {
         }
     };
 
+    // Project Editing
+    const [showEditProjectDialog, setShowEditProjectDialog] = useState(false);
+    const [editTitle, setEditTitle] = useState('');
+    const [editCoverImage, setEditCoverImage] = useState('');
+    const [editDescription, setEditDescription] = useState('');
+
+    // Initialize edit fields when project loads
+    useEffect(() => {
+        if (project) {
+            setEditTitle(project.title);
+            setEditCoverImage(project.coverImage || '');
+            setEditDescription(project.description || '');
+        }
+    }, [project]);
+
+    const handleSaveProjectDetails = async () => {
+        try {
+            const response = await fetch(`/api/writing/${projectId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    title: editTitle,
+                    coverImage: editCoverImage,
+                    description: editDescription,
+                }),
+            });
+
+            const data = await response.json();
+            if (response.ok) {
+                toast.success('Project details updated');
+                setShowEditProjectDialog(false);
+                fetchProject();
+            } else {
+                toast.error(data.error);
+            }
+        } catch (error) {
+            console.error('Error updating project:', error);
+            toast.error('Failed to update project');
+        }
+    };
+
+    const handleDeleteChapter = async (chapterId: string) => {
+        if (!window.confirm('Are you sure you want to delete this chapter?')) return;
+
+        try {
+            const response = await fetch(`/api/writing/${projectId}/chapters`, {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ chapterId }),
+            });
+
+            if (response.ok) {
+                toast.success('Chapter deleted');
+                fetchProject();
+            } else {
+                toast.error('Failed to delete chapter');
+            }
+        } catch (error) {
+            console.error('Error deleting chapter:', error);
+            toast.error('Failed to delete chapter');
+        }
+    };
+
     const handleUpdateSettings = async () => {
         try {
             const response = await fetch(`/api/writing/${projectId}`, {
@@ -184,6 +283,25 @@ export default function WritingProjectPage() {
             }
         } catch (error) {
             console.error('Error updating settings:', error);
+        }
+    };
+
+    const handleDeleteProject = async () => {
+        if (!window.confirm('Are you sure you want to delete this project? This action cannot be undone.')) return;
+
+        try {
+            const response = await fetch(`/api/writing/${project?._id}`, { method: 'DELETE' });
+
+            if (!response.ok) {
+                const data = await response.json();
+                throw new Error(data.error || 'Failed to delete');
+            }
+
+            toast.success('Project deleted');
+            router.push('/writing');
+        } catch (error) {
+            console.error('Error deleting project:', error);
+            toast.error('Failed to delete project');
         }
     };
 
@@ -245,205 +363,227 @@ export default function WritingProjectPage() {
 
             {/* Header */}
             <div className="bg-card rounded-lg border p-6 mb-4">
-                <div className="flex items-start justify-between mb-4">
-                    <div className="flex-1">
-                        <h1 className="text-3xl font-bold mb-2">{project.title}</h1>
-                        <div className="flex items-center gap-2 mb-2">
-                            <span className={`text-xs px-2 py-1 rounded-full ${project.status === 'published' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'
-                                }`}>
-                                {project.status.toUpperCase()}
-                            </span>
-                            <span className="flex items-center gap-1 text-xs px-2 py-1 bg-muted rounded-full">
-                                {project.visibility === 'public' ? <><Eye className="h-3 w-3" /> Public</> : <><EyeOff className="h-3 w-3" /> Private</>}
-                            </span>
-                            {project.forSale && (
-                                <span className="flex items-center gap-1 text-xs px-2 py-1 bg-green-100 text-green-700 rounded-full">
-                                    <DollarSign className="h-3 w-3" /> For Sale
-                                </span>
-                            )}
+                <div className="flex flex-col md:flex-row gap-6 items-start">
+                    {/* Cover Image */}
+                    <div className="w-32 shrink-0">
+                        <div className="aspect-[2/3] relative rounded-lg overflow-hidden shadow-md bg-muted">
+                            <BookCover src={project.coverImage} alt={project.title} />
                         </div>
                     </div>
-                    <div className="flex gap-2">
-                        <Button onClick={handleExportPDF} variant="outline" size="sm">
-                            <Download className="h-4 w-4 mr-2" />
-                            Export
-                        </Button>
-                    </div>
-                </div>
 
-                <div className="grid grid-cols-3 gap-4 text-center">
-                    <div className="p-3 bg-muted rounded-lg">
-                        <p className="text-2xl font-bold">{project.totalChapters}</p>
-                        <p className="text-sm text-muted-foreground">Chapters</p>
-                    </div>
-                    <div className="p-3 bg-muted rounded-lg">
-                        <p className="text-2xl font-bold">{project.totalWords.toLocaleString()}</p>
-                        <p className="text-sm text-muted-foreground">Words</p>
-                    </div>
-                    <div className="p-3 bg-muted rounded-lg">
-                        <p className="text-2xl font-bold">{Math.round(project.totalWords / 250)}</p>
-                        <p className="text-sm text-muted-foreground">Est. Pages</p>
+                    <div className="flex-1 w-full">
+                        <div className="flex items-start justify-between mb-4">
+                            <div className="flex-1">
+                                <h1 className="text-3xl font-bold mb-2">{project.title}</h1>
+                                <div className="flex items-center gap-2 mb-2">
+                                    <span className="flex items-center gap-1 text-xs px-2 py-1 bg-muted rounded-full">
+                                        {project.visibility === 'public' ? <><Eye className="h-3 w-3" /> Public</> : <><EyeOff className="h-3 w-3" /> Private</>}
+                                    </span>
+                                    {project.forSale && (
+                                        <span className="flex items-center gap-1 text-xs px-2 py-1 bg-green-100 text-green-700 rounded-full">
+                                            <DollarSign className="h-3 w-3" /> For Sale
+                                        </span>
+                                    )}
+                                </div>
+                            </div>
+                            <div className="flex gap-2">
+                                <Link href={`/writing/${project.slug || project._id}/chapters/new`}>
+                                    <Button>
+                                        <Plus className="h-4 w-4 mr-2" />
+                                        Add Chapter
+                                    </Button>
+                                </Link>
+                                <Button onClick={handleExportPDF} variant="outline" size="sm">
+                                    <Download className="h-4 w-4 mr-2" />
+                                    Export
+                                </Button>
+
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button variant="ghost" size="icon">
+                                            <MoreVertical className="h-4 w-4" />
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                        <DropdownMenuItem onClick={() => setShowEditProjectDialog(true)}>
+                                            <Edit className="h-4 w-4 mr-2" />
+                                            Edit Details
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem className="text-red-600" onClick={handleDeleteProject}>
+                                            <Trash2 className="h-4 w-4 mr-2" />
+                                            Delete Project
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+
+                                <Dialog open={showEditProjectDialog} onOpenChange={setShowEditProjectDialog}>
+                                    <DialogContent>
+                                        <DialogHeader>
+                                            <DialogTitle>Edit Project Details</DialogTitle>
+                                        </DialogHeader>
+                                        <div className="space-y-4 py-4">
+                                            <div className="space-y-2">
+                                                <Label>Title</Label>                                                <Input
+                                                    value={editTitle}
+                                                    onChange={(e) => setEditTitle(e.target.value)}
+                                                    placeholder="Book Title"
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label>Cover Image</Label>
+                                                <div className="flex justify-center">
+                                                    <ImageUploader
+                                                        onUpload={setEditCoverImage}
+                                                        currentImage={editCoverImage}
+                                                        variant="cover"
+                                                        className="w-32 aspect-[2/3]"
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label>Description</Label>
+                                                <Textarea
+                                                    value={editDescription}
+                                                    onChange={(e) => setEditDescription(e.target.value)}
+                                                    placeholder="Book Description"
+                                                    rows={4}
+                                                />
+                                            </div>
+                                        </div>
+                                        <DialogFooter>
+                                            <Button variant="outline" onClick={() => setShowEditProjectDialog(false)}>Cancel</Button>
+                                            <Button onClick={handleSaveProjectDetails}>Save Changes</Button>
+                                        </DialogFooter>
+                                    </DialogContent>
+                                </Dialog>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-3 gap-4 text-center">
+                            <div className="p-3 bg-muted rounded-lg">
+                                <p className="text-2xl font-bold">{project.totalChapters}</p>
+                                <p className="text-sm text-muted-foreground">Chapters</p>
+                            </div>
+                            <div className="p-3 bg-muted rounded-lg">
+                                <p className="text-2xl font-bold">{project.totalWords.toLocaleString()}</p>
+                                <p className="text-sm text-muted-foreground">Words</p>
+                            </div>
+                            <div className="p-3 bg-muted rounded-lg">
+                                <p className="text-2xl font-bold">{Math.round(project.totalWords / 250)}</p>
+                                <p className="text-sm text-muted-foreground">Est. Pages</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
 
             {/* Tabs */}
-            <Tabs value={activeTab} onValueChange={setActiveTab}>
-                <TabsList className="grid w-full grid-cols-3">
-                    <TabsTrigger value="chapters">Chapters</TabsTrigger>
-                    <TabsTrigger value="write">Write</TabsTrigger>
-                    <TabsTrigger value="settings">Settings</TabsTrigger>
-                </TabsList>
+            <div id="writing-tabs-wrapper">
+                <Tabs value={activeTab} onValueChange={setActiveTab}>
+                    <TabsList className="grid w-full grid-cols-2 mb-8">
+                        <TabsTrigger value="chapters">Chapters</TabsTrigger>
+                        <TabsTrigger value="settings">Settings</TabsTrigger>
+                    </TabsList>
 
-                {/* Chapters Tab */}
-                <TabsContent value="chapters" className="space-y-4">
-                    <Button onClick={() => { setShowChapterForm(true); setActiveTab('write'); }} className="w-full">
-                        <Plus className="h-4 w-4 mr-2" />
-                        Add New Chapter
-                    </Button>
-
-                    {project.chapters.length === 0 ? (
-                        <div className="text-center py-12 bg-card rounded-lg border">
-                            <BookOpen className="h-16 w-16 text-muted-foreground mx-auto mb-4 opacity-50" />
-                            <p className="text-muted-foreground">No chapters yet. Start writing!</p>
+                    <TabsContent value="chapters" className="space-y-4">
+                        <div className="flex justify-between items-center mb-4">
+                            <h2 className="text-xl font-semibold">Chapters ({project.chapters.length})</h2>
                         </div>
-                    ) : (
-                        <div className="space-y-2">
-                            {project.chapters.map((chapter) => (
-                                <div key={chapter._id} className="bg-card border rounded-lg p-4 hover:shadow-sm transition-shadow">
-                                    <div className="flex items-start justify-between">
-                                        <div className="flex-1">
-                                            <h3 className="font-semibold mb-1">
-                                                Chapter {chapter.chapterNumber}: {chapter.title}
-                                            </h3>
-                                            <p className="text-sm text-muted-foreground">
-                                                {chapter.wordCount} words • {chapter.status}
-                                            </p>
-                                            <p className="text-xs text-muted-foreground mt-1">
-                                                Last updated: {new Date(chapter.updatedAt).toLocaleDateString()}
-                                            </p>
-                                        </div>
-                                        <Button size="sm" variant="ghost" onClick={() => handleEditChapter(chapter)}>
-                                            <Edit className="h-4 w-4" />
-                                        </Button>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                </TabsContent>
 
-                {/* Write Tab */}
-                <TabsContent value="write">
-                    <div className="bg-card border rounded-lg p-6">
-                        <h2 className="font-semibold text-lg mb-4">
-                            {showChapterForm
-                                ? (editingChapter ? 'Edit Chapter' : 'Write New Chapter')
-                                : 'Select a chapter or create new'}
-                        </h2>
-
-                        {showChapterForm && (
-                            <div className="space-y-4">
-                                <div>
-                                    <Label htmlFor="chapterTitle">Chapter Title</Label>
-                                    <Input
-                                        id="chapterTitle"
-                                        value={chapterTitle}
-                                        onChange={(e) => setChapterTitle(e.target.value)}
-                                        placeholder="Chapter title..."
-                                    />
-                                </div>
-
-                                <div>
-                                    <Label htmlFor="chapterContent">Content</Label>
-                                    <Textarea
-                                        id="chapterContent"
-                                        value={chapterContent}
-                                        onChange={(e) => setChapterContent(e.target.value)}
-                                        placeholder="Start writing your chapter..."
-                                        rows={20}
-                                    />
-                                    <p className="text-xs text-muted-foreground mt-1">
-                                        Word count: {wordCount}
-                                    </p>
-                                </div>
-
-                                <div className="flex gap-3">
-                                    <Button onClick={handleSaveChapter} disabled={isSaving} className="flex-1">
-                                        <Save className="h-4 w-4 mr-2" />
-                                        {isSaving ? 'Saving...' : (editingChapter ? 'Update Chapter' : 'Save Chapter')}
+                        {project.chapters.length === 0 ? (
+                            <div className="text-center py-12 bg-muted/30 rounded-lg border border-dashed">
+                                <BookOpen className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
+                                <h3 className="text-lg font-medium mb-1">No chapters yet</h3>
+                                <p className="text-muted-foreground mb-4">Start writing your first chapter!</p>
+                                <Link href={`/writing/${project.slug || project._id}/chapters/new`}>
+                                    <Button>
+                                        <Plus className="h-4 w-4 mr-2" />
+                                        Start Writing
                                     </Button>
-                                    <Button variant="outline" onClick={handleCancelEdit}>
-                                        Cancel
-                                    </Button>
-                                </div>
+                                </Link>
                             </div>
+                        ) : (
+                            <SortableChapterList
+                                chapters={project.chapters}
+                                projectId={project._id}
+                                projectSlug={project.slug || project._id}
+                                onDelete={handleDeleteChapter}
+                            />
                         )}
-                    </div>
-                </TabsContent>
+                    </TabsContent>
 
-                {/* Settings Tab */}
-                <TabsContent value="settings">
-                    <div className="bg-card border rounded-lg p-6 space-y-6">
-                        <div>
-                            <Label>Visibility</Label>
-                            <select
-                                value={visibility}
-                                onChange={(e) => setVisibility(e.target.value)}
-                                className="w-full mt-2 px-3 py-2 border rounded-md"
-                            >
-                                <option value="private">Private (Only you can see)</option>
-                                <option value="public">Public (Everyone can read)</option>
-                            </select>
-                        </div>
-
-                        <div className="border-t pt-6">
-                            <div className="flex items-center gap-2 mb-4">
-                                <input
-                                    type="checkbox"
-                                    id="forSale"
-                                    checked={forSale}
-                                    onChange={(e) => setForSale(e.target.checked)}
-                                />
-                                <Label htmlFor="forSale">List for sale on Pathchakro Marketplace</Label>
+                    {/* Settings Tab */}
+                    <TabsContent value="settings">
+                        <div className="bg-card border rounded-lg p-6 space-y-6">
+                            <div>
+                                <Label>Visibility</Label>
+                                <select
+                                    value={visibility}
+                                    onChange={(e) => setVisibility(e.target.value)}
+                                    className="w-full mt-2 px-3 py-2 border rounded-md"
+                                >
+                                    <option value="private">Private (Only you can see)</option>
+                                    <option value="public">Public (Everyone can read)</option>
+                                </select>
                             </div>
 
-                            {forSale && (
-                                <div className="ml-6 space-y-4">
-                                    <div>
-                                        <Label>Sale Type</Label>
-                                        <select
-                                            value={saleType}
-                                            onChange={(e) => setSaleType(e.target.value)}
-                                            className="w-full mt-2 px-3 py-2 border rounded-md"
-                                        >
-                                            <option value="pdf">PDF Only</option>
-                                            <option value="physical">Physical Book Only</option>
-                                            <option value="both">Both PDF & Physical</option>
-                                        </select>
-                                    </div>
-
-                                    <div>
-                                        <Label>Price (BDT)</Label>
-                                        <Input
-                                            type="number"
-                                            value={salePrice}
-                                            onChange={(e) => setSalePrice(e.target.value)}
-                                            placeholder="Enter price"
-                                            className="mt-2"
-                                        />
-                                    </div>
+                            <div className="border-t pt-6">
+                                <div className="flex items-center gap-2 mb-4">
+                                    <input
+                                        type="checkbox"
+                                        id="forSale"
+                                        checked={forSale}
+                                        onChange={(e) => setForSale(e.target.checked)}
+                                    />
+                                    <Label htmlFor="forSale">List for sale on Pathchakro Marketplace</Label>
                                 </div>
-                            )}
-                        </div>
 
-                        <Button onClick={handleUpdateSettings} className="w-full">
-                            <Settings className="h-4 w-4 mr-2" />
-                            Save Settings
-                        </Button>
-                    </div>
-                </TabsContent>
-            </Tabs>
+                                {forSale && (
+                                    <div className="ml-6 space-y-4">
+                                        <div>
+                                            <Label>Sale Type</Label>
+                                            <select
+                                                value={saleType}
+                                                onChange={(e) => setSaleType(e.target.value)}
+                                                className="w-full mt-2 px-3 py-2 border rounded-md"
+                                            >
+                                                <option value="pdf">PDF Only</option>
+                                                <option value="physical">Physical Book Only</option>
+                                                <option value="both">Both PDF & Physical</option>
+                                            </select>
+                                        </div>
+
+                                        <div>
+                                            <Label>Price (BDT)</Label>
+                                            <Input
+                                                type="number"
+                                                value={salePrice}
+                                                onChange={(e) => setSalePrice(e.target.value)}
+                                                placeholder="Enter price"
+                                                className="mt-2"
+                                            />
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            <Button onClick={handleUpdateSettings} className="w-full">
+                                <Settings className="h-4 w-4 mr-2" />
+                                Save Settings
+                            </Button>
+
+                            <div className="border-t pt-6 mt-6">
+                                <h3 className="text-red-600 font-semibold mb-2">Danger Zone</h3>
+                                <p className="text-sm text-muted-foreground mb-4">Deleting a project is permanent and cannot be undone.</p>
+                                <Button variant="destructive" className="w-full" onClick={handleDeleteProject}>
+                                    <Trash2 className="h-4 w-4 mr-2" />
+                                    Delete Project
+                                </Button>
+                            </div>
+                        </div>
+                    </TabsContent>
+                </Tabs>
+            </div>
         </div>
     );
 }

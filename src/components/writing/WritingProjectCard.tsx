@@ -76,24 +76,24 @@ export function WritingProjectCard({ project, isOwnProfile }: WritingProjectCard
     return (
         <div className="bg-card border rounded-lg overflow-hidden hover:shadow-lg transition-shadow flex flex-col md:flex-row w-full group">
             {/* Book Cover */}
-            <div className="relative w-full md:w-32 h-48 md:h-auto shrink-0 bg-muted">
-                <BookCover src={project.coverImage} alt={project.title} />
-                {/* Status Badge */}
-                {isOwnProfile && (
-                    <div className={`absolute top-2 left-2 px-2 py-0.5 rounded text-xs font-medium uppercase
-                        ${project.status === 'published' ? 'bg-green-500 text-white' : 'bg-yellow-500 text-white'}`}>
-                        {project.status}
-                    </div>
-                )}
+            <div className="relative w-full md:w-40 h-56 md:h-auto shrink-0 bg-muted p-4 flex items-center justify-center">
+                <div className="relative w-full h-full shadow-sm rounded-sm overflow-hidden">
+                    <BookCover src={project.coverImage} alt={project.title} />
+                </div>
             </div>
 
             {/* Content */}
             <div className="flex-1 p-4 flex flex-col justify-between">
                 <div>
-                    <div className="flex justify-between items-start">
-                        <Link href={`/writing/${project.slug || project._id}`} className="hover:underline">
-                            <h3 className="font-bold text-lg line-clamp-1 mb-1">{project.title}</h3>
-                        </Link>
+                    <div className="flex justify-between items-start mb-2">
+                        <div>
+                            <Link href={`/writing/${project.slug || project._id}`} className="hover:underline">
+                                <h3 className="font-bold text-lg line-clamp-1 mb-1">{project.title}</h3>
+                            </Link>
+                            {project.author && (
+                                <p className="text-xs text-muted-foreground">by {project.author.name}</p>
+                            )}
+                        </div>
 
                         {isOwnProfile && (
                             <DropdownMenu>
@@ -141,7 +141,20 @@ export function WritingProjectCard({ project, isOwnProfile }: WritingProjectCard
 
                     {project.description && (
                         <p className="text-sm text-muted-foreground line-clamp-2">
-                            {project.description}
+                            {(() => {
+                                try {
+                                    if (project.description.trim().startsWith('{')) {
+                                        const parsed = JSON.parse(project.description);
+                                        // Simple extraction for Tiptap JSON schema
+                                        if (parsed.type === 'doc' && Array.isArray(parsed.content)) {
+                                            return parsed.content.map((node: any) => node.content?.map((text: any) => text.text).join('')).join(' ') || project.description;
+                                        }
+                                    }
+                                    return project.description;
+                                } catch (e) {
+                                    return project.description;
+                                }
+                            })()}
                         </p>
                     )}
                 </div>

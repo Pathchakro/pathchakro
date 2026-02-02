@@ -30,11 +30,12 @@ import { ColorSelector } from "./selectors/color-selector";
 interface NovelEditorProps {
     initialValue?: JSONContent;
     onChange: (value: string) => void;
+    readOnly?: boolean;
 }
 
 const extensions = [...defaultExtensions, slashCommand];
 
-export default function NovelEditor({ initialValue, onChange }: NovelEditorProps) {
+export default function NovelEditor({ initialValue, onChange, readOnly = false }: NovelEditorProps) {
     const [openNode, setOpenNode] = useState(false);
     const [openColor, setOpenColor] = useState(false);
     const [openLink, setOpenLink] = useState(false);
@@ -44,6 +45,28 @@ export default function NovelEditor({ initialValue, onChange }: NovelEditorProps
         const json = editor.getJSON();
         onChange(JSON.stringify(json));
     }, 500);
+
+    if (readOnly) {
+        return (
+            <div className="relative w-full border-none bg-background text-foreground">
+                <EditorRoot>
+                    <EditorContent
+                        initialContent={initialValue}
+                        extensions={extensions as any}
+                        editable={false}
+                        immediatelyRender={false}
+                        className="min-h-[200px] w-full"
+                        editorProps={{
+                            attributes: {
+                                class: "prose prose-lg dark:prose-invert prose-headings:font-title font-sans leading-normal focus:outline-none max-w-full text-[16px]",
+                            },
+                        }}
+                    >
+                    </EditorContent>
+                </EditorRoot>
+            </div>
+        );
+    }
 
     return (
         <div className="relative w-full border rounded-lg bg-background text-foreground">

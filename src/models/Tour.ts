@@ -138,7 +138,7 @@ const TourSchema = new Schema<ITour>(
 
 // Indexes for efficient querying
 TourSchema.index({ startDate: 1, status: 1 });
-TourSchema.index({ slug: 1 });
+
 TourSchema.index({ destination: 1, status: 1 });
 TourSchema.index({ organizer: 1, createdAt: -1 });
 

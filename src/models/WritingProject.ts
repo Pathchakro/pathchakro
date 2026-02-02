@@ -15,6 +15,8 @@ export interface IWritingProject {
         _id: string;
         chapterNumber: number;
         title: string;
+        slug: string;
+        image?: string;
         content: string;
         wordCount: number;
         status: 'draft' | 'published';
@@ -51,9 +53,10 @@ const WritingProjectSchema = new Schema<IWritingProject>(
             index: true,
             validate: {
                 validator: function (v: string) {
-                    return /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(v);
+                    // Allow Unicode but disallow spaces and URL reserved chars
+                    return /^[^\s\/\\?#]+$/.test(v);
                 },
-                message: (props: any) => `${props.value} is not a valid URL slug!`
+                message: (props: any) => `${props.value} contains invalid characters (spaces or /?# are not allowed)`
             }
         },
         coverImage: String,
@@ -84,6 +87,11 @@ const WritingProjectSchema = new Schema<IWritingProject>(
                 type: String,
                 required: true,
             },
+            slug: {
+                type: String,
+                required: true,
+            },
+            image: String, // Optional chapter cover image
             content: {
                 type: String,
                 required: true,

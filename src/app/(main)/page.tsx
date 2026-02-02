@@ -36,9 +36,17 @@ async function getInitialData() {
     let bookmarks = [];
 
     if (bookmarksRes) {
-        const bookmarksData = await bookmarksRes.json();
-        if (bookmarksData.bookmarks) {
-            bookmarks = bookmarksData.bookmarks.map((b: any) => b._id);
+        try {
+            if (bookmarksRes.ok) {
+                const bookmarksData = await bookmarksRes.json();
+                if (bookmarksData.bookmarks) {
+                    bookmarks = bookmarksData.bookmarks.map((b: any) => b._id);
+                }
+            } else {
+                console.error(`Failed to fetch bookmarks: ${bookmarksRes.status} ${bookmarksRes.statusText}`);
+            }
+        } catch (error) {
+            console.error('Error parsing bookmarks data:', error);
         }
     }
 

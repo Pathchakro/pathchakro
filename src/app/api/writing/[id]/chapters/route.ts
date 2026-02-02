@@ -62,7 +62,7 @@ export async function POST(
             );
         }
 
-        const { title, content } = await request.json();
+        const { title, content, image, slug } = await request.json();
 
         if (!title || !content) {
             return NextResponse.json(
@@ -93,9 +93,18 @@ export async function POST(
         const wordCount = content.trim().split(/\s+/).filter(Boolean).length;
         const chapterNumber = project.chapters.length + 1;
 
+        // Generate slug if not provided using book slug and chapter title
+        let finalSlug = slug;
+        if (!finalSlug) {
+            const baseSlug = title.toLowerCase().replace(/[^a-z0-9\u0980-\u09FF]+/g, '-').replace(/(^-|-$)/g, '');
+            finalSlug = `${project.slug || project._id}/chapter-${chapterNumber}-${baseSlug}`;
+        }
+
         project.chapters.push({
             chapterNumber,
             title,
+            slug: finalSlug,
+            image,
             content,
             wordCount,
             status: 'draft',
@@ -136,7 +145,7 @@ export async function PUT(
             );
         }
 
-        const { chapterId, title, content, status } = await request.json();
+        const { chapterId, title, content, status, image, slug } = await request.json();
 
         if (!chapterId) {
             return NextResponse.json(
@@ -174,6 +183,8 @@ export async function PUT(
         }
 
         if (title) chapter.title = title;
+        if (slug) chapter.slug = slug;
+        if (image !== undefined) chapter.image = image;
         if (content) {
             chapter.content = content;
             chapter.wordCount = content.trim().split(/\s+/).filter(Boolean).length;
@@ -193,6 +204,78 @@ export async function PUT(
         console.error('Error updating chapter:', error);
         return NextResponse.json(
             { error: 'Failed to update chapter' },
+            { status: 500 }
+        );
+    }
+}
+
+export async function DELETE(
+    request: NextRequest,
+    props: { params: Promise<{ id: string }> }
+) {
+    const params = await props.params;
+    try {
+        const session = await auth();
+
+        if (!session?.user?.id) {
+            return NextResponse.json(
+                { error: 'Unauthorized' },
+                { status: 401 }
+            );
+        }
+
+        const { chapterId } = await request.json();
+
+        if (!chapterId) {
+            return NextResponse.json(
+                { error: 'Chapter ID is required' },
+                { status: 400 }
+            );
+        }
+
+        await dbConnect();
+
+        const id = params.id;
+        const query = (id.match(/^[0-9a-fA-F]{24}$/))
+            ? { _id: id }
+            : { slug: id };
+
+        const project = await WritingProject.findOne({
+            ...query,
+            author: session.user.id,
+        });
+
+        if (!project) {
+            return NextResponse.json(
+                { error: 'Project not found' },
+                { status: 404 }
+            );
+        }
+
+        const chapter = project.chapters.id(chapterId);
+
+        if (!chapter) {
+            return NextResponse.json(
+                { error: 'Chapter not found' },
+                { status: 404 }
+            );
+        }
+
+        project.chapters.pull({ _id: chapterId });
+
+        // Re-calculate stats
+        project.totalChapters = project.chapters.length;
+        project.totalWords = project.chapters.reduce((sum: number, ch: any) => sum + ch.wordCount, 0);
+
+        await project.save();
+
+        return NextResponse.json({
+            message: 'Chapter deleted successfully'
+        });
+    } catch (error: any) {
+        console.error('Error deleting chapter:', error);
+        return NextResponse.json(
+            { error: 'Failed to delete chapter' },
             { status: 500 }
         );
     }
