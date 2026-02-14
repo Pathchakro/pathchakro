@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import dbConnect from '@/lib/mongodb';
 import Product from '@/models/Product';
+import { generateUniqueSlug } from '@/lib/slug-utils';
 
 export async function GET(request: NextRequest) {
     try {
@@ -81,21 +82,51 @@ export async function POST(request: NextRequest) {
 
         await dbConnect();
 
-        const product = await Product.create({
-            seller: session.user.id,
-            title,
-            description,
-            category,
-            price,
-            originalPrice,
-            images,
-            stock,
-            condition: condition || 'new',
-            tags: tags || [],
-            location,
-            status: 'active',
-            views: 0,
-        });
+        let product = null;
+        let attempts = 0;
+        const maxAttempts = 3;
+
+        while (attempts < maxAttempts) {
+            try {
+                const slug = await generateUniqueSlug(Product, title);
+
+                product = await Product.create({
+                    seller: session.user.id,
+                    title,
+                    slug,
+                    description,
+                    category,
+                    price,
+                    originalPrice,
+                    images,
+                    stock,
+                    condition: condition || 'new',
+                    tags: tags || [],
+                    location,
+                    status: 'active',
+                    views: 0,
+                });
+                break; // Success
+            } catch (error: any) {
+                if (error.code === 11000) {
+                    console.warn(`Slug collision detected for product "${title}", retrying...`);
+                    attempts++;
+                    if (attempts < maxAttempts) {
+                        continue;
+                    }
+                    // Break on final attempt to fall through to 409 response
+                    break;
+                }
+                throw error; // Rethrow if not a collision
+            }
+        }
+
+        if (!product) {
+            return NextResponse.json(
+                { error: 'Failed to generate a unique slug after multiple attempts' },
+                { status: 409 }
+            );
+        }
 
         const populatedProduct = await Product.findById(product._id)
             .populate('seller', 'name image university thana')

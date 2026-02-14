@@ -60,14 +60,14 @@ const renderNode = (node: any): string => {
                 }
                 else if (mark.type === 'textStyle') {
                     const color = mark.attrs?.color;
-                    // Allow hex, rgb/a, hsl/a, named colors
-                    if (color && /^(#[0-9a-fA-F]{3,8}|rgba?\(.*?\)|hsla?\(.*?\)|[a-z]+)$/.test(color)) {
+                    // Allow hex, rgb/a, hsl/a, named colors, var()
+                    if (color && /^(#[0-9a-fA-F]{3,8}|rgba?\(.*?\)|hsla?\(.*?\)|[a-z]+|var\(--[a-zA-Z0-9-]+\))$/i.test(color)) {
                         text = `<span style="color: ${color}">${text}</span>`;
                     }
                 }
                 else if (mark.type === 'highlight') {
                     const color = mark.attrs?.color;
-                    if (color && /^(#[0-9a-fA-F]{3,8}|rgba?\(.*?\)|hsla?\(.*?\)|[a-z]+)$/.test(color)) {
+                    if (color && /^(#[0-9a-fA-F]{3,8}|rgba?\(.*?\)|hsla?\(.*?\)|[a-z]+|var\(--[a-zA-Z0-9-]+\))$/i.test(color)) {
                         text = `<mark style="background-color: ${color}">${text}</mark>`;
                     } else {
                         text = `<mark>${text}</mark>`;
@@ -219,8 +219,8 @@ export const generateHtml = (json: any) => {
             allowedIframeHostnames: ['www.youtube.com', 'youtu.be', 'player.vimeo.com'],
             allowedStyles: {
                 '*': {
-                    'color': [/^(#[0-9a-fA-F]{3,8}|rgba?\(.*?\)|hsla?\(.*?\)|[a-z]+)$/],
-                    'background-color': [/^(#[0-9a-fA-F]{3,8}|rgba?\(.*?\)|hsla?\(.*?\)|[a-z]+)$/],
+                    'color': [/^(#[0-9a-fA-F]{3,8}|rgba?\(.*?\)|hsla?\(.*?\)|[a-z]+|var\(--[a-zA-Z0-9-]+\))$/],
+                    'background-color': [/^(#[0-9a-fA-F]{3,8}|rgba?\(.*?\)|hsla?\(.*?\)|[a-z]+|var\(--[a-zA-Z0-9-]+\))$/],
                     'width': [/^\d+(?:px|%|em|rem|vw|vh)?$/],
                     'height': [/^\d+(?:px|%|em|rem|vw|vh)?$/],
                     'max-width': [/^\d+(?:px|%|em|rem|vw|vh)?$/],

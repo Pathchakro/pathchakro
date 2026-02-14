@@ -19,6 +19,7 @@ export interface IAssignment {
         feedback?: string;
         status: 'submitted' | 'graded' | 'late';
     }>;
+    slug: string;
     createdAt: Date;
 }
 
@@ -39,6 +40,13 @@ const AssignmentSchema = new Schema<IAssignment>(
             type: String,
             required: [true, 'Assignment title is required'],
             trim: true,
+        },
+        slug: {
+            type: String,
+            unique: true,
+            required: true,
+            trim: true,
+            index: true,
         },
         description: {
             type: String,

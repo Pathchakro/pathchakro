@@ -5,6 +5,7 @@ import dbConnect from '@/lib/mongodb';
 import Post from '@/models/Post';
 import { calculateProfileCompletion } from '@/lib/utils';
 import User from '@/models/User';
+import { generateUniqueSlug } from '@/lib/slug-utils';
 
 export async function GET(request: NextRequest) {
     try {
@@ -143,10 +144,7 @@ export async function POST(request: NextRequest) {
         }
 
         // Generate slug
-        const slug = title
-            .toLowerCase()
-            .replace(/[^a-z0-9]+/g, '-')
-            .replace(/(^-|-$)+/g, '') + '-' + Date.now();
+        const slug = await generateUniqueSlug(Post, title);
 
         const post = await Post.create({
             author: session.user.id,

@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { revalidatePath } from 'next/cache';
+import { revalidatePath, revalidateTag } from 'next/cache';
 import { auth } from '@/auth';
 import dbConnect from '@/lib/mongodb';
 import Event from '@/models/Event';
 import Team from '@/models/Team';
+import { generateUniqueSlug } from '@/lib/slug-utils';
 
 export async function GET(request: NextRequest) {
     try {
@@ -123,23 +124,52 @@ export async function POST(request: NextRequest) {
 
         await dbConnect();
 
-        const event = await Event.create({
-            organizer: session.user.id,
-            team: teamId || undefined,
-            title,
-            description,
-            eventType,
-            location,
-            meetingLink,
-            startTime: new Date(startTime),
-            endTime: new Date(endTime),
-            banner,
-            status: 'upcoming',
-            roles: {
-                lecturers: [],
-            },
-            listeners: [],
-        });
+        let event = null;
+        let attempts = 0;
+        const maxAttempts = 3;
+
+        while (attempts < maxAttempts) {
+            try {
+                const slug = await generateUniqueSlug(Event, title);
+
+                event = await Event.create({
+                    organizer: session.user.id,
+                    team: teamId || undefined,
+                    title,
+                    slug,
+                    description,
+                    eventType,
+                    location,
+                    meetingLink,
+                    startTime: new Date(startTime),
+                    endTime: new Date(endTime),
+                    banner,
+                    status: 'upcoming',
+                    roles: {
+                        lecturers: [],
+                    },
+                    listeners: [],
+                });
+                break;
+            } catch (error: any) {
+                if (error.code === 11000) {
+                    attempts++;
+                    if (attempts < maxAttempts) {
+                        continue;
+                    }
+                    // Break on final attempt to fall through to 409 response
+                    break;
+                }
+                throw error;
+            }
+        }
+
+        if (!event) {
+            return NextResponse.json(
+                { error: 'Failed to create event with a unique slug' },
+                { status: 409 }
+            );
+        }
 
         const populatedEvent = await Event.findById(event._id)
             .populate('organizer', 'name image rankTier')
@@ -147,6 +177,7 @@ export async function POST(request: NextRequest) {
             .lean();
 
         revalidatePath('/', 'layout');
+        revalidateTag('events', 'default');
 
         return NextResponse.json(
             { event: populatedEvent },

@@ -96,3 +96,7 @@ export function validateAndSanitizeImage(image: any): string | undefined {
 export function isValidVisibility(visibility: string): boolean {
   return ['public', 'private'].includes(visibility);
 }
+
+export function isValidStatus(status: string): boolean {
+  return ['draft', 'published'].includes(status);
+}

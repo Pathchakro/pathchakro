@@ -3,6 +3,7 @@ import dbConnect from '@/lib/mongodb';
 import Category from '@/models/Category';
 import { CATEGORIES } from '@/lib/constants';
 import { slugify } from '@/lib/utils';
+import { generateUniqueSlug } from '@/lib/slug-utils';
 
 export async function GET(request: NextRequest) {
     try {
@@ -64,7 +65,7 @@ export async function POST(request: NextRequest) {
 
         if (!name) return NextResponse.json({ error: 'Name is required' }, { status: 400 });
 
-        const slug = slugify(name);
+        const slug = await generateUniqueSlug(Category, name);
         const category = await Category.create({ name, slug });
 
         return NextResponse.json({ category }, { status: 201 });

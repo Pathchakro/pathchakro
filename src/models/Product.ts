@@ -3,6 +3,7 @@ import { Schema, model, models } from 'mongoose';
 export interface IProduct {
     _id: string;
     seller: string;
+    slug: string;
     title: string;
     description: string;
     category: 'book' | 'notebook' | 'pen' | 'calculator' | 'bag' | 'other';
@@ -29,6 +30,13 @@ const ProductSchema = new Schema<IProduct>(
         title: {
             type: String,
             required: [true, 'Product title is required'],
+            trim: true,
+            index: true,
+        },
+        slug: {
+            type: String,
+            unique: true,
+            required: true,
             trim: true,
             index: true,
         },

@@ -174,7 +174,6 @@ export const defaultExtensions = [
     taskList,
     taskItem,
     horizontalRule,
-    aiHighlight,
     codeBlockLowlight,
     youtube,
     twitter,

@@ -1,4 +1,5 @@
 import { Metadata } from 'next';
+import { notFound } from 'next/navigation';
 import EventDetailClient from './EventDetailClient';
 import dbConnect from '@/lib/mongodb';
 import Event from '@/models/Event';
@@ -49,5 +50,30 @@ export default async function EventPage(props: Props) {
     const params = await props.params;
     const slug = params.slug;
 
-    return <EventDetailClient slug={slug} />;
+    await dbConnect();
+
+    const isObjectId = /^[0-9a-fA-F]{24}$/.test(slug);
+
+    const query = isObjectId ? { _id: slug } : { slug: slug };
+
+    const eventData = await Event.findOne(query)
+        .populate('organizer', 'name image rankTier')
+        .populate('team', 'name')
+        .populate('roles.host.user', 'name image')
+        .populate('roles.anchor.user', 'name image')
+        .populate('roles.summarizer.user', 'name image')
+        .populate('roles.opener.user', 'name image')
+        .populate('roles.closer.user', 'name image')
+        .populate('roles.lecturers.user', 'name image')
+        .populate('listeners.user', 'name image')
+        .lean();
+
+    if (!eventData) {
+        notFound();
+    }
+
+    // Convert ObjectIds to strings for passing to Client Component
+    const serializedEvent = JSON.parse(JSON.stringify(eventData));
+
+    return <EventDetailClient slug={slug} initialData={serializedEvent} />;
 }

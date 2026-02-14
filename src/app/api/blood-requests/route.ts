@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import dbConnect from '@/lib/mongodb';
 import BloodRequest from '@/models/BloodRequest';
+import { generateUniqueSlug } from '@/lib/slug-utils';
 
 export async function GET(request: NextRequest) {
     try {
@@ -70,9 +71,15 @@ export async function POST(request: NextRequest) {
         const expiresAt = new Date();
         expiresAt.setDate(expiresAt.getDate() + 7);
 
+        // Generate anonymous slug: hospital-date-unique
+        const dateStr = new Date().toISOString().split('T')[0].replace(/-/g, ''); // YYYYMMDD
+        const baseSlugString = `blood-request-${hospital}-${dateStr}`;
+        const slug = await generateUniqueSlug(BloodRequest, baseSlugString);
+
         const bloodRequest = await BloodRequest.create({
             requester: session.user.id,
             patientName,
+            slug,
             bloodType,
             unitsNeeded,
             urgency: urgency || 'normal',

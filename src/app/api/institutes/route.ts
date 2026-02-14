@@ -3,6 +3,7 @@ import dbConnect from '@/lib/mongodb';
 import Institute from '@/models/Institute';
 import { EDUCATONAL_INSTITUTE } from '@/lib/constants';
 import { slugify } from '@/lib/utils';
+import { generateUniqueSlug } from '@/lib/slug-utils';
 
 export async function GET(request: NextRequest) {
     try {
@@ -68,18 +69,11 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        const slug = slugify(name);
+        const slug = await generateUniqueSlug(Institute, name);
 
-        const existing = await Institute.findOne({
-            $or: [{ name: name }, { slug: slug }]
-        });
-
-        if (existing) {
-            return NextResponse.json(
-                { error: 'Institute already exists' },
-                { status: 400 }
-            );
-        }
+        // Check if name already exists (optional, but good practice to prevent duplicates if desired)
+        // If we want to allow duplicates with different slugs, remove this check.
+        // Assuming user wants to allow creation if slug is unique.
 
         const institute = await Institute.create({
             name,

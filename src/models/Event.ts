@@ -177,25 +177,7 @@ const EventSchema = new Schema<IEvent>(
 );
 
 // Pre-save hook to generate slug
-EventSchema.pre('save', async function () {
-    if (this.isModified('title') || this.isModified('startTime') || !this.slug) {
-        // Manual slug generation with fallback for Unicode titles
-        let titleSlug = this.title
-            .toLowerCase()
-            .replace(/[^a-z0-9]+/g, '-')
-            .replace(/(^-|-$)+/g, '');
-
-        // If titleSlug is empty (e.g., non-ASCII title), use 'event' as fallback
-        if (!titleSlug) {
-            titleSlug = 'event';
-        }
-
-        const dateStr = new Date(this.startTime).toISOString().split('T')[0];
-
-        // Final slug: title-date
-        this.slug = `${titleSlug}-${dateStr}`;
-    }
-});
+// Pre-save hook removed - Slug generation is now handled in the controller using generateUniqueSlug
 
 // Indexes for efficient querying
 EventSchema.index({ startTime: 1, status: 1 });

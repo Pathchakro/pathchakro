@@ -49,23 +49,24 @@ interface Event {
     createdAt: string;
 }
 
-export default function EventDetailClient({ slug }: { slug: string }) {
-    const [event, setEvent] = useState<Event | null>(null);
-    const [loading, setLoading] = useState(true);
+export default function EventDetailClient({ slug, initialData }: { slug: string; initialData?: Event }) {
+    const [event, setEvent] = useState<Event | null>(initialData || null);
+    const [loading, setLoading] = useState(!initialData);
     const [isJoining, setIsJoining] = useState(false);
     const [selectedRole, setSelectedRole] = useState('');
     const [lectureTopic, setLectureTopic] = useState('');
     const [lectureDuration, setLectureDuration] = useState(2);
 
     useEffect(() => {
-        fetchEvent();
-    }, [slug]);
+        if (!initialData) {
+            fetchEvent();
+        }
+    }, [slug, initialData]);
 
     const fetchEvent = async () => {
         try {
-            // We use the same API endpoint, but pass the slug. The API should handle it.
-            // Or we should update API to handle slug if it doesn't already.
-            const response = await fetch(`/api/events/${slug}`, { cache: 'no-store' });
+            // Options 'cache' and 'next.tags' are removed as they are server-side only
+            const response = await fetch(`/api/events/${slug}`);
 
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));

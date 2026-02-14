@@ -55,15 +55,18 @@ export default function NotificationsPage() {
 
     const markAsRead = async (id: string) => {
         try {
-            await fetch(`/api/notifications/${id}/read`, {
-                method: 'PUT',
+            const response = await fetch(`/api/notifications/${id}/read`, {
+                method: 'POST',
             });
 
-            setNotifications(notifications.map(n =>
-                n._id === id ? { ...n, read: true } : n
-            ));
+            if (response.ok) {
+                setNotifications(prev =>
+                    prev.map(n => n._id === id ? { ...n, read: true } : n)
+                );
+                // setUnreadCount(prev => Math.max(0, prev - 1)); // This line is commented out as setUnreadCount is not defined in the provided context.
+            }
         } catch (error) {
-            console.error('Error marking as read:', error);
+            console.error('Error marking notification as read:', error);
         }
     };
 

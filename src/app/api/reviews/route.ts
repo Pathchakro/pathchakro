@@ -5,8 +5,8 @@ import dbConnect from '@/lib/mongodb';
 import Review from '@/models/Review';
 import Book from '@/models/Book';
 import User from '@/models/User';
-import slugify from 'slugify';
 import { validateAndSanitizeImage } from '@/lib/utils';
+import { generateUniqueSlug } from '@/lib/slug-utils';
 
 export async function GET(request: NextRequest) {
     try {
@@ -133,41 +133,20 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // Generate base slug
-        let baseSlug = slugify(title, { lower: true, strict: true });
-        if (!baseSlug) baseSlug = 'review';
+        // Generate unique slug
+        const slug = await generateUniqueSlug(Review, title || 'review');
 
-        let slug = baseSlug;
-        let counter = 0;
-        let review;
-
-        while (true) {
-            try {
-                // Create review
-                review = await Review.create({
-                    book: bookId,
-                    user: session.user.id,
-                    rating,
-                    title,
-                    slug,
-                    content,
-                    image: sanitizedImage,
-                    tags: tags || [],
-                    helpful: 0,
-                });
-                break;
-            } catch (error: any) {
-                // E11000 duplicate key error
-                if (error.code === 11000 && (error.keyPattern?.slug || error.keyValue?.slug)) {
-                    counter++;
-                    // Prevent infinite loops
-                    if (counter > 15) throw error;
-                    slug = `${baseSlug}-${counter}`;
-                } else {
-                    throw error;
-                }
-            }
-        }
+        const review = await Review.create({
+            book: bookId,
+            user: session.user.id,
+            rating,
+            title,
+            slug,
+            content,
+            image: sanitizedImage,
+            tags: tags || [],
+            helpful: 0,
+        });
 
         // Update book's average rating
         const allReviews = await Review.find({ book: bookId });

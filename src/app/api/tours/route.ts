@@ -3,7 +3,7 @@ import { revalidatePath } from 'next/cache';
 import { auth } from '@/auth';
 import dbConnect from '@/lib/mongodb';
 import Tour from '@/models/Tour';
-import slugify from 'slugify';
+import { generateUniqueSlug } from '@/lib/slug-utils';
 
 export async function GET(request: NextRequest) {
     try {
@@ -121,13 +121,7 @@ export async function POST(request: NextRequest) {
 
         await dbConnect();
 
-        let slug = slugify(title, { lower: true, strict: true });
-
-        let counter = 1;
-        while (await Tour.findOne({ slug })) {
-            slug = `${slugify(title, { lower: true, strict: true })}-${counter}`;
-            counter++;
-        }
+        const slug = await generateUniqueSlug(Tour, title);
 
         const tour = await Tour.create({
             organizer: session.user.id,

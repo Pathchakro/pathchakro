@@ -3,7 +3,7 @@ import { revalidatePath } from 'next/cache';
 import { auth } from '@/auth';
 import dbConnect from '@/lib/mongodb';
 import WritingProject from '@/models/WritingProject';
-import slugify from 'slugify';
+import { generateUniqueSlug } from '@/lib/slug-utils';
 
 export async function GET(request: NextRequest) {
     try {
@@ -88,29 +88,8 @@ export async function POST(request: NextRequest) {
 
         await dbConnect();
 
-        // Generate generic slug
-        let initialSlug = slugify(title, { lower: true, strict: true });
-
-        // Use title as fallback for non-ASCII (e.g. Bengali), replacing spaces
-        if (!initialSlug || initialSlug.length === 0) {
-            initialSlug = title.trim().toLowerCase().replace(/[\s-]+/g, '-').replace(/^-+|-+$/g, '');
-        }
-
-        // Final fallback
-        if (!initialSlug || initialSlug.length === 0) {
-            initialSlug = `untitled-${Date.now()}`;
-        }
-
-        let slug = initialSlug;
-
-        // Ensure uniqueness
-        let slugExists = await WritingProject.findOne({ slug });
-        let counter = 1;
-        while (slugExists) {
-            slug = `${initialSlug}-${counter}`;
-            slugExists = await WritingProject.findOne({ slug });
-            counter++;
-        }
+        // Generate unique slug
+        const slug = await generateUniqueSlug(WritingProject, title);
 
         const initialChapters = [];
         let totalWords = 0;

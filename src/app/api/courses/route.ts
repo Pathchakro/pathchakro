@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { revalidatePath } from 'next/cache';
+import { revalidatePath, revalidateTag } from 'next/cache';
 import { auth } from '@/auth';
 import dbConnect from '@/lib/mongodb';
 import Course from '@/models/Course';
 import User from '@/models/User';
-import slugify from 'slugify';
+import { generateUniqueSlug } from '@/lib/slug-utils';
 
 export const dynamic = 'force-dynamic';
 
@@ -67,14 +67,7 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'Title and Fee are required' }, { status: 400 });
         }
 
-        let slug = slugify(data.title, { lower: true, strict: true });
-
-        // Ensure uniqueness
-        let counter = 1;
-        while (await Course.findOne({ slug })) {
-            slug = `${slugify(data.title, { lower: true, strict: true })}-${counter}`;
-            counter++;
-        }
+        const slug = await generateUniqueSlug(Course, data.title);
 
         const course = await Course.create({
             ...data,
@@ -84,6 +77,7 @@ export async function POST(req: NextRequest) {
         });
 
         revalidatePath('/', 'layout');
+        revalidateTag('courses', 'default');
 
         return NextResponse.json(course, { status: 201 });
     } catch (error) {

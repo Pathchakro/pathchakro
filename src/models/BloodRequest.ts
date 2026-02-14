@@ -12,6 +12,7 @@ export interface IBloodRequest {
     contactNumber: string;
     additionalInfo?: string;
     status: 'active' | 'fulfilled' | 'expired';
+    slug: string;
     expiresAt: Date;
     createdAt: Date;
 }
@@ -27,6 +28,13 @@ const BloodRequestSchema = new Schema<IBloodRequest>(
         patientName: {
             type: String,
             required: [true, 'Patient name is required'],
+        },
+        slug: {
+            type: String,
+            unique: true,
+            required: true,
+            trim: true,
+            index: true,
         },
         bloodType: {
             type: String,

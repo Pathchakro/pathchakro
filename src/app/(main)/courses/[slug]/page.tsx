@@ -15,7 +15,8 @@ async function getCourse(slug: string) {
 
     try {
         const res = await fetch(`${process.env.NEXTAUTH_URL}/api/courses/slug/${slug}`, {
-            cache: 'no-store'
+            cache: 'force-cache',
+            next: { tags: ['courses', `course-${slug}`] }
         });
         if (!res.ok) return null;
         return await res.json();

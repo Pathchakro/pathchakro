@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import dbConnect from '@/lib/mongodb';
 import Contest from '@/models/Contest';
+import { generateUniqueSlug } from '@/lib/slug-utils';
 
 export async function GET(request: NextRequest) {
     try {
@@ -73,8 +74,11 @@ export async function POST(request: NextRequest) {
 
         await dbConnect();
 
+        const slug = await generateUniqueSlug(Contest, title);
+
         const contest = await Contest.create({
             title,
+            slug,
             description,
             category,
             month,

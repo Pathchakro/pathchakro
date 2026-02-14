@@ -3,6 +3,7 @@ import { Schema, model, models } from 'mongoose';
 export interface IContest {
     _id: string;
     title: string;
+    slug: string;
     description: string;
     category: 'literature' | 'history' | 'language' | 'health' | 'technology';
     month: number; // 1-12
@@ -53,6 +54,13 @@ const ContestSchema = new Schema<IContest>(
             type: String,
             required: [true, 'Contest title is required'],
             trim: true,
+        },
+        slug: {
+            type: String,
+            unique: true,
+            required: true,
+            trim: true,
+            index: true,
         },
         description: {
             type: String,

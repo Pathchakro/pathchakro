@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import dbConnect from '@/lib/mongodb';
 import Team from '@/models/Team';
+import { generateUniqueSlug } from '@/lib/slug-utils';
 
 export async function GET(request: NextRequest) {
     try {
@@ -129,24 +130,7 @@ export async function POST(request: NextRequest) {
         await dbConnect();
 
         // Generate slug from name, supporting Unicode characters
-        let slugBase = name
-            .toLowerCase()
-            .replace(/\s+/g, '-') // Replace spaces with -
-            .replace(/[^\p{L}\p{M}\p{N}\-]/gu, '') // Keep letters, marks, numbers, and hyphens
-            .replace(/-+/g, '-') // Replace multiple - with single -
-            .replace(/^-+|-+$/g, ''); // Trim - from start and end
-
-        // Fallback for empty slug (e.g. if name is only special chars)
-        if (!slugBase) {
-            slugBase = 'team-' + Math.random().toString(36).substring(2, 8);
-        }
-
-        let slug = slugBase;
-        let counter = 1;
-        while (await Team.findOne({ slug })) {
-            slug = `${slugBase}-${counter}`;
-            counter++;
-        }
+        const slug = await generateUniqueSlug(Team, name);
 
         const team = await Team.create({
             name,

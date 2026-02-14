@@ -4,6 +4,7 @@ import { auth } from '@/auth';
 import dbConnect from '@/lib/mongodb';
 import Assignment from '@/models/Assignment';
 import User from '@/models/User';
+import { generateUniqueSlug } from '@/lib/slug-utils';
 
 export async function GET(request: NextRequest) {
     try {
@@ -71,10 +72,13 @@ export async function POST(request: NextRequest) {
 
         await dbConnect();
 
+        const slug = await generateUniqueSlug(Assignment, title);
+
         const assignment = await Assignment.create({
             teacher: session.user.id,
             team: teamId || undefined,
             title,
+            slug,
             description,
             dueDate: new Date(dueDate),
             totalPoints,

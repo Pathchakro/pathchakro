@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import Book from '@/models/Book';
 import { auth } from '@/auth';
-import { slugify, calculateProfileCompletion } from '@/lib/utils';
+import { calculateProfileCompletion } from '@/lib/utils';
 import User from '@/models/User';
+import { generateUniqueSlug } from '@/lib/slug-utils';
 
 export async function GET(request: NextRequest) {
     try {
@@ -93,11 +94,7 @@ export async function POST(request: NextRequest) {
 
         if (!book) {
             const userId = session.user.id;
-
-            const baseSlug = slugify(author ? `${title} ${author}` : title);
-            // Check if slug exists
-            const existingBookWithSlug = await Book.findOne({ slug: baseSlug });
-            const slug = existingBookWithSlug ? `${baseSlug}-${Date.now()}` : baseSlug;
+            const slug = await generateUniqueSlug(Book, author ? `${title} ${author}` : title);
 
             book = await Book.create({
                 title,

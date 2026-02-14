@@ -2,9 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import Author from '@/models/Author';
 import { WRITERS_LIST } from '@/lib/constants';
-import { slugify } from '@/lib/utils'; // Assuming this utility exists, otherwise I'll need to define it or import a library specific one. 
-// Note: If slugify isn't in utils, I'll basically inline a simple one or check utils first.
-// I recall seeing slugify imported in api/books/route.ts, so it should be there.
+import { slugify } from '@/lib/utils';
+import { generateUniqueSlug } from '@/lib/slug-utils';
 
 export async function GET(request: NextRequest) {
     try {
@@ -73,19 +72,7 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        const slug = slugify(name);
-
-        // Check if exists
-        const existing = await Author.findOne({
-            $or: [{ name: name }, { slug: slug }]
-        });
-
-        if (existing) {
-            return NextResponse.json(
-                { error: 'Author already exists' },
-                { status: 400 }
-            );
-        }
+        const slug = await generateUniqueSlug(Author, name);
 
         const author = await Author.create({
             name,
