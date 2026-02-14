@@ -11,11 +11,13 @@ import {
     handleCommandNavigation,
     handleImagePaste,
     handleImageDrop,
+    renderItems,
+    Command,
 } from "novel";
-import { useState } from "react";
+import React, { useState } from "react";
 import { useDebouncedCallback } from "use-debounce";
 import { defaultExtensions } from "./extensions";
-import { slashCommand, suggestionItems } from "./slash-command";
+import { suggestionItems } from "./slash-command";
 import { uploadFn } from "./image-upload";
 
 import { Separator } from "@/components/ui/separator";
@@ -33,7 +35,7 @@ interface NovelEditorProps {
     readOnly?: boolean;
 }
 
-const extensions = [...defaultExtensions, slashCommand];
+
 
 export default function NovelEditor({ initialValue, onChange, readOnly = false }: NovelEditorProps) {
     const [openNode, setOpenNode] = useState(false);
@@ -41,10 +43,25 @@ export default function NovelEditor({ initialValue, onChange, readOnly = false }
     const [openLink, setOpenLink] = useState(false);
     const [openAI, setOpenAI] = useState(false);
 
+    // Ref for the editor container to handle slash command popup placement
+    const containerRef = React.useRef<HTMLDivElement>(null);
+
     const debouncedUpdates = useDebouncedCallback(async (editor) => {
         const json = editor.getJSON();
         onChange(JSON.stringify(json));
     }, 500);
+
+    // Configure slash command to append to this container
+    const slashCommandExt = React.useMemo(() => {
+        return Command.configure({
+            suggestion: {
+                items: () => suggestionItems,
+                render: renderItems(containerRef as any),
+            },
+        });
+    }, []);
+
+    const extensions = React.useMemo(() => [...defaultExtensions, slashCommandExt], [slashCommandExt]);
 
     if (readOnly) {
         return (
@@ -69,7 +86,10 @@ export default function NovelEditor({ initialValue, onChange, readOnly = false }
     }
 
     return (
-        <div className="relative w-full border rounded-lg bg-background text-foreground">
+        <div
+            ref={containerRef}
+            className="relative w-full border rounded-lg bg-background text-foreground"
+        >
             <EditorRoot>
                 <EditorContent
                     initialContent={initialValue}
