@@ -51,6 +51,7 @@ interface ChapterFeedItem {
     chapterNumber: number;
     chapterSlug: string;
     createdAt: string;
+    updatedAt: string;
     category: string[];
     totalWords: number;
     totalChapters: number;
@@ -74,6 +75,7 @@ export function WritingProjectCard({ project, isOwnProfile }: WritingProjectCard
     const bookTitle = chapterItem ? chapterItem.title : (project as WritingProject).title;
     const author = chapterItem ? chapterItem.author : (project as WritingProject).author;
     const bookSlug = chapterItem ? chapterItem.slug || chapterItem.bookId : (project as WritingProject).slug || (project as WritingProject)._id;
+    const description = chapterItem ? undefined : (project as WritingProject).description;
     const readLink = chapterItem
         ? `/read/${bookSlug}/${chapterItem.chapterSlug}`
         : `/writing/${bookSlug}`;
@@ -201,20 +203,20 @@ export function WritingProjectCard({ project, isOwnProfile }: WritingProjectCard
                         ))}
                     </div>
 
-                    {!chapterItem && project.description && (
+                    {!chapterItem && description && (
                         <p className="text-sm text-muted-foreground line-clamp-2">
                             {(() => {
                                 try {
-                                    if (project.description.trim().startsWith('{')) {
-                                        const parsed = JSON.parse(project.description);
+                                    if (description.trim().startsWith('{')) {
+                                        const parsed = JSON.parse(description);
                                         // Simple extraction for Tiptap JSON schema
                                         if (parsed.type === 'doc' && Array.isArray(parsed.content)) {
-                                            return parsed.content.map((node: any) => node.content?.map((text: any) => text.text).join('')).join(' ') || project.description;
+                                            return parsed.content.map((node: any) => node.content?.map((text: any) => text.text).join('')).join(' ') || description;
                                         }
                                     }
-                                    return project.description;
+                                    return description;
                                 } catch (e) {
-                                    return project.description;
+                                    return description;
                                 }
                             })()}
                         </p>
@@ -226,8 +228,8 @@ export function WritingProjectCard({ project, isOwnProfile }: WritingProjectCard
                     {/* Visibility only relevant for project management view usually, but good to keep consistency if needed. 
                        For public feed, it's always public. */}
                     <span className={`text-xs px-2 py-0.5 rounded-full border 
-                        ${chapterItem ? 'border-blue-200 text-blue-700 bg-blue-50' : (project.visibility === 'public' ? 'border-green-200 text-green-700 bg-green-50' : 'border-gray-200 text-gray-700 bg-gray-50')}`}>
-                        {chapterItem ? 'Chapter' : (project.visibility === 'public' ? 'Public' : 'Private')}
+                        ${chapterItem ? 'border-blue-200 text-blue-700 bg-blue-50' : ((project as WritingProject).visibility === 'public' ? 'border-green-200 text-green-700 bg-green-50' : 'border-gray-200 text-gray-700 bg-gray-50')}`}>
+                        {chapterItem ? 'Chapter' : ((project as WritingProject).visibility === 'public' ? 'Public' : 'Private')}
                     </span>
 
                     <Link href={readLink}>
