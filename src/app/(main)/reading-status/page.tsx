@@ -17,6 +17,7 @@ import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Activity, Book, BarChart3, Users, Heart, CheckCircle, Search, BookOpen, UserCheck, Calendar as CalendarIcon, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
 
 interface BookStat {
@@ -57,12 +58,18 @@ function ReadingStatusContent() {
         from: format(startOfMonth(new Date()), 'yyyy-MM-dd'),
         to: format(endOfMonth(new Date()), 'yyyy-MM-dd'),
     });
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         setStatusFilter(initialStatus);
     }, [initialStatus]);
 
     useEffect(() => {
+        if (new Date(dateRange.from) > new Date(dateRange.to)) {
+            setError('Invalid date range: Start date cannot be after end date.');
+            return;
+        }
+        setError(null);
         fetchStats();
     }, [dateRange]); // Refetch when date changes
 
@@ -74,6 +81,12 @@ function ReadingStatusContent() {
                 to: dateRange.to
             });
             const res = await fetch(`/api/reading-status?${query.toString()}`);
+
+            if (!res.ok) {
+                const text = await res.text();
+                throw new Error(text || `Failed to fetch stats: ${res.status}`);
+            }
+
             const data = await res.json();
             if (data.report) {
                 setStats(data.report);
@@ -81,8 +94,9 @@ function ReadingStatusContent() {
             if (data.summary) {
                 setSummary(data.summary);
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error(error);
+            setError(error.message || 'Failed to load reading status.');
         } finally {
             setLoading(false);
         }
@@ -145,6 +159,12 @@ function ReadingStatusContent() {
                         className="w-auto h-8 text-sm"
                     />
                 </div>
+
+                {error && (
+                    <div className="bg-destructive/15 text-destructive text-sm p-2 rounded-md border border-destructive/20 mb-4 md:mb-0">
+                        {error}
+                    </div>
+                )}
             </div>
 
             {/* Summary Cards */}
@@ -253,12 +273,13 @@ function ReadingStatusContent() {
                                             <TableCell>
                                                 <Link href={`/books/${book.slug || book._id}`} className="block hover:bg-muted/50 rounded-md transition-colors -m-2 p-2">
                                                     <div className="flex items-center gap-3">
-                                                        <div className="h-12 w-8 overflow-hidden rounded bg-secondary flex-shrink-0">
+                                                        <div className="h-12 w-8 overflow-hidden rounded bg-secondary flex-shrink-0 relative">
                                                             {book.coverImage ? (
-                                                                <img
+                                                                <Image
                                                                     src={book.coverImage}
                                                                     alt={book.title}
-                                                                    className="h-full w-full object-cover"
+                                                                    fill
+                                                                    className="object-cover"
                                                                 />
                                                             ) : (
                                                                 <div className="h-full w-full flex items-center justify-center bg-indigo-100 text-indigo-500">

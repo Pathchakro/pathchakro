@@ -10,6 +10,7 @@ import { TourCard } from '@/components/tours/TourCard';
 import { WritingProjectCard } from '@/components/writing/WritingProjectCard';
 import { Loader2, PenTool, ClipboardList, FileText } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { CreatePostDialog } from '@/components/feed/CreatePostDialog';
 import { CreateReviewDialog } from '@/components/reviews/CreateReviewDialog';
 
@@ -74,11 +75,12 @@ export default function HomeContent({
                 <div className="bg-card rounded-lg shadow-sm p-4 mb-6 border">
                     <div className="flex gap-3">
                         {session?.user?.image ? (
-                            <div className="h-10 w-10 rounded-full overflow-hidden">
-                                <img
+                            <div className="h-10 w-10 rounded-full overflow-hidden relative">
+                                <Image
                                     src={session.user.image}
                                     alt={session.user.name || 'User'}
-                                    className="h-full w-full object-cover"
+                                    fill
+                                    className="object-cover"
                                 />
                             </div>
                         ) : (

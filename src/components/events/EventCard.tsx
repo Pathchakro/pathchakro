@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import { Calendar, Clock, MapPin, Users, Video, MoreHorizontal, Heart, MessageCircle, Share2, Bookmark } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -125,11 +126,12 @@ export function EventCard({ event, onDelete }: EventCardProps) {
             <div className="flex items-start justify-between mb-4">
                 <div className="flex items-start gap-3">
                     {event.organizer.image ? (
-                        <div className="h-10 w-10 rounded-full overflow-hidden">
-                            <img
+                        <div className="h-10 w-10 rounded-full overflow-hidden relative">
+                            <Image
                                 src={event.organizer.image}
                                 alt={event.organizer.name}
-                                className="h-full w-full object-cover"
+                                fill
+                                className="object-cover"
                             />
                         </div>
                     ) : (
@@ -178,10 +180,11 @@ export function EventCard({ event, onDelete }: EventCardProps) {
                 <Link href={eventUrl}>
                     {event.banner && (
                         <div className="mb-3 rounded-lg overflow-hidden relative aspect-video w-full">
-                            <img
+                            <Image
                                 src={event.banner}
                                 alt={event.title}
-                                className="object-cover w-full h-full hover:scale-105 transition-transform duration-300"
+                                fill
+                                className="object-cover hover:scale-105 transition-transform duration-300"
                             />
                         </div>
                     )}

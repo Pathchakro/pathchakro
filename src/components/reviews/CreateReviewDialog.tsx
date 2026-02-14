@@ -1,8 +1,8 @@
 
-
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
+import Image from 'next/image';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -253,8 +253,7 @@ export function CreateReviewDialog({ open, onOpenChange }: CreateReviewDialogPro
                             <div className="flex flex-col gap-2">
                                 {imageUrl ? (
                                     <div className="relative w-full h-48 bg-muted rounded-md overflow-hidden border">
-                                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                                        <img src={imageUrl} alt="Review attachment" className="w-full h-full object-cover" />
+                                        <Image src={imageUrl} alt="Review attachment" fill className="object-cover" />
                                         <Button
                                             type="button"
                                             variant="destructive"

@@ -8,12 +8,12 @@ export const metadata: Metadata = {
     title: 'Explore Posts | Pathchakro',
     description: 'Read and discover the latest posts, book reviews, and educational content on Pathchakro. Join our community of readers and learners.',
     alternates: {
-        canonical: 'https://pathchakro.vercel.app/posts',
+        canonical: 'https://www.pathchakro.com/posts',
     },
     openGraph: {
         title: 'Explore Posts | Pathchakro',
         description: 'Read and discover the latest posts and book reviews on Pathchakro.',
-        url: 'https://pathchakro.vercel.app/posts',
+        url: 'https://www.pathchakro.com/posts',
         siteName: 'Pathchakro',
         type: 'website',
     },
@@ -73,7 +73,7 @@ export default async function PostsPage() {
         '@type': 'CollectionPage',
         name: 'Explore Posts | Pathchakro',
         description: 'A collection of posts and book reviews from the Pathchakro community.',
-        url: 'https://pathchakro.vercel.app/posts',
+        url: 'https://www.pathchakro.com/posts',
     };
 
     return (

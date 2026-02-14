@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Calendar, MapPin, Video, Users, Clock, ArrowLeft, User, Mic } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 import Link from 'next/link';
+import Image from 'next/image';
 
 interface Event {
     _id: string;
@@ -172,11 +173,12 @@ export default function EventDetailClient({ slug }: { slug: string }) {
             {/* Event Header */}
             <div className="bg-card rounded-lg shadow-sm border p-6 mb-4">
                 {event.banner && (
-                    <div className="mb-6 rounded-lg overflow-hidden w-full h-64 md:h-80 lg:h-96">
-                        <img
+                    <div className="mb-6 rounded-lg overflow-hidden w-full h-64 md:h-80 lg:h-96 relative">
+                        <Image
                             src={event.banner}
                             alt={event.title}
-                            className="w-full h-full object-cover"
+                            fill
+                            className="object-cover"
                         />
                     </div>
                 )}

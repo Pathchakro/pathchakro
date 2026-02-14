@@ -1,13 +1,14 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { formatDate } from '@/lib/utils';
 import { Heart, MessageCircle, Share2, Bookmark, MoreHorizontal, Pencil, Trash2, EyeOff } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { toast } from 'sonner';
 import { CommentSection } from './CommentSection';
-import { PostContent } from './PostContent';
+import { generateHtml } from '@/lib/server-html';
 import { ShareDialog } from './ShareDialog';
 import {
     DropdownMenu,
@@ -203,11 +204,12 @@ export function PostCard({ initialPost, currentUserId, onDelete, initialIsBookma
                 <div className="flex items-start gap-3">
                     <Link href={`/profile/${post.author._id}`}>
                         {post.author.image ? (
-                            <div className="h-10 w-10 rounded-full overflow-hidden">
-                                <img
+                            <div className="h-10 w-10 rounded-full overflow-hidden relative">
+                                <Image
                                     src={post.author.image}
                                     alt={post.author.name}
-                                    className="h-full w-full object-cover"
+                                    fill
+                                    className="object-cover"
                                 />
                             </div>
                         ) : (
@@ -273,7 +275,10 @@ export function PostCard({ initialPost, currentUserId, onDelete, initialIsBookma
 
             {/* Post Content */}
             <div className="mb-4">
-                <PostContent content={post.content} />
+                <div
+                    className="prose prose-lg dark:prose-invert prose-headings:font-title font-sans leading-normal focus:outline-none max-w-full text-[16px]"
+                    dangerouslySetInnerHTML={{ __html: generateHtml(post.content) }}
+                />
 
                 {/* Image Slider */}
                 {post.media && post.media.length > 0 && (
@@ -283,11 +288,12 @@ export function PostCard({ initialPost, currentUserId, onDelete, initialIsBookma
                             style={{ transform: `translateX(-${currentSlide * 100}%)` }}
                         >
                             {post.media.map((url, index) => (
-                                <div key={index} className="w-full flex-shrink-0 aspect-video">
-                                    < img
+                                <div key={index} className="w-full flex-shrink-0 aspect-video relative">
+                                    <Image
                                         src={url}
                                         alt={`Slide ${index + 1}`}
-                                        className="w-full h-full object-contain bg-black/5"
+                                        fill
+                                        className="object-contain bg-black/5"
                                     />
                                 </div>
                             ))}

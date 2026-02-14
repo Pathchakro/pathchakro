@@ -1,5 +1,6 @@
 import { Metadata } from 'next';
 import Link from 'next/link';
+import Image from 'next/image';
 import { notFound } from 'next/navigation';
 import { Calendar, Users, Clock, Share2, Info, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -10,11 +11,18 @@ import { Separator } from '@/components/ui/separator';
 
 // Helper to fetch course
 async function getCourse(slug: string) {
-    const res = await fetch(`${process.env.NEXTAUTH_URL}/api/courses/slug/${slug}`, {
-        cache: 'no-store'
-    });
-    if (!res.ok) return null;
-    return res.json();
+    if (!process.env.NEXTAUTH_URL) return null;
+
+    try {
+        const res = await fetch(`${process.env.NEXTAUTH_URL}/api/courses/slug/${slug}`, {
+            cache: 'no-store'
+        });
+        if (!res.ok) return null;
+        return await res.json();
+    } catch (error) {
+        console.error('Error fetching course:', error);
+        return null;
+    }
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
@@ -40,6 +48,10 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 export default async function CourseDetailsPage({ params }: { params: Promise<{ slug: string }> }) {
     const { slug } = await params;
     const course = await getCourse(slug);
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL;
+    if (!baseUrl) {
+        throw new Error('NEXT_PUBLIC_APP_URL must be defined for share links');
+    }
 
     if (!course) notFound();
 
@@ -47,10 +59,11 @@ export default async function CourseDetailsPage({ params }: { params: Promise<{ 
         <div className="container py-10 space-y-8">
             {/* Banner */}
             <div className="relative h-[300px] md:h-[400px] w-full rounded-2xl overflow-hidden shadow-xl">
-                <img
+                <Image
                     src={course.banner}
                     alt={course.title}
-                    className="object-cover w-full h-full"
+                    fill
+                    className="object-cover"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
                 <div className="absolute bottom-0 left-0 p-6 md:p-10 text-white space-y-4">
@@ -154,15 +167,15 @@ export default async function CourseDetailsPage({ params }: { params: Promise<{ 
                                 <div className="flex gap-2">
                                     <SocialLink
                                         platform="facebook"
-                                        href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(`${process.env.NEXTAUTH_URL}/courses/${slug}`)}`}
+                                        href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(`${baseUrl}/courses/${slug}`)}`}
                                     />
                                     <SocialLink
                                         platform="twitter"
-                                        href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(`Check out ${course.title}!`)}&url=${encodeURIComponent(`${process.env.NEXTAUTH_URL}/courses/${slug}`)}`}
+                                        href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(`Check out ${course.title}!`)}&url=${encodeURIComponent(`${baseUrl}/courses/${slug}`)}`}
                                     />
                                     <SocialLink
                                         platform="linkedin"
-                                        href={`https://www.linkedin.com/shareArticle?mini=true&url=${encodeURIComponent(`${process.env.NEXTAUTH_URL}/courses/${slug}`)}&title=${encodeURIComponent(course.title)}`}
+                                        href={`https://www.linkedin.com/shareArticle?mini=true&url=${encodeURIComponent(`${baseUrl}/courses/${slug}`)}&title=${encodeURIComponent(course.title)}`}
                                     />
                                 </div>
                             </div>

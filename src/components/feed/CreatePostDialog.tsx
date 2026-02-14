@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
+import Image from 'next/image';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import NovelEditor from '@/components/editor/NovelEditor';
@@ -13,7 +14,6 @@ import { toast } from 'sonner';
 import { useDynamicConfig } from '@/hooks/useDynamicConfig';
 import { useAuthProtection } from '@/hooks/useAuthProtection';
 import { ProfileCompletionModal } from '@/components/auth/ProfileCompletionModal';
-import { useEffect } from 'react';
 
 interface CreatePostDialogProps {
     open: boolean;
@@ -161,11 +161,12 @@ export function CreatePostDialog({ open, onOpenChange }: CreatePostDialogProps) 
                         {/* Form contents */}
                         <div className="flex items-start gap-3">
                             {session?.user?.image ? (
-                                <div className="h-10 w-10 rounded-full overflow-hidden">
-                                    <img
+                                <div className="h-10 w-10 rounded-full overflow-hidden relative">
+                                    <Image
                                         src={session.user.image}
                                         alt={session.user.name || 'User'}
-                                        className="h-full w-full object-cover"
+                                        fill
+                                        className="object-cover"
                                     />
                                 </div>
                             ) : (
@@ -212,7 +213,7 @@ export function CreatePostDialog({ open, onOpenChange }: CreatePostDialogProps) 
                             <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                                 {mediaUrls.map((url, index) => (
                                     <div key={index} className="relative rounded-lg overflow-hidden border bg-muted/50 aspect-video group">
-                                        <img src={url} alt={`Preview ${index + 1}`} className="w-full h-full object-cover" />
+                                        <Image src={url} alt={`Preview ${index + 1}`} fill className="object-cover" />
                                         <button
                                             type="button"
                                             onClick={() => removeImage(index)}

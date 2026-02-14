@@ -62,7 +62,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     const userName = review.user?.name || 'Anonymous';
     const title = review.title || `${bookTitle} Review`;
     const description = `Read ${userName}'s review of ${bookTitle}`;
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://pathchakro.vercel.app';
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.pathchakro.com';
     let imageUrl = review.image || review.book?.coverImage || '/og-default.png';
 
     // Ensure absolute URL
@@ -78,7 +78,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
             description,
             images: [{ url: imageUrl, width: 1200, height: 630, alt: title }],
             type: 'article',
-            url: `https://pathchakro.vercel.app/reviews/${review.slug || review._id}`,
+            url: `https://www.pathchakro.com/reviews/${review.slug || review._id}`,
         },
         twitter: {
             card: 'summary_large_image',

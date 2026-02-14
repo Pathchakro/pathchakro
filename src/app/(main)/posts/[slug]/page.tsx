@@ -1,3 +1,4 @@
+import { decode } from 'he';
 import { notFound } from 'next/navigation';
 import connectDB from '@/lib/mongodb';
 import Post from '@/models/Post';
@@ -18,6 +19,8 @@ interface PopulatedPost extends Omit<IPost, 'author'> {
     author: IUser;
 }
 
+import { generateHtml } from '@/lib/server-html';
+
 export async function generateMetadata({ params }: PostPageProps) {
     await connectDB();
     const { slug } = await params;
@@ -31,18 +34,28 @@ export async function generateMetadata({ params }: PostPageProps) {
 
     const images = post.media && post.media.length > 0 ? [post.media[0]] : [];
 
+    // Generate description from content
+    const htmlContent = generateHtml(post.content);
+    // Strip HTML tags for plain text description
+    const plainText = htmlContent.replace(/<[^>]*>?/gm, '');
+    const decodedText = decode(plainText);
+    const description = decodedText.substring(0, 160).trim();
+
     return {
         title: `${post.title || 'Post'} | Pathchakro`,
-        description: post.content.substring(0, 160),
+        description: description,
         openGraph: {
             title: post.title || 'Post',
-            description: post.content.substring(0, 160),
+            description: description,
             images: images,
+            type: 'article',
+            publishedTime: post.createdAt instanceof Date ? post.createdAt.toISOString() : post.createdAt,
+            authors: post.author?.name ? [post.author.name] : [],
         },
         twitter: {
             card: 'summary_large_image',
             title: post.title || 'Post',
-            description: post.content.substring(0, 160),
+            description: description,
             images: images,
         },
     };

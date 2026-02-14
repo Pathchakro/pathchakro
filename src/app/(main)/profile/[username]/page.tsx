@@ -10,6 +10,7 @@ import { BookmarksTabContent } from '@/components/profile/BookmarksTabContent';
 import { MyBooksTabContent } from '@/components/profile/MyBooksTabContent';
 import { MapPin, Calendar, Edit, Trash2, Briefcase, GraduationCap, Globe, Github, Linkedin, Facebook, Twitter, Phone, Mail, Bookmark } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
+import Image from 'next/image';
 import { useSession } from 'next-auth/react';
 
 import { IUser } from '@/types';
@@ -399,7 +400,7 @@ export default function ProfilePage() {
                                         <div className="relative h-40 bg-muted">
                                             {/* Placeholder for banner if no image */}
                                             {tour.bannerUrl ? (
-                                                <img src={tour.bannerUrl} alt={tour.title} className="w-full h-full object-cover" />
+                                                <Image src={tour.bannerUrl} alt={tour.title} fill className="object-cover" />
                                             ) : (
                                                 <div className="w-full h-full flex items-center justify-center text-muted-foreground">
                                                     <MapPin className="h-10 w-10 opacity-20" />

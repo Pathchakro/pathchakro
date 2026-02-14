@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { MapPin, Calendar, Briefcase, Heart, BookOpen } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 import Link from 'next/link';
+import Image from 'next/image';
 
 interface ProfileHeaderProps {
     user: {
@@ -45,9 +46,9 @@ export function ProfileHeader({ user, stats, isOwnProfile }: ProfileHeaderProps)
     return (
         <div className="bg-card rounded-lg shadow-sm border overflow-hidden">
             {/* Cover Image */}
-            <div className={`h-48 bg-gradient-to-r ${getRankColor(user.rankTier || 'Beginner')}`}>
+            <div className={`h-48 relative bg-gradient-to-r ${getRankColor(user.rankTier || 'Beginner')}`}>
                 {user.coverImage && (
-                    <img src={user.coverImage} alt="Cover" className="w-full h-full object-cover" />
+                    <Image src={user.coverImage} alt="Cover" fill className="object-cover" />
                 )}
             </div>
 
@@ -56,11 +57,11 @@ export function ProfileHeader({ user, stats, isOwnProfile }: ProfileHeaderProps)
                 <div className="flex flex-col md:flex-row gap-4 items-start md:items-end -mt-20 md:-mt-16">
                     {/* Avatar */}
                     <div className="relative">
-                        <div className={`h-32 w-32 rounded-full border-4 border-card bg-gradient-to-br ${getRankColor(user.rankTier || 'Beginner')} flex items-center justify-center text-white font-bold text-4xl shadow-lg`}>
+                        <div className={`h-32 w-32 rounded-full border-4 border-card bg-gradient-to-br ${getRankColor(user.rankTier || 'Beginner')} flex items-center justify-center text-white font-bold text-4xl shadow-lg relative`}>
                             {user.image ? (
-                                <img src={user.image} alt={user.name} className="h-full w-full rounded-full object-cover" />
+                                <Image src={user.image} alt={user.name} fill className="rounded-full object-cover" />
                             ) : (
-                                user.name[0].toUpperCase()
+                                user.name && user.name.length > 0 ? user.name[0].toUpperCase() : '?'
                             )}
                         </div>
                         {/* Rank Badge */}

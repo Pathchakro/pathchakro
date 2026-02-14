@@ -11,6 +11,7 @@ import { ChatMessage } from '@/services/geminiService';
 import { useSession } from 'next-auth/react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import Image from 'next/image';
 
 export function Chatbot() {
     const { data: session } = useSession();
@@ -120,7 +121,7 @@ export function Chatbot() {
                                         )}>
                                             {msg.role === 'user' ? (
                                                 session?.user?.image ? (
-                                                    <img src={session.user.image} alt="User" className="h-full w-full object-cover" />
+                                                    <Image src={session.user.image} alt="User" fill className="object-cover" />
                                                 ) : (
                                                     <span className="font-bold">{session?.user?.name?.[0]?.toUpperCase() || <User className="h-4 w-4" />}</span>
                                                 )

@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import { Calendar, Users, MoreHorizontal, Heart, MessageCircle, Share2, Bookmark, GraduationCap, Pencil, Trash2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -80,11 +81,12 @@ export function CourseCard({ course, currentUserId, isBookmarked = false, onTogg
             <div className="flex items-start justify-between mb-4">
                 <div className="flex items-start gap-3">
                     {instructorImage ? (
-                        <div className="h-10 w-10 rounded-full overflow-hidden">
-                            <img
+                        <div className="h-10 w-10 rounded-full overflow-hidden relative">
+                            <Image
                                 src={instructorImage}
                                 alt={instructorName}
-                                className="h-full w-full object-cover"
+                                fill
+                                className="object-cover"
                             />
                         </div>
                     ) : (
@@ -137,10 +139,11 @@ export function CourseCard({ course, currentUserId, isBookmarked = false, onTogg
 
                     {/* Banner Image */}
                     <div className="relative aspect-video w-full overflow-hidden rounded-md mb-3 border">
-                        <img
+                        <Image
                             src={course.banner}
                             alt={course.title}
-                            className="object-cover w-full h-full"
+                            fill
+                            className="object-cover"
                         />
                         <Badge className="absolute top-2 right-2 shadow-sm" variant="secondary">
                             ৳ {course.fee}

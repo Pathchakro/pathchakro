@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../../../components/ui/tabs';
 import { User, GraduationCap, Briefcase, Globe, Heart, ArrowLeft, MapPin, ShieldCheck, X } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 // import { bdLocations } from '@/lib/bd-locations';
 // import { INTERESTS_LIST } from '@/lib/constants';
 import { useDynamicConfig } from '@/hooks/useDynamicConfig';
@@ -89,6 +90,7 @@ export default function EditProfilePage() {
     // Fetch Profile Data
     useEffect(() => {
         const fetchProfile = async () => {
+            setError('');
             try {
                 const res = await fetch('/api/profile/me');
                 if (res.ok) {
@@ -166,8 +168,9 @@ export default function EditProfilePage() {
                         }
                     }
                 }
-            } catch (error) {
+            } catch (error: any) {
                 console.error("Failed to fetch profile", error);
+                setError(error.message || 'Failed to fetch profile');
             }
         };
         fetchProfile();
@@ -256,18 +259,52 @@ export default function EditProfilePage() {
 
             if (verificationFiles.length > 0) {
                 setIsUploading(true);
-                // Upload files sequentially or in parallel
-                for (const file of verificationFiles) {
+
+                // Process uploads in parallel
+                const uploadPromises = verificationFiles.map(async (file) => {
                     const formData = new FormData();
                     formData.append('file', file);
+
                     const uploadResponse = await fetch('/api/upload/image', {
                         method: 'POST',
                         body: formData,
                     });
+
                     const uploadResult = await uploadResponse.json();
-                    if (!uploadResponse.ok) throw new Error(uploadResult.error || 'Failed to upload one or more verification documents');
-                    uploadedUrls.push(uploadResult.displayUrl || uploadResult.url);
+
+                    if (!uploadResponse.ok) {
+                        throw new Error(uploadResult.error || `Failed to upload ${file.name}`);
+                    }
+
+                    return uploadResult.displayUrl || uploadResult.url;
+                });
+
+                const results = await Promise.allSettled(uploadPromises);
+
+                // Collect successful URLs
+                const successfulUrls = results
+                    .filter((result): result is PromiseFulfilledResult<string> => result.status === 'fulfilled')
+                    .map(result => result.value);
+
+                // Collect failures
+                const failures = results
+                    .filter((result): result is PromiseRejectedResult => result.status === 'rejected')
+                    .map(result => result.reason?.message || 'Unknown error');
+
+                if (successfulUrls.length > 0) {
+                    uploadedUrls.push(...successfulUrls);
                 }
+
+                if (failures.length > 0) {
+                    console.error('Some uploads failed:', failures);
+                    // If all failed, throw an error to stop profile update
+                    if (successfulUrls.length === 0) {
+                        throw new Error(`All file uploads failed: ${failures.join(', ')}`);
+                    }
+                    // If partial failure, notify user but proceed with successful ones
+                    setError(`Warning: ${failures.length} document(s) failed to upload. Proceeding with valid uploads.`);
+                }
+
                 setIsUploading(false);
             }
 
@@ -432,9 +469,9 @@ export default function EditProfilePage() {
                             {/* Profile Image & Name */}
                             <div className="flex flex-col items-center sm:flex-row gap-6 mb-6">
                                 <div className="relative group">
-                                    <div className="h-24 w-24 rounded-full overflow-hidden border-2 border-primary/20 bg-muted flex items-center justify-center">
+                                    <div className="h-24 w-24 rounded-full overflow-hidden border-2 border-primary/20 bg-muted flex items-center justify-center relative">
                                         {imagePreview || image ? (
-                                            <img src={imagePreview || image} alt="Profile" className="h-full w-full object-cover" />
+                                            <Image src={imagePreview || image} alt="Profile" fill className="object-cover" />
                                         ) : (
                                             <User className="h-12 w-12 text-muted-foreground" />
                                         )}

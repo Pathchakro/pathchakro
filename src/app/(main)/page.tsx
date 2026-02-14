@@ -8,7 +8,7 @@ export const metadata: Metadata = {
     openGraph: {
         title: 'Pathchakro - Journey of Knowledge',
         description: 'Explore book reviews, courses, events, and more on Pathchakro.',
-        url: 'https://pathchakro.vercel.app',
+        url: 'https://www.pathchakro.com',
         siteName: 'Pathchakro',
         type: 'website',
     },

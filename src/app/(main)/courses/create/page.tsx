@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
+import Image from 'next/image';
 import { useSession } from 'next-auth/react';
 import { toast } from 'sonner';
 import { Loader2, ArrowLeft, Upload } from 'lucide-react';
@@ -133,7 +134,7 @@ export default function CreateCoursePage() {
                             <div className="flex items-center gap-4">
                                 {banner && (
                                     <div className="relative h-20 w-32 rounded-lg overflow-hidden border">
-                                        <img src={banner} alt="Banner" className="object-cover w-full h-full" />
+                                        <Image src={banner} alt="Banner" fill className="object-cover" />
                                     </div>
                                 )}
                                 <div className="flex-1">

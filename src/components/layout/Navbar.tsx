@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Bell, MessageCircle, Search, BookOpen, PlusCircle, User, Settings, LogOut } from 'lucide-react';
@@ -94,10 +95,11 @@ export function Navbar() {
                                 className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 overflow-hidden flex items-center justify-center text-white font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
                             >
                                 {session?.user?.image ? (
-                                    <img
+                                    <Image
                                         src={session.user.image}
                                         alt={session.user.name || 'User'}
-                                        className="h-full w-full object-cover"
+                                        fill
+                                        className="object-cover"
                                     />
                                 ) : (
                                     <div className="h-full w-full flex items-center justify-center bg-muted text-muted-foreground">

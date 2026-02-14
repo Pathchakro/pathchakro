@@ -33,6 +33,7 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import Link from 'next/link';
+import Image from 'next/image';
 import { formatDate } from '@/lib/utils';
 import { toast } from 'sonner';
 
@@ -173,10 +174,11 @@ function SortableChapterItem({ chapter, projectSlug, onDelete }: { chapter: Chap
 
                 {chapter.image ? (
                     <div className="relative h-16 w-16 rounded-md overflow-hidden bg-muted shrink-0 hidden sm:block">
-                        <img
+                        <Image
                             src={chapter.image}
                             alt={chapter.title}
-                            className="object-cover w-full h-full"
+                            fill
+                            className="object-cover"
                         />
                     </div>
                 ) : (

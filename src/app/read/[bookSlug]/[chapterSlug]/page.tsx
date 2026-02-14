@@ -12,11 +12,74 @@ import { ReaderWrapper } from './ReaderWrapper';
 import { ReaderInfoSidebar } from './ReaderInfoSidebar';
 import { ReaderChapterList } from './ReaderChapterList';
 
+import { generateHtml } from '@/lib/server-html';
+import Image from 'next/image';
+
 interface ReaderPageProps {
     params: Promise<{
         bookSlug: string;
         chapterSlug: string;
     }>;
+}
+
+export async function generateMetadata({ params }: ReaderPageProps) {
+    await dbConnect();
+    const resolvedParams = await params;
+
+    // Logic duplicated from component because generateMetadata is separate
+    const bookSlug = decodeURIComponent(resolvedParams.bookSlug);
+    const chapterSlug = decodeURIComponent(resolvedParams.chapterSlug);
+
+    const projectQuery = (bookSlug.match(/^[0-9a-fA-F]{24}$/))
+        ? { _id: bookSlug }
+        : { slug: bookSlug };
+
+    const project = await WritingProject.findOne(projectQuery).populate('author', 'name').lean();
+
+    if (!project) {
+        return {
+            title: 'Chapter Not Found',
+        };
+    }
+
+    const targetSlug = `${bookSlug}/${chapterSlug}`;
+    const chapter = project.chapters.find((c: any) => c.slug === targetSlug || c.slug === chapterSlug);
+
+    if (!chapter) {
+        return {
+            title: 'Chapter Not Found',
+        };
+    }
+
+    // Generate description from content
+    let description = '';
+    if (chapter.content) {
+        const htmlContent = generateHtml(chapter.content);
+        // Strip HTML and take first 160 chars
+        description = htmlContent.replace(/<[^>]*>?/gm, '').substring(0, 160).trim();
+    }
+
+    const title = `${chapter.title} | ${project.title}`;
+    const images = chapter.image ? [chapter.image] : (project.coverImage ? [project.coverImage] : []);
+
+    return {
+        title: title,
+        description: description,
+        openGraph: {
+            title: title,
+            description: description,
+            images: images,
+            type: 'article',
+            publishedTime: chapter.createdAt instanceof Date ? chapter.createdAt.toISOString() : chapter.createdAt,
+            authors: project.author?.name ? [project.author.name] : [],
+        },
+        twitter: {
+            card: 'summary_large_image',
+            title: title,
+            description: description,
+            images: images,
+        },
+    };
 }
 
 export default async function ReaderPage(props: ReaderPageProps) {
@@ -122,10 +185,11 @@ export default async function ReaderPage(props: ReaderPageProps) {
 
                                 {chapter.image && (
                                     <div className="relative w-full aspect-[2/1] md:aspect-[3/1] mt-8 rounded-xl overflow-hidden shadow-lg">
-                                        <img
+                                        <Image
                                             src={chapter.image}
                                             alt={chapter.title}
-                                            className="object-cover w-full h-full"
+                                            fill
+                                            className="object-cover"
                                         />
                                     </div>
                                 )}

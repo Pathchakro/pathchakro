@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import Image from 'next/image';
 import { useRouter, useParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
@@ -211,11 +212,12 @@ export default function EditPostPage() {
                 <form onSubmit={handleSubmit} className="space-y-6">
                     <div className="flex items-start gap-3">
                         {session?.user?.image ? (
-                            <div className="h-10 w-10 rounded-full overflow-hidden">
-                                <img
+                            <div className="h-10 w-10 rounded-full overflow-hidden relative">
+                                <Image
                                     src={session.user.image}
                                     alt={session.user.name || 'User'}
-                                    className="h-full w-full object-cover"
+                                    fill
+                                    className="object-cover"
                                 />
                             </div>
                         ) : (
@@ -261,7 +263,7 @@ export default function EditPostPage() {
                         <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                             {mediaUrls.map((url, index) => (
                                 <div key={index} className="relative rounded-lg overflow-hidden border bg-muted/50 aspect-video group">
-                                    <img src={url} alt={`Preview ${index + 1}`} className="w-full h-full object-cover" />
+                                    <Image src={url} alt={`Preview ${index + 1}`} fill className="object-cover" />
                                     <button
                                         type="button"
                                         onClick={() => removeImage(index)}

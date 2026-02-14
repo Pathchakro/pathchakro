@@ -1,8 +1,9 @@
 'use client';
 
+import Image from 'next/image';
 import { Star, ThumbsUp, MoreHorizontal, MessageCircle, Share2, Trash2, Pencil, Heart } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
-import { PostContent } from '@/components/feed/PostContent';
+import { generateHtml } from '@/lib/server-html';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
@@ -130,11 +131,12 @@ export function ReviewCard({
             <div className="flex items-start justify-between mb-4">
                 <div className="flex items-start gap-3">
                     {review.user?.image ? (
-                        <div className="h-10 w-10 rounded-full overflow-hidden">
-                            <img
+                        <div className="h-10 w-10 rounded-full overflow-hidden relative">
+                            <Image
                                 src={review.user.image}
                                 alt={review.user.name}
-                                className="h-full w-full object-cover"
+                                fill
+                                className="object-cover"
                             />
                         </div>
                     ) : (
@@ -220,16 +222,22 @@ export function ReviewCard({
 
                         {review.image && (
                             <div className="rounded-lg overflow-hidden border bg-muted shadow-md">
-                                <img
+                                <Image
                                     src={review.image}
                                     alt={review.title || 'Review image'}
+                                    width={0}
+                                    height={0}
+                                    sizes="100vw"
                                     className="w-full h-auto max-h-[600px] object-contain mx-auto"
                                 />
                             </div>
                         )}
 
                         <div className="text-base leading-relaxed mt-4">
-                            <PostContent content={review.content} />
+                            <div
+                                className="prose prose-lg dark:prose-invert prose-headings:font-title font-sans leading-normal focus:outline-none max-w-full text-[16px]"
+                                dangerouslySetInnerHTML={{ __html: generateHtml(review.content) }}
+                            />
                         </div>
 
                         {/* Book Footer Card */}
@@ -241,11 +249,14 @@ export function ReviewCard({
                             >
                                 <div className="w-20 h-28 bg-muted rounded-lg flex-shrink-0 flex items-center justify-center border overflow-hidden shadow-sm">
                                     {review.book.coverImage ? (
-                                        <img
-                                            src={review.book.coverImage}
-                                            alt={review.book.title}
-                                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                                        />
+                                        <div className="relative w-full h-full">
+                                            <Image
+                                                src={review.book.coverImage}
+                                                alt={review.book.title}
+                                                fill
+                                                className="object-cover group-hover:scale-105 transition-transform duration-300"
+                                            />
+                                        </div>
                                     ) : (
                                         <span className="text-3xl">📚</span>
                                     )}
@@ -267,11 +278,14 @@ export function ReviewCard({
                             className="w-24 h-32 bg-muted rounded-lg flex-shrink-0 flex items-center justify-center border hover:opacity-90 transition-opacity overflow-hidden"
                         >
                             {review.book.coverImage ? (
-                                <img
-                                    src={review.book.coverImage}
-                                    alt={review.book.title}
-                                    className="w-full h-full object-cover"
-                                />
+                                <div className="relative w-full h-full">
+                                    <Image
+                                        src={review.book.coverImage}
+                                        alt={review.book.title}
+                                        fill
+                                        className="object-cover"
+                                    />
+                                </div>
                             ) : (
                                 <span className="text-4xl">📚</span>
                             )}

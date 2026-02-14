@@ -7,6 +7,7 @@ import { Select } from '@/components/ui/select';
 import { MapPin, Calendar, DollarSign, Users, Plus, Search, Loader2, Heart } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useSession } from 'next-auth/react';
 
@@ -255,7 +256,7 @@ export default function ToursPage() {
                             {/* Tour Image Placeholder */}
                             <div className="h-40 bg-gradient-to-br from-blue-400 to-purple-600 flex items-center justify-center relative overflow-hidden">
                                 {tour.bannerUrl ? (
-                                    <img src={tour.bannerUrl} alt={tour.title} className="w-full h-full object-cover transition-transform group-hover:scale-105" />
+                                    <Image src={tour.bannerUrl} alt={tour.title} fill className="object-cover transition-transform group-hover:scale-105" />
                                 ) : (
                                     <MapPin className="h-16 w-16 text-white/50" />
                                 )}

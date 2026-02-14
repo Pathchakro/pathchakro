@@ -17,6 +17,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Trophy, Calendar as CalendarIcon, ArrowRight, ArrowLeft, BookOpen, Search } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
 
 interface CompletedBook {
@@ -64,6 +65,12 @@ function CompletedLeaderboardContent() {
                 to: dateRange.to
             });
             const res = await fetch(`/api/reading-status/completed?${query.toString()}`);
+
+            if (!res.ok) {
+                console.error(`Failed to fetch: ${res.status}`);
+                throw new Error(`Failed to fetch leaderboard: ${res.status}`);
+            }
+
             const data = await res.json();
             if (data.leaderboard) {
                 setLeaderboard(data.leaderboard);
@@ -190,9 +197,9 @@ function CompletedLeaderboardContent() {
                                                     {stat.books.map((book) => (
                                                         <Link href={`/books/${book.slug || book._id}`} key={book._id}>
                                                             <div className="flex items-center gap-2 bg-secondary/30 p-1.5 rounded-md border max-w-[200px] hover:bg-secondary transition-colors cursor-pointer" title={book.title}>
-                                                                <div className="h-8 w-6 overflow-hidden rounded bg-gray-200 flex-shrink-0">
+                                                                <div className="h-8 w-6 overflow-hidden rounded bg-gray-200 flex-shrink-0 relative">
                                                                     {book.coverImage ? (
-                                                                        <img src={book.coverImage} alt={book.title} className="h-full w-full object-cover" />
+                                                                        <Image src={book.coverImage} alt={book.title} fill className="object-cover" />
                                                                     ) : (
                                                                         <div className="h-full w-full flex items-center justify-center text-xs">📖</div>
                                                                     )}

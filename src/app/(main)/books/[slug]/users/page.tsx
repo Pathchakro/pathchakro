@@ -32,6 +32,11 @@ export default function BookUsersPage() {
             try {
                 // 1. Get Book ID from Slug
                 const bookRes = await fetch(`/api/books/slug/${slug}`);
+
+                if (!bookRes.ok) {
+                    throw new Error(`Failed to fetch book: ${bookRes.status}`);
+                }
+
                 const bookData = await bookRes.json();
 
                 if (bookData._id) {
@@ -100,12 +105,12 @@ export default function BookUsersPage() {
                     {users.map((user) => (
                         <div key={user._id} className="flex items-center gap-4 bg-card p-4 rounded-lg border shadow-sm">
                             {user.image ? (
-                                <div className="h-12 w-12 rounded-full overflow-hidden">
-                                    <img src={user.image} alt={user.name} className="h-full w-full object-cover" />
+                                <div className="h-12 w-12 rounded-full overflow-hidden relative">
+                                    <Image src={user.image} alt={user.name} fill className="object-cover" />
                                 </div>
                             ) : (
                                 <div className="h-12 w-12 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-medium text-lg">
-                                    {user.name[0]}
+                                    {user.name?.charAt(0).toUpperCase() || '?'}
                                 </div>
                             )}
 
@@ -119,9 +124,11 @@ export default function BookUsersPage() {
                                 </div>
                             </div>
 
-                            <Button variant="outline" size="sm">
-                                View Profile
-                            </Button>
+                            <Link href={`/profile/${user._id}`}>
+                                <Button variant="outline" size="sm">
+                                    View Profile
+                                </Button>
+                            </Link>
                         </div>
                     ))}
                 </div>

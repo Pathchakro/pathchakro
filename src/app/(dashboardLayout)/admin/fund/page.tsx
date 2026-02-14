@@ -45,10 +45,7 @@ import { Loader2, Check, X, Eye, ExternalLink, DollarSign, Filter, TrendingUp, H
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 
-const NovelEditor = dynamic(() => import('@/components/editor/NovelEditor'), {
-    ssr: false,
-    loading: () => <p>Loading content...</p>
-});
+import { generateHtml } from '@/lib/server-html';
 
 export default function AdminFundPage() {
     const { data: session } = useSession();
@@ -382,9 +379,7 @@ export default function AdminFundPage() {
                                                                     Requested by {app.applicant?.name} • ৳{app.amountRequested}
                                                                 </DialogDescription>
                                                             </DialogHeader>
-                                                            <div className="border rounded-md p-4 min-h-[200px] mt-4">
-                                                                <NovelEditor initialValue={app.description} onChange={() => { }} />
-                                                            </div>
+                                                            <div className="prose prose-sm dark:prose-invert max-w-full" dangerouslySetInnerHTML={{ __html: generateHtml(app.description) }} />
                                                             <div className="flex justify-end gap-3 mt-4">
                                                                 {app.status === 'pending' && (
                                                                     <>

@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import { DollarSign, MapPin, Users, MoreHorizontal, Heart, MessageCircle, Share2, Bookmark, Plane } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 import {
@@ -46,11 +47,12 @@ export function TourCard({ tour }: TourCardProps) {
             <div className="flex items-start justify-between mb-4">
                 <div className="flex items-start gap-3">
                     {tour.organizer.image ? (
-                        <div className="h-10 w-10 rounded-full overflow-hidden">
-                            <img
+                        <div className="h-10 w-10 rounded-full overflow-hidden relative">
+                            <Image
                                 src={tour.organizer.image}
                                 alt={tour.organizer.name}
-                                className="h-full w-full object-cover"
+                                fill
+                                className="object-cover"
                             />
                         </div>
                     ) : (

@@ -10,12 +10,12 @@ export const metadata: Metadata = {
     title: 'Book Reviews | Pathchakro',
     description: 'Discover and read the latest book reviews from the Pathchakro community. Share your thoughts and join the conversation.',
     alternates: {
-        canonical: 'https://pathchakro.vercel.app/reviews',
+        canonical: 'https://www.pathchakro.com/reviews',
     },
     openGraph: {
         title: 'Book Reviews | Pathchakro',
         description: 'Discover and read the latest book reviews from the Pathchakro community.',
-        url: 'https://pathchakro.vercel.app/reviews',
+        url: 'https://www.pathchakro.com/reviews',
         siteName: 'Pathchakro',
         type: 'website',
     },
@@ -60,7 +60,7 @@ export default async function ReviewsPage() {
         '@type': 'CollectionPage',
         name: 'Book Reviews | Pathchakro',
         description: 'A collection of book reviews from the Pathchakro community.',
-        url: 'https://pathchakro.vercel.app/reviews',
+        url: 'https://www.pathchakro.com/reviews',
     };
 
     return (

@@ -16,6 +16,7 @@ import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Users, Search, BookOpen, UserX, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 
 interface ActiveBook {
@@ -189,9 +190,9 @@ export default function UserReadingStatusPage() {
                                                         {stat.activeBooks.map((book) => (
                                                             <Link href={`/books/${book.slug || book._id}`} key={book._id} className="w-full max-w-sm">
                                                                 <div className="flex gap-3 bg-muted/30 p-2 rounded-md border w-full hover:bg-muted transition-colors cursor-pointer group">
-                                                                    <div className="h-16 w-10 bg-secondary rounded overflow-hidden flex-shrink-0 group-hover:shadow-sm transition-all">
+                                                                    <div className="h-16 w-10 bg-secondary rounded overflow-hidden flex-shrink-0 group-hover:shadow-sm transition-all relative">
                                                                         {book.coverImage ? (
-                                                                            <img src={book.coverImage} alt={book.title} className="h-full w-full object-cover" />
+                                                                            <Image src={book.coverImage} alt={book.title} fill className="object-cover" />
                                                                         ) : (
                                                                             <div className="h-full w-full flex items-center justify-center bg-indigo-50 text-indigo-300">
                                                                                 <BookOpen className="h-4 w-4" />
