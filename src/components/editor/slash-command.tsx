@@ -4,10 +4,12 @@ import {
     Heading1,
     Heading2,
     Heading3,
+    Heading4,
+    Heading5,
+    Heading6,
     ImageIcon,
     List,
     ListOrdered,
-    MessageSquarePlus,
     Text,
     TextQuote,
     Youtube,
@@ -16,15 +18,7 @@ import { Command, createSuggestionItems, renderItems } from "novel";
 import { uploadFn } from "./image-upload";
 
 export const suggestionItems = createSuggestionItems([
-    {
-        title: "Send Feedback",
-        description: "Let us know how we can improve.",
-        icon: <MessageSquarePlus size={18} />,
-        command: ({ editor, range }) => {
-            editor.chain().focus().deleteRange(range).run();
-            window.open("/feedback", "_blank");
-        },
-    },
+
     {
         title: "Text",
         description: "Just start typing with plain text.",
@@ -68,6 +62,33 @@ export const suggestionItems = createSuggestionItems([
         icon: <Heading3 size={18} />,
         command: ({ editor, range }) => {
             editor.chain().focus().deleteRange(range).setNode("heading", { level: 3 }).run();
+        },
+    },
+    {
+        title: "Heading 4",
+        description: "Smaller section heading.",
+        searchTerms: ["subtitle", "smaller"],
+        icon: <Heading4 size={18} />,
+        command: ({ editor, range }) => {
+            editor.chain().focus().deleteRange(range).setNode("heading", { level: 4 }).run();
+        },
+    },
+    {
+        title: "Heading 5",
+        description: "Smallest section heading.",
+        searchTerms: ["subtitle", "smallest"],
+        icon: <Heading5 size={18} />,
+        command: ({ editor, range }) => {
+            editor.chain().focus().deleteRange(range).setNode("heading", { level: 5 }).run();
+        },
+    },
+    {
+        title: "Heading 6",
+        description: "Tiny section heading.",
+        searchTerms: ["subtitle", "tiny"],
+        icon: <Heading6 size={18} />,
+        command: ({ editor, range }) => {
+            editor.chain().focus().deleteRange(range).setNode("heading", { level: 6 }).run();
         },
     },
     {
