@@ -276,7 +276,7 @@ export function PostCard({ initialPost, currentUserId, onDelete, initialIsBookma
             {/* Post Content */}
             <div className="mb-4">
                 <div
-                    className="ProseMirror prose prose-lg dark:prose-invert prose-headings:font-title font-sans dark:text-white leading-normal focus:outline-none max-w-full"
+                    className="ProseMirror prose prose-lg dark:prose-invert prose-headings:font-title font-sans leading-normal focus:outline-none max-w-full"
                     dangerouslySetInnerHTML={{ __html: generateHtml(post.content) }}
                 />
 
