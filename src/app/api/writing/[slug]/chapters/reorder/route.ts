@@ -5,7 +5,7 @@ import WritingProject from '@/models/WritingProject';
 
 export async function POST(
     request: NextRequest,
-    props: { params: Promise<{ id: string }> }
+    props: { params: Promise<{ slug: string }> }
 ) {
     const params = await props.params;
     try {
@@ -44,8 +44,8 @@ export async function POST(
             );
         }
 
-        // params.id is project ID or slug
-        const projectIdOrSlug = params.id;
+        // params.slug is project ID or slug
+        const projectIdOrSlug = params.slug;
 
         await dbConnect();
 
