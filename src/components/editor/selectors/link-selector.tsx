@@ -1,4 +1,4 @@
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { Check, Trash } from "lucide-react";
@@ -41,7 +41,7 @@ export const LinkSelector = ({ open, onOpenChange }: LinkSelectorProps) => {
     return (
         <Popover modal={true} open={open} onOpenChange={onOpenChange}>
             <PopoverTrigger asChild>
-                <Button size="sm" variant="ghost" className="gap-2 rounded-none border-none">
+                <span className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "gap-2 rounded-none border-none cursor-pointer")}>
                     <p className="text-base">↗</p>
                     <p
                         className={cn("underline decoration-stone-400 underline-offset-4", {
@@ -50,13 +50,14 @@ export const LinkSelector = ({ open, onOpenChange }: LinkSelectorProps) => {
                     >
                         Link
                     </p>
-                </Button>
+                </span>
             </PopoverTrigger>
             <PopoverContent align="start" className="w-60 p-0" sideOffset={10}>
                 <form
                     onSubmit={(e) => {
                         const target = e.currentTarget as HTMLFormElement;
                         e.preventDefault();
+                        e.stopPropagation();
                         const input = target[0] as HTMLInputElement;
                         const url = getUrlFromString(input.value);
                         if (url) {
@@ -79,7 +80,8 @@ export const LinkSelector = ({ open, onOpenChange }: LinkSelectorProps) => {
                             variant="outline"
                             type="button"
                             className="flex h-8 items-center rounded-sm p-1 text-red-600 transition-all hover:bg-red-100 dark:hover:bg-red-800"
-                            onClick={() => {
+                            onClick={(e) => {
+                                e.stopPropagation();
                                 editor.chain().focus().unsetLink().run();
                                 if (inputRef.current) {
                                     inputRef.current.value = "";
