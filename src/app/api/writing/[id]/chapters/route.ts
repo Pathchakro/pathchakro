@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import dbConnect from '@/lib/mongodb';
 import WritingProject from '@/models/WritingProject';
+import { isValidVisibility, slugify } from '@/lib/utils';
 
 export async function GET(
     request: NextRequest,
@@ -103,8 +104,7 @@ export async function POST(
         // Generate slug if not provided using book slug and chapter title
         let finalSlug = slug;
         if (!finalSlug) {
-            const baseSlug = title.toLowerCase().replace(/[^a-z0-9\u0980-\u09FF]+/g, '-').replace(/(^-|-$)/g, '');
-            finalSlug = `${project.slug || project._id}/chapter-${chapterNumber}-${baseSlug}`;
+            finalSlug = slugify(title);
         }
 
         project.chapters.push({
