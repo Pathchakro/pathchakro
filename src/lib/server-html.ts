@@ -58,6 +58,21 @@ const renderNode = (node: any): string => {
 
                     text = `<a href="${safeHref}"${safeTarget}${safeRel} class="text-muted-foreground underline underline-offset-[3px] hover:text-primary transition-colors cursor-pointer">${text}</a>`;
                 }
+                else if (mark.type === 'textStyle') {
+                    const color = mark.attrs?.color;
+                    // Allow hex, rgb/a, hsl/a, named colors
+                    if (color && /^(#[0-9a-fA-F]{3,8}|rgba?\(.*?\)|hsla?\(.*?\)|[a-z]+)$/.test(color)) {
+                        text = `<span style="color: ${color}">${text}</span>`;
+                    }
+                }
+                else if (mark.type === 'highlight') {
+                    const color = mark.attrs?.color;
+                    if (color && /^(#[0-9a-fA-F]{3,8}|rgba?\(.*?\)|hsla?\(.*?\)|[a-z]+)$/.test(color)) {
+                        text = `<mark style="background-color: ${color}">${text}</mark>`;
+                    } else {
+                        text = `<mark>${text}</mark>`;
+                    }
+                }
             });
         }
         return text;
@@ -139,6 +154,8 @@ export const generateHtml = (json: any) => {
                     },
                     allowedStyles: {
                         '*': {
+                            'color': [/^(#[0-9a-fA-F]{3,8}|rgba?\(.*?\)|hsla?\(.*?\)|[a-z]+)$/],
+                            'background-color': [/^(#[0-9a-fA-F]{3,8}|rgba?\(.*?\)|hsla?\(.*?\)|[a-z]+)$/],
                             'width': [/^\d+(?:px|%|em|rem|vw|vh)?$/],
                             'height': [/^\d+(?:px|%|em|rem|vw|vh)?$/],
                             'max-width': [/^\d+(?:px|%|em|rem|vw|vh)?$/],
@@ -160,6 +177,8 @@ export const generateHtml = (json: any) => {
                 },
                 allowedStyles: {
                     '*': {
+                        'color': [/^(#[0-9a-fA-F]{3,8}|rgba?\(.*?\)|hsla?\(.*?\)|[a-z]+)$/],
+                        'background-color': [/^(#[0-9a-fA-F]{3,8}|rgba?\(.*?\)|hsla?\(.*?\)|[a-z]+)$/],
                         'width': [/^\d+(?:px|%|em|rem|vw|vh)?$/],
                         'height': [/^\d+(?:px|%|em|rem|vw|vh)?$/],
                         'max-width': [/^\d+(?:px|%|em|rem|vw|vh)?$/],
@@ -186,18 +205,22 @@ export const generateHtml = (json: any) => {
         // Sanitize the final HTML
         return sanitizeHtml(rawHtml, {
             allowedTags: sanitizeHtml.defaults.allowedTags.concat([
-                'h1', 'h2', 'img', 'iframe', 'u', 's'
+                'h1', 'h2', 'img', 'iframe', 'u', 's', 'span', 'mark'
             ]),
             allowedAttributes: {
                 ...sanitizeHtml.defaults.allowedAttributes,
-                '*': ['class'], // Removed global style
+                '*': ['class', 'style'], // Re-enabled global style for colors on span/mark
                 'a': ['href', 'target', 'rel', 'class'],
                 'img': ['src', 'alt', 'title', 'style', 'class', 'width', 'height'],
-                'iframe': ['src', 'width', 'height', 'frameborder', 'allowfullscreen', 'class', 'style']
+                'iframe': ['src', 'width', 'height', 'frameborder', 'allowfullscreen', 'class', 'style'],
+                'span': ['class', 'style'],
+                'mark': ['class', 'style']
             },
             allowedIframeHostnames: ['www.youtube.com', 'youtu.be', 'player.vimeo.com'],
             allowedStyles: {
                 '*': {
+                    'color': [/^(#[0-9a-fA-F]{3,8}|rgba?\(.*?\)|hsla?\(.*?\)|[a-z]+)$/],
+                    'background-color': [/^(#[0-9a-fA-F]{3,8}|rgba?\(.*?\)|hsla?\(.*?\)|[a-z]+)$/],
                     'width': [/^\d+(?:px|%|em|rem|vw|vh)?$/],
                     'height': [/^\d+(?:px|%|em|rem|vw|vh)?$/],
                     'max-width': [/^\d+(?:px|%|em|rem|vw|vh)?$/],
