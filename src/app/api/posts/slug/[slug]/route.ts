@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import dbConnect from '@/lib/mongodb';
 import Post from '@/models/Post';
-import { revalidatePath } from 'next/cache';
+import { revalidatePath, revalidateTag } from 'next/cache';
 
 export async function GET(
     request: NextRequest,
@@ -63,7 +63,7 @@ export async function DELETE(
 
         revalidatePath('/');
         revalidatePath(`/posts/${params.slug}`);
-        revalidatePath('/api/feed');
+        revalidateTag('feed', 'default');
 
         return NextResponse.json({ message: 'Post deleted successfully' });
     } catch (error) {
@@ -116,6 +116,10 @@ export async function PATCH(
         // User asked for "edit" functionality, typically implies content. 
 
         await post.save();
+
+        revalidatePath('/');
+        revalidatePath(`/posts/${params.slug}`);
+        revalidateTag('feed', 'default');
 
         return NextResponse.json({ post });
     } catch (error) {

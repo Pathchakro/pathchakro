@@ -166,6 +166,7 @@ export async function POST(request: NextRequest) {
 
         // Revalidate the entire site cache for posts
         revalidatePath('/', 'layout');
+        revalidateTag('feed', 'default');
 
         return NextResponse.json(
             { post: populatedPost },
