@@ -152,121 +152,124 @@ export function CreatePostDialog({ open, onOpenChange }: CreatePostDialogProps) 
                 onOpenChange={setShowProfileModal}
             />
             <Dialog open={open} onOpenChange={onOpenChange}>
-                <DialogContent className="sm:max-w-4xl max-h-[80vh] overflow-y-auto">
+                <DialogContent className="sm:max-w-4xl max-h-[80vh] flex flex-col">
                     <DialogHeader>
                         <DialogTitle>Create Post</DialogTitle>
                     </DialogHeader>
 
-                    <form onSubmit={handleSubmit} className="space-y-4">
-                        {/* Form contents */}
-                        <div className="flex items-start gap-3">
-                            {session?.user?.image ? (
-                                <div className="h-10 w-10 rounded-full overflow-hidden relative">
-                                    <Image
-                                        src={session.user.image}
-                                        alt={session.user.name || 'User'}
-                                        fill
-                                        className="object-cover"
-                                    />
+
+                    <div className="overflow-y-auto flex-1">
+                        <form onSubmit={handleSubmit} className="space-y-4">
+                            {/* Form contents */}
+                            <div className="flex items-start gap-3">
+                                {session?.user?.image ? (
+                                    <div className="h-10 w-10 rounded-full overflow-hidden relative">
+                                        <Image
+                                            src={session.user.image}
+                                            alt={session.user.name || 'User'}
+                                            fill
+                                            className="object-cover"
+                                        />
+                                    </div>
+                                ) : (
+                                    <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white font-medium">
+                                        {session?.user?.name?.[0] || 'U'}
+                                    </div>
+                                )}
+                                <div className="flex-1">
+                                    <p className="font-semibold">{session?.user?.name || 'User Name'}</p>
+                                    <Select
+                                        value={category}
+                                        onChange={(e) => setCategory(e.target.value)}
+                                        className="mt-1 text-xs h-7 w-fit bg-transparent border-none p-0 focus:ring-0 text-muted-foreground font-normal"
+                                    >
+                                        <option value="" disabled>Select Category</option>
+                                        {categories.map((cat) => (
+                                            <option key={cat} value={cat}>
+                                                {cat}
+                                            </option>
+                                        ))}
+                                    </Select>
                                 </div>
-                            ) : (
-                                <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white font-medium">
-                                    {session?.user?.name?.[0] || 'U'}
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="title">Title</Label>
+                                <input
+                                    id="title"
+                                    type="text"
+                                    value={title}
+                                    onChange={(e) => setTitle(e.target.value)}
+                                    placeholder="Post Title"
+                                    className="w-full rounded-md border border-input px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                                />
+                            </div>
+
+                            <NovelEditor
+                                initialValue={content ? JSON.parse(content) : undefined}
+                                onChange={(val) => setContent(val)}
+                            />
+
+                            {/* Image Preview */}
+                            {mediaUrls.length > 0 && (
+                                <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                                    {mediaUrls.map((url, index) => (
+                                        <div key={index} className="relative rounded-lg overflow-hidden border bg-muted/50 aspect-video group">
+                                            <Image src={url} alt={`Preview ${index + 1}`} fill className="object-cover" />
+                                            <button
+                                                type="button"
+                                                onClick={() => removeImage(index)}
+                                                className="absolute top-1 right-1 p-1 bg-black/50 rounded-full text-white hover:bg-black/70 opacity-0 group-hover:opacity-100 transition-opacity"
+                                            >
+                                                <X className="h-3 w-3" />
+                                            </button>
+                                            {index === 0 && (
+                                                <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-[10px] px-2 py-0.5 text-center">
+                                                    Thumbnail
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))}
                                 </div>
                             )}
-                            <div className="flex-1">
-                                <p className="font-semibold">{session?.user?.name || 'User Name'}</p>
-                                <Select
-                                    value={category}
-                                    onChange={(e) => setCategory(e.target.value)}
-                                    className="mt-1 text-xs h-7 w-fit bg-transparent border-none p-0 focus:ring-0 text-muted-foreground font-normal"
-                                >
-                                    <option value="" disabled>Select Category</option>
-                                    {categories.map((cat) => (
-                                        <option key={cat} value={cat}>
-                                            {cat}
-                                        </option>
-                                    ))}
-                                </Select>
+
+                            {isUploading && (
+                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                    <Loader2 className="h-4 w-4 animate-spin" /> Uploading image...
+                                </div>
+                            )}
+
+                            <div className="border rounded-lg p-3">
+                                <p className="text-sm font-medium mb-2">Add to your post</p>
+                                <div className="flex gap-2">
+                                    <input
+                                        type="file"
+                                        ref={fileInputRef}
+                                        hidden
+                                        accept="image/*"
+                                        onChange={handleImageUpload}
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => fileInputRef.current?.click()}
+                                        disabled={isUploading || mediaUrls.length >= 5}
+                                        className="flex items-center gap-1 px-3 py-2 rounded-lg hover:bg-muted transition-colors disabled:opacity-50"
+                                    >
+                                        <ImageIcon className="h-5 w-5 text-green-500" />
+                                        <span className="text-sm">Photo {mediaUrls.length}/5</span>
+                                    </button>
+                                </div>
                             </div>
-                        </div>
 
-                        <div className="space-y-2">
-                            <Label htmlFor="title">Title</Label>
-                            <input
-                                id="title"
-                                type="text"
-                                value={title}
-                                onChange={(e) => setTitle(e.target.value)}
-                                placeholder="Post Title"
-                                className="w-full rounded-md border border-input px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                            />
-                        </div>
-
-                        <NovelEditor
-                            initialValue={content ? JSON.parse(content) : undefined}
-                            onChange={(val) => setContent(val)}
-                        />
-
-                        {/* Image Preview */}
-                        {mediaUrls.length > 0 && (
-                            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                                {mediaUrls.map((url, index) => (
-                                    <div key={index} className="relative rounded-lg overflow-hidden border bg-muted/50 aspect-video group">
-                                        <Image src={url} alt={`Preview ${index + 1}`} fill className="object-cover" />
-                                        <button
-                                            type="button"
-                                            onClick={() => removeImage(index)}
-                                            className="absolute top-1 right-1 p-1 bg-black/50 rounded-full text-white hover:bg-black/70 opacity-0 group-hover:opacity-100 transition-opacity"
-                                        >
-                                            <X className="h-3 w-3" />
-                                        </button>
-                                        {index === 0 && (
-                                            <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-[10px] px-2 py-0.5 text-center">
-                                                Thumbnail
-                                            </div>
-                                        )}
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-
-                        {isUploading && (
-                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                <Loader2 className="h-4 w-4 animate-spin" /> Uploading image...
-                            </div>
-                        )}
-
-                        <div className="border rounded-lg p-3">
-                            <p className="text-sm font-medium mb-2">Add to your post</p>
-                            <div className="flex gap-2">
-                                <input
-                                    type="file"
-                                    ref={fileInputRef}
-                                    hidden
-                                    accept="image/*"
-                                    onChange={handleImageUpload}
-                                />
-                                <button
-                                    type="button"
-                                    onClick={() => fileInputRef.current?.click()}
-                                    disabled={isUploading || mediaUrls.length >= 5}
-                                    className="flex items-center gap-1 px-3 py-2 rounded-lg hover:bg-muted transition-colors disabled:opacity-50"
-                                >
-                                    <ImageIcon className="h-5 w-5 text-green-500" />
-                                    <span className="text-sm">Photo {mediaUrls.length}/5</span>
-                                </button>
-                            </div>
-                        </div>
-
-                        <Button
-                            type="submit"
-                            className="w-full"
-                            disabled={(!content.trim() && mediaUrls.length === 0) || !title.trim() || isLoading || isUploading}
-                        >
-                            {isLoading ? 'Posting...' : 'Post'}
-                        </Button>
-                    </form>
+                            <Button
+                                type="submit"
+                                className="w-full"
+                                disabled={(!content.trim() && mediaUrls.length === 0) || !title.trim() || isLoading || isUploading}
+                            >
+                                {isLoading ? 'Posting...' : 'Post'}
+                            </Button>
+                        </form>
+                    </div>
                 </DialogContent>
             </Dialog>
         </>
