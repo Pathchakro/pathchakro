@@ -7,8 +7,8 @@ import { useEffect, useRef } from "react";
 
 export function isValidUrl(url: string) {
     try {
-        new URL(url);
-        return true;
+        const parsed = new URL(url);
+        return ["http:", "https:", "mailto:", "tel:"].includes(parsed.protocol);
     } catch (_e) {
         return false;
     }
@@ -22,6 +22,7 @@ export function getUrlFromString(str: string) {
     } catch (_e) {
         return null;
     }
+    return null;
 }
 interface LinkSelectorProps {
     open: boolean;
@@ -34,8 +35,10 @@ export const LinkSelector = ({ open, onOpenChange }: LinkSelectorProps) => {
 
     // Autofocus on input by default
     useEffect(() => {
-        inputRef.current?.focus();
-    });
+        if (open) {
+            inputRef.current?.focus();
+        }
+    }, [open]);
     if (!editor) return null;
 
     return (
