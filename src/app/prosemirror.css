@@ -251,3 +251,9 @@ span[style] > strong {
 mark[style] > strong {
   color: inherit;
 }
+
+[cmdk-list] {
+  max-height: 330px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
