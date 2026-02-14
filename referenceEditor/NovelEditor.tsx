@@ -11,16 +11,18 @@ import {
     handleCommandNavigation,
     handleImagePaste,
     handleImageDrop,
+    EditorBubble,
 } from "novel";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useDebouncedCallback } from "use-debounce";
 import { defaultExtensions } from "./extensions";
 import { slashCommand, suggestionItems } from "./slash-command";
-import { uploadFn } from "./image-upload";
+import { onUpload } from "./image-upload";
+import { toast } from "sonner";
 
 import { Separator } from "@/components/ui/separator";
 
-import GenerativeMenuSwitch from "./generative/generative-menu-switch";
+
 import { NodeSelector } from "./selectors/node-selector";
 import { LinkSelector } from "./selectors/link-selector";
 import { MathSelector } from "./selectors/math-selector";
@@ -29,7 +31,7 @@ import { ColorSelector } from "./selectors/color-selector";
 
 interface NovelEditorProps {
     initialValue?: JSONContent;
-    onChange: (value: string) => void;
+    onChange?: (content: JSONContent) => void;
     readOnly?: boolean;
 }
 
@@ -39,12 +41,20 @@ export default function NovelEditor({ initialValue, onChange, readOnly = false }
     const [openNode, setOpenNode] = useState(false);
     const [openColor, setOpenColor] = useState(false);
     const [openLink, setOpenLink] = useState(false);
-    const [openAI, setOpenAI] = useState(false);
+    const [isMounted, setIsMounted] = useState(false);
+
+    useEffect(() => {
+        setIsMounted(true);
+    }, []);
 
     const debouncedUpdates = useDebouncedCallback(async (editor) => {
         const json = editor.getJSON();
-        onChange(JSON.stringify(json));
+        onChange?.(JSON.stringify(json) as any);
     }, 500);
+
+    if (!isMounted) {
+        return null; // Prevent SSR issues
+    }
 
     if (readOnly) {
         return (
@@ -58,13 +68,13 @@ export default function NovelEditor({ initialValue, onChange, readOnly = false }
                         className="min-h-[200px] w-full"
                         editorProps={{
                             attributes: {
-                                class: "prose prose-lg dark:prose-invert prose-headings:font-title font-sans leading-normal focus:outline-none max-w-full",
+                                class: "prose prose-lg dark:prose-invert prose-headings:font-title font-sans leading-normal focus:outline-none max-w-full text-[16px]",
                             },
                         }}
                     >
                     </EditorContent>
                 </EditorRoot>
-            </div >
+            </div>
         );
     }
 
@@ -80,10 +90,60 @@ export default function NovelEditor({ initialValue, onChange, readOnly = false }
                         handleDOMEvents: {
                             keydown: (_view, event) => handleCommandNavigation(event),
                         },
-                        handlePaste: (view, event) => handleImagePaste(view, event, uploadFn),
-                        handleDrop: (view, event, _slice, moved) => handleImageDrop(view, event, moved, uploadFn),
+                        handlePaste: (view, event) => {
+                            if (event.clipboardData && event.clipboardData.files.length > 0) {
+                                const file = event.clipboardData.files[0];
+                                if (file.type.startsWith("image/")) {
+                                    event.preventDefault(); // Prevent default paste behavior
+                                    const alt = file.name.split(".")[0]; // Use filename as alt text
+
+                                    // Upload the image
+                                    onUpload(file)
+                                        .then((url) => {
+                                            if (typeof url === "string") {
+                                                const { schema } = view.state;
+                                                const node = schema.nodes.image.create({ src: url, alt, title: alt });
+                                                const transaction = view.state.tr.insert(view.state.selection.from, node);
+                                                view.dispatch(transaction);
+                                            }
+                                        })
+                                        .catch((error) => {
+                                            toast.error(error.message || "Failed to upload image");
+                                        });
+                                    return true; // Handled
+                                }
+                            }
+                            return false; // Not handled
+                        },
+                        handleDrop: (view, event, _slice, moved) => {
+                            if (!moved && event.dataTransfer && event.dataTransfer.files.length > 0) {
+                                const file = event.dataTransfer.files[0];
+                                if (file.type.startsWith("image/")) {
+                                    event.preventDefault();
+                                    const alt = file.name.split(".")[0]; // Use filename as alt text
+
+                                    const coordinates = view.posAtCoords({ left: event.clientX, top: event.clientY });
+
+                                    // Upload the image
+                                    onUpload(file)
+                                        .then((url) => {
+                                            if (typeof url === "string") {
+                                                const { schema } = view.state;
+                                                const node = schema.nodes.image.create({ src: url, alt, title: alt });
+                                                const transaction = view.state.tr.insert(coordinates?.pos ?? view.state.selection.from, node);
+                                                view.dispatch(transaction);
+                                            }
+                                        })
+                                        .catch((error) => {
+                                            toast.error(error.message || "Failed to upload image");
+                                        });
+                                    return true; // Handled
+                                }
+                            }
+                            return false; // Not handled
+                        },
                         attributes: {
-                            class: "prose prose-lg dark:prose-invert prose-headings:font-title font-sans leading-normal focus:outline-none max-w-full",
+                            class: "prose prose-lg dark:prose-invert prose-headings:font-title font-sans leading-normal focus:outline-none max-w-full text-[16px]",
                         },
                     }}
                     onUpdate={({ editor }) => {
@@ -112,7 +172,12 @@ export default function NovelEditor({ initialValue, onChange, readOnly = false }
                         </EditorCommandList>
                     </EditorCommand>
 
-                    <GenerativeMenuSwitch open={openAI} onOpenChange={setOpenAI}>
+                    <EditorBubble
+                        tippyOptions={{
+                            placement: "top",
+                        }}
+                        className="flex w-fit max-w-[90vw] overflow-hidden rounded-md border border-muted bg-background shadow-xl"
+                    >
                         <Separator orientation="vertical" />
                         <NodeSelector open={openNode} onOpenChange={setOpenNode} />
                         <Separator orientation="vertical" />
@@ -124,9 +189,9 @@ export default function NovelEditor({ initialValue, onChange, readOnly = false }
                         <TextButtons />
                         <Separator orientation="vertical" />
                         <ColorSelector open={openColor} onOpenChange={setOpenColor} />
-                    </GenerativeMenuSwitch>
+                    </EditorBubble>
                 </EditorContent>
             </EditorRoot>
-        </div >
+        </div>
     );
 }
