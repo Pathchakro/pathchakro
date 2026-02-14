@@ -163,4 +163,13 @@
   pre:hover::-webkit-scrollbar-thumb {
     background: var(--primary);
   }
+
+  /* Force pointer events on Tippy popups (slash command) even when inside Dialog */
+  .tippy-box {
+    pointer-events: auto !important;
+  }
+
+  .tippy-box * {
+    pointer-events: auto !important;
+  }
 }
