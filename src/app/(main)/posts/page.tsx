@@ -3,6 +3,7 @@ import { auth } from '@/auth';
 import PostsContent from '@/components/posts/PostsContent';
 import dbConnect from '@/lib/mongodb';
 import Post from '@/models/Post';
+import User from '@/models/User';
 
 export const metadata: Metadata = {
     title: 'Explore Posts | Pathchakro',
@@ -42,18 +43,13 @@ async function getInitialData() {
     let bookmarkedIds: string[] = [];
     if (userId) {
         try {
-            // We can call an internal API or direct DB for bookmarks too
-            const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
-            const response = await fetch(`${baseUrl}/api/users/bookmarks?userId=${userId}`, {
-                cache: 'force-cache',
-                next: { tags: ['bookmarks', `bookmarks-${userId}`] }
-            });
-            const data = await response.json();
-            if (data.bookmarks) {
-                bookmarkedIds = data.bookmarks.map((b: any) => b._id);
+            const user = await User.findById(userId).select('savedPosts').lean();
+            if (user && user.savedPosts) {
+                // Ensure savedPosts are treated as strings
+                bookmarkedIds = user.savedPosts.map((id: any) => id.toString());
             }
         } catch (error) {
-            console.error('Error fetching bookmarks on server:', error);
+            console.error('Error fetching bookmarks directly:', error);
         }
     }
 
