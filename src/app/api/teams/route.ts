@@ -24,6 +24,14 @@ export async function GET(request: NextRequest) {
             filter.type = type;
         }
 
+        const filterMode = searchParams.get('filter');
+        if (filterMode === 'mine') {
+            const session = await auth();
+            if (session?.user?.id) {
+                filter['members.user'] = session.user.id;
+            }
+        }
+
         if (category && category !== 'all') {
             filter.category = category;
         }
