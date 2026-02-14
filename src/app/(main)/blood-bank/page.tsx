@@ -1,211 +1,278 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Select } from '@/components/ui/select';
-import { Droplet, Plus, Search, MapPin, Phone } from 'lucide-react';
-import { formatDate } from '@/lib/utils';
-import Link from 'next/link';
+import { useEffect, useState } from "react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select-radix";
+import { bdLocations } from "@/lib/bd-locations";
+import { Loader2, Mail, MapPin, Phone } from "lucide-react";
 
-interface BloodRequest {
+interface User {
     _id: string;
-    requester: {
-        _id: string;
-        name: string;
-        image?: string;
+    username: string;
+    name: string;
+    image?: string;
+    bloodGroup: string;
+    address?: {
+        present?: {
+            district?: string;
+            thana?: string;
+        };
     };
-    patientName: string;
-    bloodType: string;
-    unitsNeeded: number;
-    urgency: string;
-    location: string;
-    hospital: string;
-    contactNumber: string;
-    additionalInfo?: string;
-    status: string;
-    createdAt: string;
-    expiresAt: string;
+    email: string;
+    whatsappNumber?: string;
+    phone?: string;
+    willingToDonateBlood: boolean;
+    title?: string;
+    lastDateOfDonateBlood?: string;
 }
 
-export default function BloodDonationPage() {
-    const [requests, setRequests] = useState<BloodRequest[]>([]);
+export default function BloodBankPage() {
+    const [users, setUsers] = useState<User[]>([]);
     const [loading, setLoading] = useState(true);
-    const [bloodTypeFilter, setBloodTypeFilter] = useState('');
-    const [locationFilter, setLocationFilter] = useState('');
-    const [urgencyFilter, setUrgencyFilter] = useState('');
+    const [filters, setFilters] = useState({
+        bloodGroup: "all",
+        district: "all",
+        thana: "all",
+    });
+    const [revealedContacts, setRevealedContacts] = useState<Set<string>>(new Set());
 
-    useEffect(() => {
-        fetchRequests();
-    }, [bloodTypeFilter, locationFilter, urgencyFilter]);
+    // Derived state for dependent dropdowns
+    const selectedDistrictData = bdLocations
+        .flatMap((div) => div.districts)
+        .find((d) => d.name === filters.district);
 
-    const fetchRequests = async () => {
+    const thanas = selectedDistrictData ? selectedDistrictData.thanas : [];
+
+    // Reset thana when district changes
+    const handleDistrictChange = (value: string) => {
+        setFilters((prev) => ({ ...prev, district: value, thana: "all" }));
+    };
+
+    const fetchUsers = async () => {
         setLoading(true);
         try {
-            const params = new URLSearchParams();
-            if (bloodTypeFilter) params.append('bloodType', bloodTypeFilter);
-            if (locationFilter) params.append('location', locationFilter);
-            if (urgencyFilter) params.append('urgency', urgencyFilter);
+            const query = new URLSearchParams();
+            if (filters.bloodGroup !== "all") query.set("bloodGroup", filters.bloodGroup);
+            if (filters.district !== "all") query.set("district", filters.district);
+            if (filters.thana !== "all") query.set("thana", filters.thana);
 
-            const response = await fetch(`/api/blood-requests?${params}`);
-            const data = await response.json();
+            const res = await fetch(`/api/blood-bank?${query.toString()}`);
 
-            if (data.requests) {
-                setRequests(data.requests);
+            if (!res.ok) {
+                console.error("Failed to fetch users", res.status, res.statusText);
+                return;
+            }
+
+            const data = await res.json();
+            if (data.users) {
+                setUsers(data.users);
             }
         } catch (error) {
-            console.error('Error fetching blood requests:', error);
+            console.error("Failed to fetch users", error);
         } finally {
             setLoading(false);
         }
     };
 
-    const getUrgencyColor = (urgency: string) => {
-        switch (urgency) {
-            case 'critical': return 'bg-red-500';
-            case 'urgent': return 'bg-orange-500';
-            default: return 'bg-blue-500';
-        }
+    const formatDate = (dateString?: string) => {
+        if (!dateString) return "No record";
+        return new Date(dateString).toLocaleDateString("en-US", {
+            day: "numeric",
+            month: "short",
+            year: "numeric"
+        });
     };
 
-    const getUrgencyTextColor = (urgency: string) => {
-        switch (urgency) {
-            case 'critical': return 'text-red-500';
-            case 'urgent': return 'text-orange-500';
-            default: return 'text-blue-500';
-        }
+    useEffect(() => {
+        fetchUsers();
+    }, [filters]);
+
+    const toggleContact = (userId: string) => {
+        setRevealedContacts((prev) => {
+            const newSet = new Set(prev);
+            if (newSet.has(userId)) {
+                newSet.delete(userId);
+            } else {
+                newSet.add(userId);
+            }
+            return newSet;
+        });
     };
 
     return (
-        <div className="max-w-6xl mx-auto p-4">
-            {/* Header */}
-            <div className="mb-6">
-                <div className="flex items-center justify-between mb-4">
-                    <div>
-                        <h1 className="text-3xl font-bold">Blood Donation</h1>
-                        <p className="text-muted-foreground">Help save lives by donating blood</p>
-                    </div>
-                    <Link href="/blood-donation/create">
-                        <Button className="gap-2">
-                            <Plus className="h-4 w-4" />
-                            Create Request
-                        </Button>
-                    </Link>
+        <div className="container py-8 max-w-7xl mx-auto space-y-8">
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                <div>
+                    <h1 className="text-3xl font-bold tracking-tight">Blood Bank</h1>
+                    <p className="text-muted-foreground mt-1">
+                        Find willing blood donors in your area.
+                    </p>
+                </div>
+            </div>
+
+            {/* Filters */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-muted/30 p-4 rounded-lg border">
+                <div className="space-y-2">
+                    <label className="text-sm font-medium">Blood Group</label>
+                    <Select
+                        value={filters.bloodGroup}
+                        onValueChange={(value) =>
+                            setFilters((prev) => ({ ...prev, bloodGroup: value }))
+                        }
+                    >
+                        <SelectTrigger>
+                            <SelectValue placeholder="Select Blood Group" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">All Groups</SelectItem>
+                            {['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-'].map((bg) => (
+                                <SelectItem key={bg} value={bg}>
+                                    {bg}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
                 </div>
 
-                {/* Filters */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                    <Select
-                        value={bloodTypeFilter}
-                        onChange={(e) => setBloodTypeFilter(e.target.value)}
-                    >
-                        <option value="">All Blood Types</option>
-                        <option value="A+">A+</option>
-                        <option value="A-">A-</option>
-                        <option value="B+">B+</option>
-                        <option value="B-">B-</option>
-                        <option value="O+">O+</option>
-                        <option value="O-">O-</option>
-                        <option value="AB+">AB+</option>
-                        <option value="AB-">AB-</option>
+                <div className="space-y-2">
+                    <label className="text-sm font-medium">District</label>
+                    <Select value={filters.district} onValueChange={handleDistrictChange}>
+                        <SelectTrigger>
+                            <SelectValue placeholder="Select District" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">All Districts</SelectItem>
+                            {bdLocations
+                                .flatMap((div) => div.districts)
+                                .sort((a, b) => a.name.localeCompare(b.name))
+                                .map((district) => (
+                                    <SelectItem key={district.name} value={district.name}>
+                                        {district.name}
+                                    </SelectItem>
+                                ))}
+                        </SelectContent>
                     </Select>
+                </div>
 
-                    <div className="relative">
-                        <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        <Input
-                            value={locationFilter}
-                            onChange={(e) => setLocationFilter(e.target.value)}
-                            placeholder="Filter by location..."
-                            className="pl-10"
-                        />
-                    </div>
-
+                <div className="space-y-2">
+                    <label className="text-sm font-medium">Thana</label>
                     <Select
-                        value={urgencyFilter}
-                        onChange={(e) => setUrgencyFilter(e.target.value)}
+                        value={filters.thana}
+                        onValueChange={(value) =>
+                            setFilters((prev) => ({ ...prev, thana: value }))
+                        }
+                        disabled={!selectedDistrictData}
                     >
-                        <option value="">All Urgency Levels</option>
-                        <option value="critical">Critical</option>
-                        <option value="urgent">Urgent</option>
-                        <option value="normal">Normal</option>
+                        <SelectTrigger>
+                            <SelectValue placeholder="Select Thana" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">All Thanas</SelectItem>
+                            {thanas.map((thana) => (
+                                <SelectItem key={thana} value={thana}>
+                                    {thana}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
                     </Select>
                 </div>
             </div>
 
-            {/* Requests List */}
+            {/* Content */}
             {loading ? (
-                <div className="text-center py-12 text-muted-foreground">
-                    Loading requests...
+                <div className="flex justify-center py-20">
+                    <Loader2 className="h-10 w-10 animate-spin text-primary" />
                 </div>
-            ) : requests.length === 0 ? (
-                <div className="text-center py-12">
-                    <Droplet className="h-16 w-16 text-muted-foreground mx-auto mb-4 opacity-50" />
-                    <h3 className="text-xl font-semibold mb-2">No active requests</h3>
-                    <p className="text-muted-foreground mb-4">
-                        {bloodTypeFilter || locationFilter || urgencyFilter
-                            ? 'Try adjusting your filters'
-                            : 'Be the first to create a blood donation request'}
-                    </p>
+            ) : users.length === 0 ? (
+                <div className="text-center py-20 text-muted-foreground">
+                    <p className="text-lg">No donors found matching your criteria.</p>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {requests.map((request) => (
-                        <div
-                            key={request._id}
-                            className="bg-card border rounded-lg p-4 hover:shadow-md transition-shadow relative"
-                        >
-                            {/* Urgency Badge */}
-                            <div className={`absolute top-3 right-3 px-2 py-1 rounded-full text-xs font-medium text-white ${getUrgencyColor(request.urgency)}`}>
-                                {request.urgency.toUpperCase()}
-                            </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {users.map((user) => (
+                        <Card key={user._id} className="overflow-hidden flex flex-col h-full hover:shadow-lg transition-shadow border-muted">
+                            <CardHeader className="p-0">
+                                <div className="h-20 bg-gradient-to-r from-red-50 to-red-100 dark:from-red-950/20 dark:to-red-900/10 relative">
+                                    <Badge
+                                        className="absolute top-3 right-3 text-lg font-bold px-3 py-1 shadow-sm"
+                                        variant="destructive"
+                                    >
+                                        {user.bloodGroup}
+                                    </Badge>
+                                </div>
+                            </CardHeader>
+                            <CardContent className="flex flex-col items-center -mt-10 p-6 pt-0 flex-1">
+                                <Avatar className="h-20 w-20 border-4 border-background shadow-sm">
+                                    <AvatarImage src={user.image} alt={user.name} className="object-cover" />
+                                    <AvatarFallback className="text-xl">
+                                        {user.name?.charAt(0)}
+                                    </AvatarFallback>
+                                </Avatar>
 
-                            <div className="flex items-start gap-4 mb-4">
-                                <div className={`h-16 w-16 rounded-full flex items-center justify-center text-white font-bold text-xl ${getUrgencyColor(request.urgency)}`}>
-                                    {request.bloodType}
+                                <div className="text-center mt-3 space-y-1 mb-4 w-full">
+                                    <h3 className="font-bold text-lg leading-snug">{user.name}</h3>
+                                    {(user.title) && (
+                                        <Badge variant="outline" className="text-xs font-normal border-primary/20 bg-primary/5 text-primary">
+                                            {user.title}
+                                        </Badge>
+                                    )}
                                 </div>
-                                <div className="flex-1">
-                                    <h3 className="font-semibold text-lg">{request.patientName}</h3>
-                                    <p className="text-sm text-muted-foreground">
-                                        Requested by {request.requester.name}
-                                    </p>
-                                    <p className="text-xs text-muted-foreground mt-1">
-                                        {formatDate(request.createdAt)}
-                                    </p>
-                                </div>
-                            </div>
 
-                            <div className="space-y-2 text-sm">
-                                <div className="flex items-center gap-2">
-                                    <Droplet className="h-4 w-4 text-muted-foreground" />
-                                    <span className="font-medium">{request.unitsNeeded} unit(s) needed</span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <MapPin className="h-4 w-4 text-muted-foreground" />
-                                    <span>{request.hospital}, {request.location}</span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <Phone className="h-4 w-4 text-muted-foreground" />
-                                    <a href={`tel:${request.contactNumber}`} className="text-primary hover:underline">
-                                        {request.contactNumber}
-                                    </a>
-                                </div>
-                            </div>
+                                {user.lastDateOfDonateBlood && (
+                                    <div className="w-full text-center mb-4 bg-muted/30 py-1.5 rounded text-xs font-medium text-muted-foreground">
+                                        Last Donated: <span className="text-foreground">{formatDate(user.lastDateOfDonateBlood)}</span>
+                                    </div>
+                                )}
 
-                            {request.additionalInfo && (
-                                <p className="text-sm text-muted-foreground mt-3 p-2 bg-muted rounded">
-                                    {request.additionalInfo}
-                                </p>
-                            )}
+                                <div className="w-full space-y-4 mt-auto">
+                                    <div className="flex items-start gap-2.5 text-sm text-muted-foreground bg-muted/50 p-3 rounded-md">
+                                        <MapPin className="h-4 w-4 mt-0.5 shrink-0 text-primary/70" />
+                                        <span className="text-left font-medium text-foreground/80 leading-snug">
+                                            {[
+                                                user.address?.present?.thana,
+                                                user.address?.present?.district,
+                                            ]
+                                                .filter(Boolean)
+                                                .join(", ") || "Location unavailable"}
+                                        </span>
+                                    </div>
 
-                            <div className="flex items-center justify-between mt-4 pt-3 border-t">
-                                <p className="text-xs text-muted-foreground">
-                                    Expires: {formatDate(request.expiresAt)}
-                                </p>
-                                <Button size="sm" className={getUrgencyColor(request.urgency)}>
-                                    Contact Donor
-                                </Button>
-                            </div>
-                        </div>
+                                    {revealedContacts.has(user._id) ? (
+                                        <div className="space-y-3 animate-in fade-in slide-in-from-top-2 duration-300 border rounded-md p-3 bg-secondary/10">
+                                            {user.email && (
+                                                <div className="flex items-center gap-2 text-sm overflow-hidden">
+                                                    <Mail className="h-4 w-4 shrink-0 text-primary" />
+                                                    <span className="truncate" title={user.email}>{user.email}</span>
+                                                </div>
+                                            )}
+                                            {(user.whatsappNumber || user.phone) && (
+                                                <div className="flex items-center gap-2 text-sm">
+                                                    <Phone className="h-4 w-4 shrink-0 text-primary" />
+                                                    <span className="font-medium">{user.whatsappNumber || user.phone}</span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    ) : null}
+
+                                    <Button
+                                        variant={revealedContacts.has(user._id) ? "secondary" : "default"}
+                                        className="w-full shadow-sm"
+                                        onClick={() => toggleContact(user._id)}
+                                    >
+                                        {revealedContacts.has(user._id) ? "Hide Contact" : "Show Contact"}
+                                    </Button>
+                                </div>
+                            </CardContent>
+                        </Card>
                     ))}
                 </div>
             )}

@@ -7,6 +7,7 @@ import Event from '@/models/Event';
 import Course from '@/models/Course';
 import Tour from '@/models/Tour';
 import Book from '@/models/Book'; // Ensure Book model is registered for Review population
+import WritingProject from '@/models/WritingProject';
 
 export async function GET(request: NextRequest) {
     try {
@@ -33,7 +34,9 @@ export async function GET(request: NextRequest) {
         // Fetch from all sources
         // We fetch 'limit' items from each to ensure we have enough to interleave
         // This is a naive aggregation but works for reasonable limits
-        const [posts, reviews, events, courses, tours] = await Promise.all([
+
+
+        const [posts, reviews, events, courses, tours, books] = await Promise.all([
             Post.find(query)
                 .sort({ createdAt: -1 })
                 .limit(limit)
@@ -54,12 +57,62 @@ export async function GET(request: NextRequest) {
             Course.find(query)
                 .sort({ createdAt: -1 })
                 .limit(limit)
-                .lean(), // Course instructor population might be needed if displayed, currently card doesn't strictly depend on it for basic view or uses it as ID
+                .lean(),
             Tour.find(query)
                 .sort({ createdAt: -1 })
                 .limit(limit)
                 .populate('organizer', 'name image')
                 .lean(),
+            WritingProject.aggregate([
+                { $match: { visibility: 'public' } },
+                { $unwind: '$chapters' },
+                {
+                    $match: {
+                        'chapters.visibility': 'public',
+                        'chapters.status': 'published',
+                        ...(cursor ? { 'chapters.createdAt': { $lt: new Date(cursor) } } : {})
+                    }
+                },
+                { $sort: { 'chapters.createdAt': -1 } },
+                { $limit: limit },
+                {
+                    $lookup: {
+                        from: 'users',
+                        localField: 'author',
+                        foreignField: '_id',
+                        as: 'authorDetails'
+                    }
+                },
+                {
+                    $unwind: {
+                        path: '$authorDetails',
+                        preserveNullAndEmptyArrays: true
+                    }
+                },
+                {
+                    $project: {
+                        _id: '$chapters._id',
+                        type: 'chapter',
+                        bookId: '$_id',
+                        title: '$title',
+                        slug: '$slug',
+                        coverImage: '$coverImage',
+                        author: {
+                            _id: { $ifNull: ['$authorDetails._id', '$author'] },
+                            name: { $ifNull: ['$authorDetails.name', 'Unknown Author'] },
+                            image: { $ifNull: ['$authorDetails.image', null] },
+                            rankTier: { $ifNull: ['$authorDetails.rankTier', null] }
+                        },
+                        chapterTitle: '$chapters.title',
+                        chapterNumber: '$chapters.chapterNumber',
+                        chapterSlug: '$chapters.slug',
+                        createdAt: '$chapters.createdAt',
+                        category: '$category',
+                        totalWords: '$totalWords', // Project totals
+                        totalChapters: '$totalChapters' // Project totals
+                    }
+                }
+            ]),
         ]);
 
         // Tag them with types
@@ -68,6 +121,8 @@ export async function GET(request: NextRequest) {
         const typedEvents = events.map(e => ({ ...e, type: 'event' }));
         const typedCourses = courses.map(c => ({ ...c, type: 'course' }));
         const typedTours = tours.map(t => ({ ...t, type: 'tour' }));
+        // Books aggregation already defines the structure and type: 'chapter'
+        const chapterItems = books;
 
         // Combine and sort
         const combined = [
@@ -75,7 +130,8 @@ export async function GET(request: NextRequest) {
             ...typedReviews,
             ...typedEvents,
             ...typedCourses,
-            ...typedTours
+            ...typedTours,
+            ...chapterItems,
         ].sort((a: any, b: any) => {
             return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
         });

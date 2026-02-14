@@ -92,3 +92,7 @@ export function validateAndSanitizeImage(image: any): string | undefined {
   // Reject unsupported formats
   throw new Error('Invalid image source. Must be a valid HTTPS URL or Data URI.');
 }
+
+export function isValidVisibility(visibility: string): boolean {
+  return ['public', 'private'].includes(visibility);
+}

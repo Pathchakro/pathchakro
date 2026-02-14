@@ -29,7 +29,8 @@ interface Book {
 export function CreateReviewDialog({ open, onOpenChange }: CreateReviewDialogProps) {
     const { checkAuth, showProfileModal, setShowProfileModal } = useAuthProtection({
         requireProfileCompletion: true,
-        requireAuth: true
+        requireAuth: true,
+        checkOnMount: false
     });
 
     const [selectedBook, setSelectedBook] = useState<Book | null>(null);

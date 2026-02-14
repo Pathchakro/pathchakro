@@ -35,13 +35,57 @@ interface WritingProject {
     updatedAt: string;
 }
 
+interface ChapterFeedItem {
+    _id: string; // Chapter ID
+    type: 'chapter';
+    bookId: string;
+    title: string; // Book Title
+    slug?: string; // Book Slug
+    coverImage?: string;
+    author: {
+        _id: string;
+        name: string;
+        image?: string;
+    };
+    chapterTitle: string;
+    chapterNumber: number;
+    chapterSlug: string;
+    createdAt: string;
+    category: string[];
+    totalWords: number;
+    totalChapters: number;
+}
+
 interface WritingProjectCardProps {
-    project: WritingProject;
+    project: WritingProject | ChapterFeedItem;
     isOwnProfile?: boolean;
 }
 
 export function WritingProjectCard({ project, isOwnProfile }: WritingProjectCardProps) {
     const { data: session } = useSession();
+
+    const isChapter = (item: any): item is ChapterFeedItem => {
+        return item.type === 'chapter';
+    };
+
+    const chapterItem = isChapter(project) ? project : null;
+    // Normalized data
+    const coverImage = chapterItem ? chapterItem.coverImage : (project as WritingProject).coverImage;
+    const bookTitle = chapterItem ? chapterItem.title : (project as WritingProject).title;
+    const author = chapterItem ? chapterItem.author : (project as WritingProject).author;
+    const bookSlug = chapterItem ? chapterItem.slug || chapterItem.bookId : (project as WritingProject).slug || (project as WritingProject)._id;
+    const readLink = chapterItem
+        ? `/read/${bookSlug}/${chapterItem.chapterSlug}`
+        : `/writing/${bookSlug}`;
+
+    // For regular project card, we use project details. For chapter card, strict "Chapter X: title" format isn't requested broadly but implicit in "clickable chapter name with book name"
+    // User requested: "chapter card contain clickable chapter name with book name"
+
+    const displayTitle = chapterItem
+        ? `${chapterItem.title}`
+        : (project as WritingProject).title;
+
+    const chapterLink = chapterItem ? `/read/${bookSlug}/${chapterItem.chapterSlug}` : null;
 
     const handleDelete = async () => {
         const result = await Swal.fire({
@@ -78,7 +122,7 @@ export function WritingProjectCard({ project, isOwnProfile }: WritingProjectCard
             {/* Book Cover */}
             <div className="relative w-full md:w-40 h-56 md:h-auto shrink-0 bg-muted p-4 flex items-center justify-center">
                 <div className="relative w-full h-full shadow-sm rounded-sm overflow-hidden">
-                    <BookCover src={project.coverImage} alt={project.title} />
+                    <BookCover src={coverImage} alt={bookTitle} />
                 </div>
             </div>
 
@@ -87,15 +131,33 @@ export function WritingProjectCard({ project, isOwnProfile }: WritingProjectCard
                 <div>
                     <div className="flex justify-between items-start mb-2">
                         <div>
-                            <Link href={`/writing/${project.slug || project._id}`} className="hover:underline">
-                                <h3 className="font-bold text-lg line-clamp-1 mb-1">{project.title}</h3>
-                            </Link>
-                            {project.author && (
-                                <p className="text-xs text-muted-foreground">by {project.author.name}</p>
+                            {chapterItem ? (
+                                <div className="space-y-1">
+                                    <Link href={readLink} className="hover:underline">
+                                        <h3 className="font-bold text-lg line-clamp-1">{bookTitle}</h3>
+                                    </Link>
+                                    <Link href={chapterLink!} className="block w-fit">
+                                        <h4 className="font-medium text-base text-primary hover:underline line-clamp-1">
+                                            Chapter {chapterItem.chapterNumber}: {chapterItem.chapterTitle}
+                                        </h4>
+                                    </Link>
+                                    {author && (
+                                        <p className="text-xs text-muted-foreground">by {author.name}</p>
+                                    )}
+                                </div>
+                            ) : (
+                                <>
+                                    <Link href={readLink} className="hover:underline">
+                                        <h3 className="font-bold text-lg line-clamp-1 mb-1">{bookTitle}</h3>
+                                    </Link>
+                                    {author && (
+                                        <p className="text-xs text-muted-foreground">by {author.name}</p>
+                                    )}
+                                </>
                             )}
                         </div>
 
-                        {isOwnProfile && (
+                        {!chapterItem && isOwnProfile && (
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                     <Button variant="ghost" size="icon" className="h-8 w-8 -mt-1 -mr-2">
@@ -139,7 +201,7 @@ export function WritingProjectCard({ project, isOwnProfile }: WritingProjectCard
                         ))}
                     </div>
 
-                    {project.description && (
+                    {!chapterItem && project.description && (
                         <p className="text-sm text-muted-foreground line-clamp-2">
                             {(() => {
                                 try {
@@ -157,17 +219,20 @@ export function WritingProjectCard({ project, isOwnProfile }: WritingProjectCard
                             })()}
                         </p>
                     )}
+                    {/* For chapter items, we typically don't show the full book description, or maybe just the chapter title is enough context */}
                 </div>
 
                 <div className="mt-4 pt-3 border-t flex justify-between items-center">
+                    {/* Visibility only relevant for project management view usually, but good to keep consistency if needed. 
+                       For public feed, it's always public. */}
                     <span className={`text-xs px-2 py-0.5 rounded-full border 
-                        ${project.visibility === 'public' ? 'border-green-200 text-green-700 bg-green-50' : 'border-gray-200 text-gray-700 bg-gray-50'}`}>
-                        {project.visibility === 'public' ? 'Public' : 'Private'}
+                        ${chapterItem ? 'border-blue-200 text-blue-700 bg-blue-50' : (project.visibility === 'public' ? 'border-green-200 text-green-700 bg-green-50' : 'border-gray-200 text-gray-700 bg-gray-50')}`}>
+                        {chapterItem ? 'Chapter' : (project.visibility === 'public' ? 'Public' : 'Private')}
                     </span>
 
-                    <Link href={`/writing/${project.slug || project._id}`}>
+                    <Link href={readLink}>
                         <Button variant="outline" size="sm" className="h-8 text-xs">
-                            {isOwnProfile ? 'Manage Project' : 'Read Now'}
+                            {isOwnProfile ? 'Manage Project' : (chapterItem ? 'Read Chapter' : 'Read Now')}
                         </Button>
                     </Link>
                 </div>

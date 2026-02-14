@@ -25,7 +25,8 @@ export function CreatePostDialog({ open, onOpenChange }: CreatePostDialogProps) 
     const { categories } = useDynamicConfig();
     const { checkAuth, showProfileModal, setShowProfileModal } = useAuthProtection({
         requireProfileCompletion: true,
-        requireAuth: true
+        requireAuth: true,
+        checkOnMount: false
     });
 
     useEffect(() => {

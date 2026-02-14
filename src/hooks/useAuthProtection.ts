@@ -8,13 +8,15 @@ interface AuthProtectionOptions {
     requireAuth?: boolean;
     requireProfileCompletion?: boolean;
     redirectUrl?: string;
+    checkOnMount?: boolean;
 }
 
 export function useAuthProtection(options: AuthProtectionOptions = {}) {
     const {
         requireAuth = true,
         requireProfileCompletion = true,
-        redirectUrl = '/'
+        redirectUrl = '/',
+        checkOnMount = true
     } = options;
 
     const { data: session, status } = useSession();
@@ -40,8 +42,9 @@ export function useAuthProtection(options: AuthProtectionOptions = {}) {
         if (requireAuth && !session) {
             setIsAuthorized(false);
             setIsLoading(false);
-            // We can return here and let the component handle the UI (popup/redirect)
-            // But usually we trigger something.
+            if (redirectUrl) {
+                router.push(redirectUrl);
+            }
             return;
         }
 
@@ -50,7 +53,9 @@ export function useAuthProtection(options: AuthProtectionOptions = {}) {
 
             if (completion < 70) {
                 setIsAuthorized(false);
-                setShowProfileModal(true);
+                if (checkOnMount) {
+                    setShowProfileModal(true);
+                }
             } else {
                 setIsAuthorized(true);
             }
@@ -59,7 +64,7 @@ export function useAuthProtection(options: AuthProtectionOptions = {}) {
         }
 
         setIsLoading(false);
-    }, [session, status, requireAuth, requireProfileCompletion]);
+    }, [session, status, requireAuth, requireProfileCompletion, checkOnMount]);
 
     const checkAuth = useCallback(() => {
         if (!session) {
@@ -71,6 +76,7 @@ export function useAuthProtection(options: AuthProtectionOptions = {}) {
         if (requireProfileCompletion) {
             const completion = (session.user as any).profileCompletion ?? calculateProfileCompletion(session.user);
             if (completion < 70) {
+                setIsAuthorized(false); // Ensure state reflects unauthorized
                 setShowProfileModal(true);
                 toast.error("Please complete your profile to proceed.");
                 return false;

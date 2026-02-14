@@ -7,6 +7,7 @@ import { ReviewCard } from '@/components/reviews/ReviewCard';
 import { EventCard } from '@/components/events/EventCard';
 import { CourseCard } from '@/components/courses/CourseCard';
 import { TourCard } from '@/components/tours/TourCard';
+import { WritingProjectCard } from '@/components/writing/WritingProjectCard';
 import { Loader2, PenTool, ClipboardList, FileText } from 'lucide-react';
 import Link from 'next/link';
 import { CreatePostDialog } from '@/components/feed/CreatePostDialog';
@@ -137,6 +138,8 @@ export default function HomeContent({
                             return <CourseCard key={item._id} course={item} />;
                         case 'tour':
                             return <TourCard key={item._id} tour={item} />;
+                        case 'book':
+                            return <WritingProjectCard key={item._id} project={item} />;
                         default:
                             return null;
                     }

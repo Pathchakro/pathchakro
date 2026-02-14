@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
@@ -9,9 +9,11 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { FileText, ArrowLeft } from 'lucide-react';
+import { FileText, ArrowLeft, Loader2 } from 'lucide-react';
 import { z } from 'zod';
 import Link from 'next/link';
+import { useAuthProtection } from '@/hooks/useAuthProtection';
+import { ProfileCompletionModal } from '@/components/auth/ProfileCompletionModal';
 
 const assignmentSchema = z.object({
     title: z.string().min(5, 'Title must be at least 5 characters'),
@@ -24,8 +26,17 @@ type AssignmentData = z.infer<typeof assignmentSchema>;
 
 export default function CreateAssignmentPage() {
     const router = useRouter();
-    const [isLoading, setIsLoading] = useState(false);
+    const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState('');
+
+    const { checkAuth, showProfileModal, setShowProfileModal, isAuthorized, isLoading } = useAuthProtection({
+        requireProfileCompletion: true,
+        requireAuth: true
+    });
+
+    useEffect(() => {
+        checkAuth();
+    }, [checkAuth]);
 
     const {
         register,
@@ -39,7 +50,7 @@ export default function CreateAssignmentPage() {
     });
 
     const onSubmit = async (data: AssignmentData) => {
-        setIsLoading(true);
+        setSubmitting(true);
         setError('');
 
         try {
@@ -62,9 +73,33 @@ export default function CreateAssignmentPage() {
         } catch (err) {
             setError('An error occurred. Please try again.');
         } finally {
-            setIsLoading(false);
+            setSubmitting(false);
         }
     };
+
+    const handleModalOpenChange = (open: boolean) => {
+        setShowProfileModal(open);
+        if (!open && !isAuthorized) {
+            router.push('/assignments');
+        }
+    };
+
+    if (isLoading) {
+        return (
+            <div className="flex h-[50vh] w-full items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+        );
+    }
+
+    if (!isAuthorized) {
+        return (
+            <ProfileCompletionModal
+                open={showProfileModal}
+                onOpenChange={handleModalOpenChange}
+            />
+        );
+    }
 
     return (
         <div className="max-w-3xl mx-auto p-4">
@@ -72,6 +107,11 @@ export default function CreateAssignmentPage() {
                 <ArrowLeft className="h-4 w-4" />
                 Back to Assignments
             </Link>
+
+            <ProfileCompletionModal
+                open={showProfileModal}
+                onOpenChange={setShowProfileModal}
+            />
 
             <Card>
                 <CardHeader>
@@ -102,7 +142,7 @@ export default function CreateAssignmentPage() {
                                 id="title"
                                 placeholder="Write an essay on..."
                                 {...register('title')}
-                                disabled={isLoading}
+                                disabled={submitting}
                             />
                             {errors.title && (
                                 <p className="text-sm text-red-500">{errors.title.message}</p>
@@ -116,7 +156,7 @@ export default function CreateAssignmentPage() {
                                 placeholder="Provide detailed instructions for students..."
                                 rows={6}
                                 {...register('description')}
-                                disabled={isLoading}
+                                disabled={submitting}
                             />
                             {errors.description && (
                                 <p className="text-sm text-red-500">{errors.description.message}</p>
@@ -130,7 +170,7 @@ export default function CreateAssignmentPage() {
                                     id="dueDate"
                                     type="datetime-local"
                                     {...register('dueDate')}
-                                    disabled={isLoading}
+                                    disabled={submitting}
                                 />
                                 {errors.dueDate && (
                                     <p className="text-sm text-red-500">{errors.dueDate.message}</p>
@@ -145,7 +185,7 @@ export default function CreateAssignmentPage() {
                                     min="1"
                                     max="1000"
                                     {...register('totalPoints', { valueAsNumber: true })}
-                                    disabled={isLoading}
+                                    disabled={submitting}
                                 />
                                 {errors.totalPoints && (
                                     <p className="text-sm text-red-500">{errors.totalPoints.message}</p>
@@ -164,10 +204,10 @@ export default function CreateAssignmentPage() {
                             </Button>
                             <Button
                                 type="submit"
-                                disabled={isLoading}
+                                disabled={submitting}
                                 className="flex-1"
                             >
-                                {isLoading ? 'Creating...' : 'Create Assignment'}
+                                {submitting ? 'Creating...' : 'Create Assignment'}
                             </Button>
                         </div>
                     </form>

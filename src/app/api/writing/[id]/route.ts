@@ -137,7 +137,15 @@ export async function PUT(
         if (body.description !== undefined) project.description = body.description;
         if (body.category) project.category = body.category;
         if (body.status) project.status = body.status;
-        if (body.visibility) project.visibility = body.visibility;
+        if (body.visibility) {
+            project.visibility = body.visibility;
+            // Sync all chapters to have the same visibility
+            if (project.chapters && project.chapters.length > 0) {
+                project.chapters.forEach((chapter: any) => {
+                    chapter.visibility = body.visibility;
+                });
+            }
+        }
         if (body.forSale !== undefined) project.forSale = body.forSale;
         if (body.salePrice) project.salePrice = body.salePrice;
         if (body.saleType) project.saleType = body.saleType;

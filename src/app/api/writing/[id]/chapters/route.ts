@@ -62,11 +62,18 @@ export async function POST(
             );
         }
 
-        const { title, content, image, slug } = await request.json();
+        const { title, content, image, slug, visibility } = await request.json();
 
         if (!title || !content) {
             return NextResponse.json(
                 { error: 'Chapter title and content are required' },
+                { status: 400 }
+            );
+        }
+
+        if (visibility && !isValidVisibility(visibility)) {
+            return NextResponse.json(
+                { error: 'Invalid visibility. Must be "public" or "private".' },
                 { status: 400 }
             );
         }
@@ -108,6 +115,7 @@ export async function POST(
             content,
             wordCount,
             status: 'draft',
+            visibility: visibility || 'public',
             createdAt: new Date(),
             updatedAt: new Date(),
         });
@@ -145,7 +153,14 @@ export async function PUT(
             );
         }
 
-        const { chapterId, title, content, status, image, slug } = await request.json();
+        const { chapterId, title, content, status, image, slug, visibility } = await request.json();
+
+        if (visibility && !isValidVisibility(visibility)) {
+            return NextResponse.json(
+                { error: 'Invalid visibility. Must be "public" or "private".' },
+                { status: 400 }
+            );
+        }
 
         if (!chapterId) {
             return NextResponse.json(
@@ -190,6 +205,7 @@ export async function PUT(
             chapter.wordCount = content.trim().split(/\s+/).filter(Boolean).length;
         }
         if (status) chapter.status = status;
+        if (visibility) chapter.visibility = visibility;
         chapter.updatedAt = new Date();
 
         project.totalWords = project.chapters.reduce((sum: number, ch: any) => sum + ch.wordCount, 0);

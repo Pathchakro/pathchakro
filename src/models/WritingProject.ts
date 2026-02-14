@@ -20,6 +20,7 @@ export interface IWritingProject {
         content: string;
         wordCount: number;
         status: 'draft' | 'published';
+        visibility: 'private' | 'public';
         createdAt: Date;
         updatedAt: Date;
     }>;
@@ -75,7 +76,7 @@ const WritingProjectSchema = new Schema<IWritingProject>(
         visibility: {
             type: String,
             enum: ['private', 'public'],
-            default: 'private',
+            default: 'public',
             index: true,
         },
         chapters: [{
@@ -104,6 +105,11 @@ const WritingProjectSchema = new Schema<IWritingProject>(
                 type: String,
                 enum: ['draft', 'published'],
                 default: 'draft',
+            },
+            visibility: {
+                type: String,
+                enum: ['private', 'public'],
+                default: 'public',
             },
             createdAt: {
                 type: Date,

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
@@ -9,13 +9,15 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { PenTool, ArrowLeft } from 'lucide-react';
+import { PenTool, ArrowLeft, Loader2 } from 'lucide-react';
 import { z } from 'zod';
 import Link from 'next/link';
 import { ImageUploader } from '@/components/uploads/ImageUploader';
 import { CATEGORIES } from '@/lib/constants';
 import NovelEditor from '@/components/editor/NovelEditor';
 import { toast } from 'sonner';
+import { useAuthProtection } from '@/hooks/useAuthProtection';
+import { ProfileCompletionModal } from '@/components/auth/ProfileCompletionModal';
 
 const projectSchema = z.object({
     title: z.string().min(1, 'Title is required'),
@@ -33,8 +35,17 @@ type ProjectData = z.infer<typeof projectSchema>;
 
 export default function NewWritingProjectPage() {
     const router = useRouter();
-    const [isLoading, setIsLoading] = useState(false);
+    const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState('');
+
+    const { checkAuth, showProfileModal, setShowProfileModal, isAuthorized, isLoading } = useAuthProtection({
+        requireProfileCompletion: true,
+        requireAuth: true
+    });
+
+    useEffect(() => {
+        checkAuth();
+    }, [checkAuth]);
 
     const {
         register,
@@ -71,7 +82,7 @@ export default function NewWritingProjectPage() {
     };
 
     const onSubmit = async (data: ProjectData) => {
-        setIsLoading(true);
+        setSubmitting(true);
         setError('');
 
         try {
@@ -97,9 +108,33 @@ export default function NewWritingProjectPage() {
         } catch (err) {
             setError('An error occurred. Please try again.');
         } finally {
-            setIsLoading(false);
+            setSubmitting(false);
         }
     };
+
+    const handleModalOpenChange = (open: boolean) => {
+        setShowProfileModal(open);
+        if (!open && !isAuthorized) {
+            router.push('/writing');
+        }
+    };
+
+    if (isLoading) {
+        return (
+            <div className="flex h-[50vh] w-full items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+        );
+    }
+
+    if (!isAuthorized) {
+        return (
+            <ProfileCompletionModal
+                open={showProfileModal}
+                onOpenChange={handleModalOpenChange}
+            />
+        );
+    }
 
     return (
         <div className="max-w-3xl mx-auto p-4">
@@ -135,7 +170,7 @@ export default function NewWritingProjectPage() {
                                 id="title"
                                 placeholder="Enter your book title"
                                 {...register('title')}
-                                disabled={isLoading}
+                                disabled={submitting}
                             />
                             {errors.title && (
                                 <p className="text-sm text-red-500">{errors.title.message}</p>
@@ -158,7 +193,7 @@ export default function NewWritingProjectPage() {
                                 placeholder="Write an introduction to your book..."
                                 rows={4}
                                 {...register('introduction')}
-                                disabled={isLoading}
+                                disabled={submitting}
                             />
                         </div>
 
@@ -168,7 +203,7 @@ export default function NewWritingProjectPage() {
                                 id="chapterName"
                                 placeholder="Enter chapter name (optional)"
                                 {...register('chapterName')}
-                                disabled={isLoading}
+                                disabled={submitting}
                             />
                         </div>
 
@@ -208,7 +243,7 @@ export default function NewWritingProjectPage() {
                                 id="visibility"
                                 {...register('visibility')}
                                 className="w-full px-3 py-2 border rounded-md"
-                                disabled={isLoading}
+                                disabled={submitting}
                             >
                                 <option value="private">Private (Only you can see)</option>
                                 <option value="public">Public (Everyone can read)</option>
@@ -229,10 +264,10 @@ export default function NewWritingProjectPage() {
                             </Button>
                             <Button
                                 type="submit"
-                                disabled={isLoading}
+                                disabled={submitting}
                                 className="flex-1"
                             >
-                                {isLoading ? 'Creating...' : 'Create Book'}
+                                {submitting ? 'Creating...' : 'Create Book'}
                             </Button>
                         </div>
                     </form>
