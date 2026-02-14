@@ -116,6 +116,53 @@ const renderNode = (node: any): string => {
             }
 
             return `<img src="${src}" alt="${alt}" title="${title}"${style} class="rounded-lg border border-muted" />`;
+        case 'youtube': {
+            const rawSrc = String(node.attrs?.src || '');
+            const rawStart = node.attrs?.start;
+            const rawWidth = node.attrs?.width;
+            const rawHeight = node.attrs?.height;
+
+            // 1. Extract Video ID robustly
+            // Covers: standard youtube.com/watch?v=ID, youtu.be/ID, embed/ID
+            // Strips query params/hash by capturing only the ID part
+            const idRegex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i;
+            const match = rawSrc.match(idRegex);
+            const videoId = match ? match[1] : null;
+
+            if (!videoId) return '';
+
+            // 2. Validate Start Time (non-negative integer only)
+            let startParam = '';
+            if (rawStart !== undefined && rawStart !== null) {
+                const startInt = parseInt(String(rawStart), 10);
+                if (!isNaN(startInt) && startInt >= 0) {
+                    startParam = `?start=${startInt}`;
+                }
+            }
+
+            // 3. Validate Width/Height
+            const dimensionRegex = /^\d+(?:\.\d+)?(?:px|%|em|rem|vw|vh)?$/;
+
+            let width = '100%';
+            if (rawWidth && dimensionRegex.test(String(rawWidth))) {
+                width = String(rawWidth);
+            }
+
+            let height = '360'; // Default numeric height
+            if (rawHeight && dimensionRegex.test(String(rawHeight)) && String(rawHeight) !== 'auto') {
+                height = String(rawHeight);
+            }
+
+            // 4. Construct Canonical URL
+            const embedUrl = `https://www.youtube.com/embed/${videoId}${startParam}`;
+
+            // 5. Escape all outputs
+            const safeUrl = escapeHtml(embedUrl);
+            const safeWidth = escapeHtml(width);
+            const safeHeight = escapeHtml(height);
+
+            return `<div data-youtube-video><iframe src="${safeUrl}" width="${safeWidth}" height="${safeHeight}" allowfullscreen frameborder="0"></iframe></div>`;
+        }
         case 'hardBreak':
             return '<br>';
         case 'horizontalRule':
