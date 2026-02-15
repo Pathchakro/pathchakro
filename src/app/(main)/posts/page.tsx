@@ -1,9 +1,7 @@
 import { Metadata } from 'next';
 import { auth } from '@/auth';
 import PostsContent from '@/components/posts/PostsContent';
-import dbConnect from '@/lib/mongodb';
-import Post from '@/models/Post';
-import User from '@/models/User';
+import { getLatestPosts, getUserBookmarks } from '@/lib/data-service';
 
 export const metadata: Metadata = {
     title: 'Explore Posts | Pathchakro',
@@ -25,36 +23,36 @@ export const metadata: Metadata = {
     },
 };
 
+
+
 async function getInitialData() {
     const session = await auth();
     const userId = session?.user?.id;
 
-    // Direct database call or fetch with cache
-    // Using fetch to demonstrate revalidatePath/Tag if the API is internal but called via URL
-    // However, since it's a server component, direct DB access is often preferred for initial load
-    await dbConnect();
-
-    const posts = await Post.find({})
-        .populate('author', 'name image rankTier')
-        .sort({ createdAt: -1 })
-        .limit(10)
-        .lean();
+    let posts = [];
+    try {
+        // Direct function call instead of fetch
+        posts = await getLatestPosts();
+    } catch (error) {
+        console.error('Error fetching latest posts:', error);
+        // Throwing error to ensure failure is visible and deterministic as requested
+        throw error;
+    }
 
     let bookmarkedIds: string[] = [];
     if (userId) {
         try {
-            const user = await User.findById(userId).select('savedPosts').lean();
-            if (user && user.savedPosts) {
-                // Ensure savedPosts are treated as strings
-                bookmarkedIds = user.savedPosts.map((id: any) => id.toString());
-            }
+            // Direct function call for bookmarks
+            bookmarkedIds = await getUserBookmarks(userId);
         } catch (error) {
-            console.error('Error fetching bookmarks directly:', error);
+            console.error(`Error fetching bookmarks for user ${userId}:`, error);
+            // Bookmarks are non-critical, so we can allow fallback to empty array
+            // but the error is logged for debugging.
         }
     }
 
     return {
-        posts: JSON.parse(JSON.stringify(posts)),
+        posts,
         userId,
         bookmarkedIds
     };

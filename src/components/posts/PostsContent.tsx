@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { PostCard, Post } from '@/components/feed/PostCard';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
@@ -27,6 +27,8 @@ export default function PostsContent({
     const [myBookmarkedIds, setMyBookmarkedIds] = useState<string[]>(initialBookmarks);
     const [activeTab, setActiveTab] = useState('all');
 
+    const isInitialMount = useRef(true);
+
     useEffect(() => {
         const timer = setTimeout(() => {
             setDebouncedSearch(search);
@@ -34,11 +36,25 @@ export default function PostsContent({
         return () => clearTimeout(timer);
     }, [search]);
 
+    const fetchControllerRef = useRef<AbortController | null>(null);
+
     useEffect(() => {
-        fetchPosts();
+        // Skip the initial fetch if the state matches the initial props
+        if (isInitialMount.current) {
+            isInitialMount.current = false;
+            return;
+        }
+
+        const controller = new AbortController();
+        fetchControllerRef.current = controller;
+        fetchPosts(controller.signal);
+
+        return () => {
+            controller.abort();
+        };
     }, [debouncedSearch, category, activeTab]);
 
-    const fetchPosts = async () => {
+    const fetchPosts = async (signal?: AbortSignal) => {
         setLoading(true);
         try {
             const queryParams = new URLSearchParams();
@@ -51,17 +67,37 @@ export default function PostsContent({
                 queryParams.set('filter', 'favorites');
             }
 
-            const response = await fetch(`/api/posts?${queryParams.toString()}`);
+            const response = await fetch(`/api/posts?${queryParams.toString()}`, { signal });
+
+            if (!response.ok) {
+                throw new Error(`Failed to fetch posts: ${response.status} ${response.statusText}`);
+            }
+
             const data = await response.json();
 
             if (data.posts) {
                 setPosts(data.posts);
             }
-        } catch (error) {
-            console.error('Error fetching posts:', error);
+        } catch (error: any) {
+            if (error.name !== 'AbortError') {
+                console.error('Error fetching posts:', error);
+            }
         } finally {
-            setLoading(false);
+            // Only turn off loading if not aborted (to avoid race conditions with strict mode/fast updates)
+            if (!signal?.aborted) {
+                setLoading(false);
+            }
         }
+    };
+
+    const handleToggleBookmark = (postId: string, isBookmarked: boolean) => {
+        setMyBookmarkedIds(prev => {
+            if (isBookmarked) {
+                return [...prev, postId];
+            } else {
+                return prev.filter(id => id !== postId);
+            }
+        });
     };
 
     // We need to keep myBookmarkedIds in sync if a user bookmarks/unbookmarks a post
@@ -128,6 +164,7 @@ export default function PostsContent({
                             currentUserId={currentUserId}
                             initialIsBookmarked={myBookmarkedIds.includes(post._id)}
                             onDelete={(id) => setPosts(prev => prev.filter(p => p._id !== id))}
+                            onToggleBookmark={handleToggleBookmark}
                         />
                     ))}
                 </div>

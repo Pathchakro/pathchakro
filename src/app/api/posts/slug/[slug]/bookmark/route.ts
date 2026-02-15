@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidatePath, revalidateTag } from 'next/cache';
 import { auth } from '@/auth';
 import dbConnect from '@/lib/mongodb';
 import Post from '@/models/Post';
@@ -71,6 +72,10 @@ export async function POST(
 
         await user.save();
         console.log('User saved with bookmarks:', user.savedPosts.length);
+
+        // Revalidate cache
+        revalidateTag(`bookmarks-${userId}`, 'default');
+        revalidatePath('/', 'layout');
 
         return NextResponse.json({
             bookmarked: !isBookmarked,

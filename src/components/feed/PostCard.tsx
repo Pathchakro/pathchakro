@@ -45,9 +45,10 @@ interface PostCardProps {
     initialIsBookmarked?: boolean;
     currentUserId?: string;
     onDelete?: (postId: string) => void;
+    onToggleBookmark?: (postId: string, isBookmarked: boolean) => void;
 }
 
-export function PostCard({ initialPost, currentUserId, onDelete, initialIsBookmarked = false }: PostCardProps) {
+export function PostCard({ initialPost, currentUserId, onDelete, initialIsBookmarked = false, onToggleBookmark }: PostCardProps) {
     const [post, setPost] = useState<Post>(initialPost);
     const [isBookmarked, setIsBookmarked] = useState(initialIsBookmarked);
     const [currentSlide, setCurrentSlide] = useState(0);
@@ -93,7 +94,13 @@ export function PostCard({ initialPost, currentUserId, onDelete, initialIsBookma
     const handleBookmark = async () => {
         // Optimistic update
         const previousState = isBookmarked;
-        setIsBookmarked(!previousState);
+        const newState = !previousState;
+        setIsBookmarked(newState);
+
+        // Notify parent immediately for optimistic UI update
+        if (onToggleBookmark) {
+            onToggleBookmark(post._id, newState);
+        }
 
         try {
             const slugOrId = (post as any).slug || post._id;
@@ -104,11 +111,17 @@ export function PostCard({ initialPost, currentUserId, onDelete, initialIsBookma
             if (!response.ok) {
                 // Revert if failed
                 setIsBookmarked(previousState);
+                if (onToggleBookmark) {
+                    onToggleBookmark(post._id, previousState);
+                }
                 toast.error('Failed to bookmark post');
             }
         } catch (error) {
             console.error('Error bookmarking post:', error);
             setIsBookmarked(previousState);
+            if (onToggleBookmark) {
+                onToggleBookmark(post._id, previousState);
+            }
             toast.error('Something went wrong');
         }
     };
