@@ -412,6 +412,7 @@ export default function TeamDetailPage() {
                                     {/* Comment Section */}
                                     <CommentSection
                                         postId={post._id}
+                                        postAuthorId={post.author._id}
                                         initialCount={post.comments.length}
                                         isOpen={!!openComments[post._id]}
                                         onToggle={() => toggleComments(post._id)}
