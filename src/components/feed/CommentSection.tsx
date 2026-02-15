@@ -19,21 +19,25 @@ interface Comment {
     };
     content: string;
     createdAt: string;
+    replies?: Comment[];
 }
 
 interface CommentSectionProps {
     postId: string;
+    postAuthorId: string;
     initialCount: number;
     slug?: string;
     isOpen: boolean;
     onToggle: () => void;
 }
 
-export function CommentSection({ postId, initialCount, slug, isOpen, onToggle }: CommentSectionProps) {
+export function CommentSection({ postId, postAuthorId, initialCount, slug, isOpen, onToggle }: CommentSectionProps) {
     const { data: session } = useSession();
     const { checkBasicAccess } = useAccessControl();
     const [comments, setComments] = useState<Comment[]>([]);
     const [newComment, setNewComment] = useState('');
+    const [replyingTo, setReplyingTo] = useState<string | null>(null);
+    const [replyContent, setReplyContent] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -44,10 +48,8 @@ export function CommentSection({ postId, initialCount, slug, isOpen, onToggle }:
     }, [isOpen]);
 
     const fetchComments = async () => {
-        // ... (fetch logic remains same)
         setIsLoading(true);
         try {
-            // Use slug if provided
             const url = slug
                 ? `/api/posts/slug/${slug}/comments`
                 : `/api/posts/${postId}/comments`;
@@ -64,15 +66,16 @@ export function CommentSection({ postId, initialCount, slug, isOpen, onToggle }:
         }
     };
 
-    const handleSubmit = async (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent, parentId?: string) => {
         e.preventDefault();
 
         if (!checkBasicAccess()) return;
-        if (!newComment.trim()) return;
+
+        const content = parentId ? replyContent : newComment;
+        if (!content.trim()) return;
 
         setIsSubmitting(true);
         try {
-            // Use slug if provided
             const url = slug
                 ? `/api/posts/slug/${slug}/comments`
                 : `/api/posts/${postId}/comments`;
@@ -82,21 +85,44 @@ export function CommentSection({ postId, initialCount, slug, isOpen, onToggle }:
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ content: newComment }),
+                body: JSON.stringify({
+                    content,
+                    parentId
+                }),
             });
 
             const data = await response.json();
 
             if (data.comment) {
-                setComments([data.comment, ...comments]);
-                setNewComment('');
+                if (parentId) {
+                    // Add reply to the parent comment in state
+                    setComments(prev => prev.map(c => {
+                        if (c._id === parentId) {
+                            return {
+                                ...c,
+                                replies: [...(c.replies || []), data.comment]
+                            };
+                        }
+                        return c;
+                    }));
+                    setReplyContent('');
+                    setReplyingTo(null);
+                } else {
+                    setComments(prev => [data.comment, ...prev]);
+                    setNewComment('');
+                }
+            } else if (data.error) {
+                toast.error(data.error);
             }
         } catch (error) {
             console.error('Error posting comment:', error);
+            toast.error('Failed to post comment');
         } finally {
             setIsSubmitting(false);
         }
     };
+
+    const isPostAuthor = session?.user?.id === postAuthorId;
 
     return (
         <div className="border-t pt-3">
@@ -111,12 +137,12 @@ export function CommentSection({ postId, initialCount, slug, isOpen, onToggle }:
 
             {isOpen && (
                 <>
-                    {/* Add Comment Form */}
-                    <form onSubmit={handleSubmit} className="mb-4">
+                    {/* Add Main Comment Form */}
+                    <form onSubmit={(e) => handleSubmit(e)} className="mb-4">
                         <div className="flex gap-2">
                             {session?.user?.image ? (
                                 <div className="h-8 w-8 rounded-full overflow-hidden flex-shrink-0">
-                                    < img
+                                    <img
                                         src={session.user.image}
                                         alt={session.user.name || 'User'}
                                         className="h-full w-full object-cover"
@@ -132,8 +158,8 @@ export function CommentSection({ postId, initialCount, slug, isOpen, onToggle }:
                                     value={newComment}
                                     onChange={(e) => setNewComment(e.target.value)}
                                     placeholder="Write a comment..."
-                                    rows={2}
-                                    className="resize-none text-sm"
+                                    rows={1}
+                                    className="resize-none text-sm min-h-[40px]"
                                 />
                                 <Button
                                     type="submit"
@@ -152,20 +178,79 @@ export function CommentSection({ postId, initialCount, slug, isOpen, onToggle }:
                     ) : comments.length === 0 ? (
                         <p className="text-sm text-muted-foreground text-center py-4">No comments yet</p>
                     ) : (
-                        <div className="space-y-3">
+                        <div className="space-y-4">
                             {comments.map((comment) => (
-                                <div key={comment._id} className="flex gap-2">
-                                    <div className="h-8 w-8 rounded-full bg-gradient-to-br from-green-400 to-blue-500 flex items-center justify-center text-white text-xs font-medium flex-shrink-0">
-                                        {comment.author.name[0]}
-                                    </div>
-                                    <div className="flex-1 bg-muted rounded-lg px-3 py-2">
-                                        <div className="flex items-center gap-2 mb-1">
-                                            <span className="text-sm font-semibold">{comment.author.name}</span>
-                                            <span className="text-xs text-muted-foreground">
-                                                {formatDate(comment.createdAt)}
-                                            </span>
+                                <div key={comment._id} className="group">
+                                    <div className="flex gap-2">
+                                        <div className="h-8 w-8 rounded-full bg-gradient-to-br from-green-400 to-blue-500 flex items-center justify-center text-white text-xs font-medium flex-shrink-0">
+                                            {comment.author.name[0]}
                                         </div>
-                                        <p className="text-sm">{comment.content}</p>
+                                        <div className="flex-1">
+                                            <div className="bg-muted rounded-lg px-3 py-2">
+                                                <div className="flex items-center gap-2 mb-1">
+                                                    <span className="text-sm font-semibold">{comment.author.name}</span>
+                                                    <span className="text-xs text-muted-foreground">
+                                                        {formatDate(comment.createdAt)}
+                                                    </span>
+                                                </div>
+                                                <p className="text-sm whitespace-pre-wrap">{comment.content}</p>
+                                            </div>
+
+                                            {/* Reply Button - Only for Post Author */}
+                                            {isPostAuthor && (
+                                                <div className="flex gap-2 mt-1 ml-1">
+                                                    <button
+                                                        onClick={() => setReplyingTo(replyingTo === comment._id ? null : comment._id)}
+                                                        className="text-xs text-muted-foreground hover:text-foreground font-medium"
+                                                    >
+                                                        Reply
+                                                    </button>
+                                                </div>
+                                            )}
+
+                                            {/* Reply Form */}
+                                            {replyingTo === comment._id && (
+                                                <form onSubmit={(e) => handleSubmit(e, comment._id)} className="mt-2 ml-2 flex gap-2">
+                                                    <Textarea
+                                                        value={replyContent}
+                                                        onChange={(e) => setReplyContent(e.target.value)}
+                                                        placeholder={`Reply to ${comment.author.name}...`}
+                                                        rows={1}
+                                                        className="resize-none text-sm min-h-[36px]"
+                                                        autoFocus
+                                                    />
+                                                    <Button
+                                                        type="submit"
+                                                        size="sm"
+                                                        disabled={!replyContent.trim() || isSubmitting}
+                                                    >
+                                                        <Send className="h-3 w-3" />
+                                                    </Button>
+                                                </form>
+                                            )}
+
+                                            {/* Nested Replies */}
+                                            {comment.replies && comment.replies.length > 0 && (
+                                                <div className="mt-2 ml-4 space-y-2 border-l-2 pl-3">
+                                                    {comment.replies.map((reply) => (
+                                                        <div key={reply._id} className="flex gap-2">
+                                                            <div className="h-6 w-6 rounded-full bg-gradient-to-br from-purple-400 to-pink-500 flex items-center justify-center text-white text-[10px] font-medium flex-shrink-0">
+                                                                {reply.author.name[0]}
+                                                            </div>
+                                                            <div className="bg-muted/50 rounded-lg px-3 py-1.5 flex-1">
+                                                                <div className="flex items-center gap-2 mb-0.5">
+                                                                    <span className="text-xs font-semibold">{reply.author.name}</span>
+                                                                    <span className="text-[10px] text-muted-foreground">
+                                                                        {formatDate(reply.createdAt)}
+                                                                    </span>
+                                                                </div>
+                                                                <p className="text-xs whitespace-pre-wrap">{reply.content}</p>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                             ))}

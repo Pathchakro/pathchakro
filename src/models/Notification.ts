@@ -4,7 +4,7 @@ export interface INotification {
     _id: string;
     recipient: string;
     sender: string;
-    type: 'like' | 'comment' | 'follow' | 'team_invite' | 'team_join' | 'mention' | 'review_helpful';
+    type: 'like' | 'comment' | 'reply' | 'follow' | 'team_invite' | 'team_join' | 'mention' | 'review_helpful';
     post?: string;
     comment?: string;
     team?: string;
@@ -29,7 +29,7 @@ const NotificationSchema = new Schema<INotification>(
         },
         type: {
             type: String,
-            enum: ['like', 'comment', 'follow', 'team_invite', 'team_join', 'mention', 'review_helpful'],
+            enum: ['like', 'comment', 'reply', 'follow', 'team_invite', 'team_join', 'mention', 'review_helpful'],
             required: true,
         },
         post: {

@@ -212,6 +212,7 @@ export interface IComment {
     author: string | IUser;
     content: string;
     replies?: IComment[];
+    parent?: string | IComment;
     likes: string[];
     createdAt: Date;
 }

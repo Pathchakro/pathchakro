@@ -372,6 +372,7 @@ export function PostCard({ initialPost, currentUserId, onDelete, initialIsBookma
             {/* Comment Section */}
             <CommentSection
                 postId={post._id}
+                postAuthorId={post.author._id}
                 initialCount={post.comments.length}
                 slug={(post as any).slug || post._id}
                 isOpen={showComments}

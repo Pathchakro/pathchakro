@@ -25,6 +25,11 @@ const CommentSchema = new Schema<IComment>(
             type: Schema.Types.ObjectId as any,
             ref: 'User',
         }],
+        parent: {
+            type: Schema.Types.ObjectId as any,
+            ref: 'Comment',
+            default: null,
+        },
     },
     {
         timestamps: true,
