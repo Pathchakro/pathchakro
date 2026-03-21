@@ -4,22 +4,27 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { Bell, MessageCircle, Search, BookOpen, PlusCircle, User, Settings, LogOut } from 'lucide-react';
+import { Bell, MessageCircle, Search, BookOpen, PlusCircle, User, Settings, LogOut, Mic, MicOff } from 'lucide-react';
 import { toast } from 'sonner';
+import { useVoiceSearch } from '@/hooks/useVoiceSearch';
 import { NotificationDropdown } from '@/components/notifications/NotificationDropdown';
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useSession, signIn, signOut } from 'next-auth/react';
 import { Chatbot } from '@/components/chatbot/Chatbot';
 import { ModeToggle } from '@/components/ui/mode-toggle';
+import { useAppDispatch, useAppSelector } from '@/store';
+import { setSearchQuery as setGlobalSearchQuery } from '@/store/slices/uiSlice';
 
 export function Navbar() {
     const pathname = usePathname();
     const router = useRouter();
     const searchParams = useSearchParams();
     const { data: session } = useSession();
+    const dispatch = useAppDispatch();
+    const globalSearchQuery = useAppSelector((state) => state.ui.searchQuery);
     const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
-    const [searchQuery, setSearchQuery] = useState('');
+    const [localSearchQuery, setLocalSearchQuery] = useState('');
     const dropdownRef = useRef<HTMLDivElement>(null);
 
     // Login success toast
@@ -35,6 +40,7 @@ export function Navbar() {
             window.history.replaceState({}, '', newUrl);
         }
     }, [searchParams]);
+
     // Close on click outside
     useEffect(() => {
         function handleClickOutside(event: MouseEvent) {
@@ -48,15 +54,44 @@ export function Navbar() {
         };
     }, []);
 
-    const handleSearch = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (searchQuery.trim()) {
-            router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+    const handleSearchChange = useCallback((value: string) => {
+        setLocalSearchQuery(value);
+        dispatch(setGlobalSearchQuery(value));
+        
+        // If not on home page and typing, redirect to home
+        if (value.trim() && pathname !== '/') {
+            router.push('/');
         }
+    }, [dispatch, pathname, router]);
+
+    // Handle ?q= parameter on initial load
+    useEffect(() => {
+        const query = searchParams?.get('q');
+        if (query && query !== globalSearchQuery) {
+            handleSearchChange(query);
+        }
+    }, [searchParams, globalSearchQuery, handleSearchChange]);
+
+    const handleSearch = (e?: React.FormEvent) => {
+        if (e) e.preventDefault();
+        // Global state is already updated via handleSearchChange
     };
 
+    // Sync local with global (for voice etc)
+    useEffect(() => {
+        setLocalSearchQuery(globalSearchQuery);
+    }, [globalSearchQuery]);
+
+    const handleVoiceResult = useCallback((transcript: string) => {
+        handleSearchChange(transcript);
+    }, [handleSearchChange]);
+
+    const { isListening, toggleListening, supported } = useVoiceSearch({
+        onResult: handleVoiceResult,
+    });
+
     return (
-        <nav className="sticky top-0 z-50 w-full border-b bg-card shadow-sm">
+        <nav className="hidden md:block sticky top-0 z-50 w-full border-b bg-card shadow-sm">
             <div className="max-w-7xl mx-auto px-4">
                 <div className="flex items-center justify-between h-16">
                     {/* Logo */}
@@ -73,11 +108,25 @@ export function Navbar() {
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                             <input
                                 type="search"
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                placeholder="Search books, users, teams..."
-                                className="w-full h-10 pl-10 pr-4 rounded-full bg-muted border-0 focus:outline-none focus:ring-2 focus:ring-primary"
+                                value={localSearchQuery}
+                                onChange={(e) => handleSearchChange(e.target.value)}
+                                placeholder="Search books, posts, reviews..."
+                                className="w-full h-10 pl-10 pr-10 rounded-full bg-muted border-0 focus:outline-none focus:ring-2 focus:ring-primary"
                             />
+                            {supported && (
+                                <button
+                                    type="button"
+                                    onClick={toggleListening}
+                                    className={`absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-full transition-colors ${
+                                        isListening 
+                                        ? 'text-red-500 bg-red-100 animate-pulse' 
+                                        : 'text-muted-foreground hover:text-primary hover:bg-background'
+                                    }`}
+                                    title="Voice Search"
+                                >
+                                    {isListening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+                                </button>
+                            )}
                         </form>
                     </div>
 

@@ -123,21 +123,34 @@ export function TourCard({ tour }: TourCardProps) {
             {/* Footer Actions */}
             <div className="flex items-center justify-between pt-3 border-t mt-3">
                 <div className="flex gap-2">
-                    <button className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-muted transition-colors">
-                        <Heart className="h-5 w-5" />
-                        <span className="text-sm font-medium">Interested</span>
+                    <button 
+                        aria-label="Interested"
+                        className="flex items-center gap-2 px-2 py-1 md:px-3 md:py-2 rounded-lg hover:bg-muted transition-colors"
+                    >
+                        <Heart className="h-4 w-4 md:h-5 md:w-5" />
+                        <span className="text-sm font-medium hidden md:inline">Interested</span>
                     </button>
-                    <Link href={linkHref} className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-muted transition-colors">
-                        <MessageCircle className="h-5 w-5" />
-                        <span className="text-sm font-medium">Discuss</span>
+                    <Link 
+                        href={linkHref} 
+                        aria-label="Discuss"
+                        className="flex items-center gap-2 px-2 py-1 md:px-3 md:py-2 rounded-lg hover:bg-muted transition-colors"
+                    >
+                        <MessageCircle className="h-4 w-4 md:h-5 md:w-5" />
+                        <span className="text-sm font-medium hidden md:inline">Discuss</span>
                     </Link>
-                    <button className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-muted transition-colors">
-                        <Share2 className="h-5 w-5" />
-                        <span className="text-sm font-medium">Share</span>
+                    <button 
+                        aria-label="Share"
+                        className="flex items-center gap-2 px-2 py-1 md:px-3 md:py-2 rounded-lg hover:bg-muted transition-colors"
+                    >
+                        <Share2 className="h-4 w-4 md:h-5 md:w-5" />
+                        <span className="text-sm font-medium hidden md:inline">Share</span>
                     </button>
                 </div>
-                <button className="p-2 rounded-lg hover:bg-muted transition-colors">
-                    <Bookmark className="h-5 w-5" />
+                <button 
+                    aria-label="Bookmark"
+                    className="p-1.5 md:p-2 rounded-lg hover:bg-muted transition-colors"
+                >
+                    <Bookmark className="h-4 w-4 md:h-5 md:w-5" />
                 </button>
             </div>
         </div>

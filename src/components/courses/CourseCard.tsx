@@ -44,6 +44,29 @@ export function CourseCard({ course, currentUserId, isBookmarked = false, onTogg
 
     const linkHref = `/courses/${course.slug || course._id}`;
 
+    const handleShare = async () => {
+        const shareData = {
+            title: course.title,
+            text: `Check out this course: ${course.title}`,
+            url: `${window.location.origin}${linkHref}`,
+        };
+
+        try {
+            if (navigator.share) {
+                await navigator.share(shareData);
+                toast.success('Shared successfully');
+            } else {
+                await navigator.clipboard.writeText(shareData.url);
+                toast.success('Link copied to clipboard');
+            }
+        } catch (error) {
+            if ((error as Error).name !== 'AbortError') {
+                console.error('Error sharing:', error);
+                toast.error('Failed to share');
+            }
+        }
+    };
+
     const handleDelete = async () => {
         const result = await Swal.fire({
             title: 'Are you sure?',
@@ -163,23 +186,31 @@ export function CourseCard({ course, currentUserId, isBookmarked = false, onTogg
                 </Link>
             </div>
 
-            {/* Footer Actions */}
             <div className="flex items-center justify-between pt-3 border-t mt-auto">
                 <div className="flex gap-2">
                     <button
                         onClick={onToggleBookmark}
-                        className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-muted transition-colors"
+                        className="flex items-center gap-2 px-2 py-1 md:px-3 md:py-2 rounded-lg hover:bg-muted transition-colors"
+                        aria-label={isBookmarked ? "Unsave course" : "Save course"}
                     >
-                        <Heart className={`h-5 w-5 ${isBookmarked ? 'fill-red-500 text-red-500' : ''}`} />
-                        <span className="text-sm font-medium">{isBookmarked ? 'Saved' : 'Save'}</span>
+                        <Heart className={`h-4 w-4 md:h-5 md:w-5 ${isBookmarked ? 'fill-red-500 text-red-500' : ''}`} />
+                        <span className="text-sm font-medium hidden md:inline">{isBookmarked ? 'Saved' : 'Save'}</span>
                     </button>
-                    <Link href={linkHref} className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-muted transition-colors">
-                        <MessageCircle className="h-5 w-5" />
-                        <span className="text-sm font-medium">Details</span>
+                    <Link
+                        href={linkHref}
+                        className="flex items-center gap-2 px-2 py-1 md:px-3 md:py-2 rounded-lg hover:bg-muted transition-colors"
+                        aria-label="View course details"
+                    >
+                        <MessageCircle className="h-4 w-4 md:h-5 md:w-5" />
+                        <span className="text-sm font-medium hidden md:inline">Details</span>
                     </Link>
-                    <button className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-muted transition-colors">
-                        <Share2 className="h-5 w-5" />
-                        <span className="text-sm font-medium">Share</span>
+                    <button
+                        onClick={handleShare}
+                        className="flex items-center gap-2 px-2 py-1 md:px-3 md:py-2 rounded-lg hover:bg-muted transition-colors"
+                        aria-label="Share course"
+                    >
+                        <Share2 className="h-4 w-4 md:h-5 md:w-5" />
+                        <span className="text-sm font-medium hidden md:inline">Share</span>
                     </button>
                 </div>
                 <Button asChild size="sm">

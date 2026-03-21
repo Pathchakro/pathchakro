@@ -14,6 +14,7 @@ export interface IEvent {
     banner?: string;
     slug: string;
     status: 'upcoming' | 'ongoing' | 'completed' | 'cancelled';
+    privacy: 'public' | 'private' | 'team';
 
     // Role-based participants
     roles: {
@@ -106,6 +107,11 @@ const EventSchema = new Schema<IEvent>(
             default: 'upcoming',
             index: true,
         },
+        privacy: {
+            type: String,
+            enum: ['public', 'private', 'team'],
+            default: 'public',
+        },
         roles: {
             host: {
                 user: {
@@ -176,12 +182,18 @@ const EventSchema = new Schema<IEvent>(
     }
 );
 
+EventSchema.pre('validate', function(this: any) {
+    if (this.privacy === 'team' && !this.team) {
+        throw new Error('Team is required for team-only events');
+    }
+});
+
 // Pre-save hook to generate slug
 // Pre-save hook removed - Slug generation is now handled in the controller using generateUniqueSlug
 
 // Indexes for efficient querying
 EventSchema.index({ startTime: 1, status: 1 });
-EventSchema.index({ team: 1, status: 1, startTime: 1 });
+EventSchema.index({ team: 1, privacy: 1, status: 1, startTime: 1 });
 EventSchema.index({ organizer: 1, createdAt: -1 });
 
 const Event = models.Event || model<IEvent>('Event', EventSchema);

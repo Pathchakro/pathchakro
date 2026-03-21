@@ -100,3 +100,7 @@ export function isValidVisibility(visibility: string): boolean {
 export function isValidStatus(status: string): boolean {
   return ['draft', 'published'].includes(status);
 }
+
+export function escapeRegExp(string: string): string {
+  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}

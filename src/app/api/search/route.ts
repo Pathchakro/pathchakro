@@ -4,6 +4,12 @@ import User from '@/models/User';
 import Post from '@/models/Post';
 import Book from '@/models/Book';
 import Team from '@/models/Team';
+import Review from '@/models/Review';
+import Event from '@/models/Event';
+import Tour from '@/models/Tour';
+import Course from '@/models/Course';
+import { escapeRegExp } from '@/lib/utils';
+import { auth } from '@/auth';
 
 export async function GET(request: NextRequest) {
     try {
@@ -20,35 +26,37 @@ export async function GET(request: NextRequest) {
 
         await dbConnect();
 
-        const searchRegex = { $regex: query, $options: 'i' };
+        const escapedQuery = escapeRegExp(query);
+        const searchRegex = { $regex: escapedQuery, $options: 'i' };
+        const session = await auth();
         const results: any = {};
-
-        // Search Users
-        if (type === 'all' || type === 'users') {
-            const users = await User.find({
-                $or: [
-                    { name: searchRegex },
-                    { email: searchRegex },
-                    { university: searchRegex },
-                    { thana: searchRegex },
-                ],
-            })
-                .select('name email image university thana rankTier')
-                .limit(20)
-                .lean();
-
-            results.users = users;
-        }
 
         // Search Posts
         if (type === 'all' || type === 'posts') {
-            const posts = await Post.find({
+            const postQuery: any = {
                 content: searchRegex,
-                privacy: { $in: ['public', 'friends'] }, // Don't show team-only posts in search
-            })
+            };
+
+            if (session?.user?.id) {
+                // Fetch up-to-date following list from DB
+                const currentUser = await User.findById(session.user.id).select('following').lean();
+                const followingIds = (currentUser as any)?.following || [];
+                
+                // If authenticated, show public posts OR friends' posts
+                // Defining friends as people you follow
+                postQuery.$or = [
+                    { privacy: 'public' },
+                    { privacy: 'friends', author: { $in: [...followingIds, session.user.id] } }
+                ];
+            } else {
+                // If unauthenticated, only show public posts
+                postQuery.privacy = 'public';
+            }
+
+            const posts = await Post.find(postQuery)
                 .populate('author', 'name image rankTier')
                 .sort({ createdAt: -1 })
-                .limit(20)
+                .limit(10)
                 .lean();
 
             results.posts = posts;
@@ -61,30 +69,86 @@ export async function GET(request: NextRequest) {
                     { title: searchRegex },
                     { author: searchRegex },
                     { publisher: searchRegex },
+                    { category: searchRegex },
                 ],
             })
+                .select('title author publisher coverImage slug category averageRating totalReviews description pdfUrl copies')
                 .sort({ averageRating: -1, totalReviews: -1 })
-                .limit(20)
+                .limit(10)
                 .lean();
 
             results.books = books;
         }
 
-        // Search Teams
-        if (type === 'all' || type === 'teams') {
-            const teams = await Team.find({
+        // Search Reviews
+        if (type === 'all' || type === 'reviews') {
+            const reviews = await Review.find({
                 $or: [
-                    { name: searchRegex },
-                    { description: searchRegex },
+                    { title: searchRegex },
+                    { content: searchRegex },
+                    { tags: searchRegex },
                 ],
-                privacy: 'public', // Only show public teams
             })
-                .populate('leader', 'name image rankTier')
+                .populate('book', 'title author coverImage slug')
+                .populate('user', 'name image rankTier')
                 .sort({ createdAt: -1 })
-                .limit(20)
+                .limit(10)
                 .lean();
 
-            results.teams = teams;
+            results.reviews = reviews;
+        }
+
+        // Search Events
+        if (type === 'all' || type === 'events') {
+            const events = await Event.find({
+                $or: [
+                    { title: searchRegex },
+                    { description: searchRegex },
+                    { location: searchRegex },
+                ],
+                startTime: { $gte: new Date() },
+                privacy: 'public',
+            })
+                .populate('organizer', 'name image')
+                .sort({ startTime: 1 })
+                .limit(10)
+                .lean();
+
+            results.events = events;
+        }
+
+        // Search Tours
+        if (type === 'all' || type === 'tours') {
+            const tours = await Tour.find({
+                $or: [
+                    { title: searchRegex },
+                    { destination: searchRegex },
+                    { description: searchRegex },
+                ],
+                privacy: 'public',
+            })
+                .populate('organizer', 'name image')
+                .sort({ startDate: 1 })
+                .limit(10)
+                .lean();
+
+            results.tours = tours;
+        }
+
+        // Search Courses
+        if (type === 'all' || type === 'courses') {
+            const courses = await Course.find({
+                $or: [
+                    { title: searchRegex },
+                    { description: searchRegex },
+                ],
+            })
+                .populate('instructor', 'name image')
+                .sort({ createdAt: -1 })
+                .limit(10)
+                .lean();
+
+            results.courses = courses;
         }
 
         // Calculate total results

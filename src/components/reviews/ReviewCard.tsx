@@ -341,17 +341,26 @@ export function ReviewCard({
             {/* Footer Actions */}
             <div className="flex items-center justify-between pt-3 border-t mt-4">
                 <div className="flex gap-2">
-                    <button className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-muted transition-colors">
-                        <ThumbsUp className="h-5 w-5" />
-                        <span className="text-sm font-medium">Helpful ({review.helpful})</span>
+                    <button 
+                        aria-label={`Helpful: ${review.helpful}`}
+                        className="flex items-center gap-2 px-2 py-1 md:px-3 md:py-2 rounded-lg hover:bg-muted transition-colors"
+                    >
+                        <ThumbsUp className="h-4 w-4 md:h-5 md:w-5" />
+                        <span className="text-sm font-medium"><span className="hidden md:inline">Helpful </span>{review.helpful}</span>
                     </button>
-                    <button className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-muted transition-colors">
-                        <MessageCircle className="h-5 w-5" />
-                        <span className="text-sm font-medium">Comment</span>
+                    <button 
+                        aria-label="Comment"
+                        className="flex items-center gap-2 px-2 py-1 md:px-3 md:py-2 rounded-lg hover:bg-muted transition-colors"
+                    >
+                        <MessageCircle className="h-4 w-4 md:h-5 md:w-5" />
+                        <span className="text-sm font-medium hidden md:inline">Comment</span>
                     </button>
-                    <button className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-muted transition-colors">
-                        <Share2 className="h-5 w-5" />
-                        <span className="text-sm font-medium">Share</span>
+                    <button 
+                        aria-label="Share"
+                        className="flex items-center gap-2 px-2 py-1 md:px-3 md:py-2 rounded-lg hover:bg-muted transition-colors"
+                    >
+                        <Share2 className="h-4 w-4 md:h-5 md:w-5" />
+                        <span className="text-sm font-medium hidden md:inline">Share</span>
                     </button>
                 </div>
             </div>

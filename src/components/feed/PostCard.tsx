@@ -336,11 +336,10 @@ export function PostCard({ initialPost, currentUserId, onDelete, initialIsBookma
             </div>
 
             {/* Post Stats */}
-            <div className="flex items-center justify-between text-sm text-muted-foreground mb-3 pb-3 border-b">
+            <div className="flex items-center justify-between text-sm text-muted-foreground mb-3 pb-3 border-b font-medium">
                 <span>{post.likes.length} likes</span>
                 <div className="flex gap-3">
                     <span>{post.comments.length} comments</span>
-                    <span>{post.shares} shares</span>
                 </div>
             </div>
 
@@ -349,35 +348,41 @@ export function PostCard({ initialPost, currentUserId, onDelete, initialIsBookma
                 <div className="flex gap-2">
                     <button
                         onClick={handleLike}
-                        className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-muted transition-colors"
+                        aria-label={isLiked ? "Unlike post" : "Like post"}
+                        aria-pressed={isLiked}
+                        className="flex items-center gap-2 px-2 py-1 md:px-3 md:py-2 rounded-lg hover:bg-muted transition-colors"
                     >
-                        <Heart className={`h-5 w-5 ${isLiked ? 'fill-red-500 text-red-500' : ''}`} />
-                        <span className="text-sm font-medium">Like</span>
+                        <Heart className={`h-4 w-4 md:h-5 md:w-5 ${isLiked ? 'fill-red-500 text-red-500' : ''}`} />
+                        <span className="text-sm font-medium hidden md:inline">Like</span>
                     </button>
                     <button
                         onClick={() => setShowComments(!showComments)}
-                        className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-muted transition-colors"
+                        aria-label="Open comments"
+                        className="flex items-center gap-2 px-2 py-1 md:px-3 md:py-2 rounded-lg hover:bg-muted transition-colors"
                     >
-                        <MessageCircle className="h-5 w-5" />
-                        <span className="text-sm font-medium">Comment</span>
+                        <MessageCircle className="h-4 w-4 md:h-5 md:w-5" />
+                        <span className="text-sm font-medium hidden md:inline">Comment</span>
                     </button>
                     <ShareDialog
                         post={post}
                         trigger={
                             <button
-                                className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-muted transition-colors"
+                                aria-label="Share post"
+                                className="flex items-center gap-2 px-2 py-1 md:px-3 md:py-2 rounded-lg hover:bg-muted transition-colors"
                             >
-                                <Share2 className="h-5 w-5" />
-                                <span className="text-sm font-medium">Share</span>
+                                <Share2 className="h-4 w-4 md:h-5 md:w-5" />
+                                <span className="text-sm font-medium hidden md:inline">Share</span>
                             </button>
                         }
                     />
                 </div>
                 <button
                     onClick={handleBookmark}
-                    className="p-2 rounded-lg hover:bg-muted transition-colors"
+                    aria-label={isBookmarked ? "Remove bookmark" : "Bookmark post"}
+                    aria-pressed={isBookmarked}
+                    className="p-1.5 md:p-2 rounded-lg hover:bg-muted transition-colors"
                 >
-                    <Bookmark className={`h-5 w-5 ${isBookmarked ? 'fill-primary text-primary' : ''}`} />
+                    <Bookmark className={`h-4 w-4 md:h-5 md:w-5 ${isBookmarked ? 'fill-primary text-primary' : ''}`} />
                 </button>
             </div>
 
