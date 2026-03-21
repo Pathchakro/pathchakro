@@ -39,9 +39,11 @@ export function useVoiceSearch({ onResult, lang = 'bn-BD', customToastMessage }:
                 };
 
                 recog.onresult = (event: any) => {
-                    const transcript = event.results[0][0].transcript;
-                    if (transcript) {
-                        onResultRef.current(transcript);
+                    if (event.results && event.results.length > 0 && event.results[0][0]) {
+                        const transcript = event.results[0][0].transcript;
+                        if (typeof transcript === 'string' && transcript.trim().length > 0) {
+                            onResultRef.current(transcript);
+                        }
                     }
                     setIsListening(false);
                 };
@@ -100,7 +102,11 @@ export function useVoiceSearch({ onResult, lang = 'bn-BD', customToastMessage }:
                 recognition.start();
             } catch (err) {
                 console.error('Recognition start error:', err);
-                recognition.stop();
+                try {
+                    recognition.stop();
+                } catch (stopErr) {
+                    console.error('Secondary error during recognition stop:', stopErr);
+                }
             }
         }
     }, [recognition, isListening]);

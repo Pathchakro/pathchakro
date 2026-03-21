@@ -176,6 +176,7 @@ export interface ICourse {
     totalClasses: number;
     instructor: string | IUser;
     students: string[] | IUser[]; // In model it's ObjectIds
+    privacy: 'public' | 'private';
     createdAt: Date;
     updatedAt: Date;
 }

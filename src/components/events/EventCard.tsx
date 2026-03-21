@@ -262,6 +262,7 @@ export function EventCard({ event, onDelete }: EventCardProps) {
                     </Link>
                     <button 
                         aria-label="Share"
+                        onClick={() => toast.info("Share feature coming soon!")}
                         className="flex items-center gap-2 px-2 py-1 md:px-3 md:py-2 rounded-lg hover:bg-muted transition-colors"
                     >
                         <Share2 className="h-4 w-4 md:h-5 md:w-5" />
@@ -270,6 +271,7 @@ export function EventCard({ event, onDelete }: EventCardProps) {
                 </div>
                 <button 
                     aria-label="Bookmark"
+                    onClick={() => toast.info("Bookmark feature coming soon!")}
                     className="p-1.5 md:p-2 rounded-lg hover:bg-muted transition-colors"
                 >
                     <Bookmark className="h-4 w-4 md:h-5 md:w-5" />

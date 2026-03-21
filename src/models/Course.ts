@@ -12,6 +12,7 @@ export interface ICourse extends Document {
     totalClasses: number;
     instructor: mongoose.Types.ObjectId;
     students: mongoose.Types.ObjectId[];
+    privacy: 'public' | 'private';
     createdAt: Date;
     updatedAt: Date;
 }
@@ -28,7 +29,13 @@ const CourseSchema: Schema<ICourse> = new Schema(
         mode: { type: String, enum: ['online', 'offline'], required: true },
         totalClasses: { type: Number, required: true },
         instructor: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-        students: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }]
+        students: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+        privacy: {
+            type: String,
+            enum: ['public', 'private'],
+            default: 'public',
+            index: true,
+        },
     },
     { timestamps: true }
 );

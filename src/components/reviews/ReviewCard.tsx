@@ -125,6 +125,18 @@ export function ReviewCard({
         }
     };
 
+    const handleHelpfulClick = () => {
+        toast.info("Helpful feature coming soon!");
+    };
+
+    const handleCommentClick = () => {
+        toast.info("Comment feature coming soon!");
+    };
+
+    const handleShareClick = () => {
+        toast.info("Share feature coming soon!");
+    };
+
     return (
         <div className={`bg-card rounded-lg shadow-sm border mb-4 ${isDetail ? 'p-6' : 'p-4'}`}>
             {/* Header */}
@@ -343,6 +355,7 @@ export function ReviewCard({
                 <div className="flex gap-2">
                     <button 
                         aria-label={`Helpful: ${review.helpful}`}
+                        onClick={handleHelpfulClick}
                         className="flex items-center gap-2 px-2 py-1 md:px-3 md:py-2 rounded-lg hover:bg-muted transition-colors"
                     >
                         <ThumbsUp className="h-4 w-4 md:h-5 md:w-5" />
@@ -350,6 +363,7 @@ export function ReviewCard({
                     </button>
                     <button 
                         aria-label="Comment"
+                        onClick={handleCommentClick}
                         className="flex items-center gap-2 px-2 py-1 md:px-3 md:py-2 rounded-lg hover:bg-muted transition-colors"
                     >
                         <MessageCircle className="h-4 w-4 md:h-5 md:w-5" />
@@ -357,6 +371,7 @@ export function ReviewCard({
                     </button>
                     <button 
                         aria-label="Share"
+                        onClick={handleShareClick}
                         className="flex items-center gap-2 px-2 py-1 md:px-3 md:py-2 rounded-lg hover:bg-muted transition-colors"
                     >
                         <Share2 className="h-4 w-4 md:h-5 md:w-5" />

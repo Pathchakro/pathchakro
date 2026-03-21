@@ -357,7 +357,8 @@ export function PostCard({ initialPost, currentUserId, onDelete, initialIsBookma
                     </button>
                     <button
                         onClick={() => setShowComments(!showComments)}
-                        aria-label="Open comments"
+                        aria-label={showComments ? "Close comments" : "Open comments"}
+                        aria-pressed={showComments}
                         className="flex items-center gap-2 px-2 py-1 md:px-3 md:py-2 rounded-lg hover:bg-muted transition-colors"
                     >
                         <MessageCircle className="h-4 w-4 md:h-5 md:w-5" />

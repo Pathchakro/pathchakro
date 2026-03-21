@@ -59,8 +59,9 @@ export function Navbar() {
         dispatch(setGlobalSearchQuery(value));
         
         // If not on home page and typing, redirect to home
+        // Use replace instead of push to avoid polluting history on every keystroke
         if (value.trim() && pathname !== '/') {
-            router.push('/');
+            router.replace('/');
         }
     }, [dispatch, pathname, router]);
 

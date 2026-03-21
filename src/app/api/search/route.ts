@@ -142,6 +142,7 @@ export async function GET(request: NextRequest) {
                     { title: searchRegex },
                     { description: searchRegex },
                 ],
+                privacy: 'public',
             })
                 .populate('instructor', 'name image')
                 .sort({ createdAt: -1 })

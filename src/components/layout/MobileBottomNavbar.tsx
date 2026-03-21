@@ -51,7 +51,7 @@ export function MobileBottomNavbar() {
             <div className="flex flex-1 items-center justify-center">
                 <button 
                     onClick={() => dispatch(setCreatePostOpen(true))}
-                    className="bg-primary text-primary-foreground h-7 w-7 rounded-sm flex items-center justify-center shadow-md active:scale-95 transition-all"
+                    className="bg-primary text-primary-foreground h-7 w-7 rounded-sm flex items-center justify-center shadow-md active:scale-95 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
                     aria-label="Create Post"
                 >
                     <Plus className="h-4 w-4 stroke-[2.5]" />
@@ -82,7 +82,7 @@ export function MobileBottomNavbar() {
             
             <button 
                 onClick={() => dispatch(toggleMobileMenu())}
-                className="flex flex-1 items-center justify-center h-full text-muted-foreground hover:text-primary transition-colors"
+                className="flex flex-1 items-center justify-center h-full text-muted-foreground hover:text-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary"
                 aria-label="Menu"
             >
                 <Menu className="h-[18px] w-[18px]" />

@@ -229,7 +229,19 @@ export default function HomeContent({
                                     {(activeSearchTab === 'all' || activeSearchTab === 'posts') && searchResults.posts?.length > 0 && (
                                         <div className="space-y-6">
                                             {searchResults.posts.map((post: any) => (
-                                                <PostCard key={post._id} initialPost={post} currentUserId={session?.user?.id} />
+                                                <PostCard 
+                                                    key={post._id} 
+                                                    initialPost={post} 
+                                                    currentUserId={session?.user?.id} 
+                                                    initialIsBookmarked={myBookmarkedIds.includes(post._id)}
+                                                    onToggleBookmark={(postId, bookmarked) => {
+                                                        setMyBookmarkedIds(prev => 
+                                                            bookmarked 
+                                                                ? [...prev, postId] 
+                                                                : prev.filter(id => id !== postId)
+                                                        );
+                                                    }}
+                                                />
                                             ))}
                                         </div>
                                     )}
@@ -353,7 +365,14 @@ export default function HomeContent({
                                         initialPost={item}
                                         currentUserId={session?.user?.id}
                                         onDelete={handleDeleteItem}
-                                        {...(myBookmarkedIds.includes(item._id) ? { isBookmarked: true } : {})}
+                                        initialIsBookmarked={myBookmarkedIds.includes(item._id)}
+                                        onToggleBookmark={(postId, bookmarked) => {
+                                            setMyBookmarkedIds(prev => 
+                                                bookmarked 
+                                                    ? [...prev, postId] 
+                                                    : prev.filter(id => id !== postId)
+                                            );
+                                        }}
                                     />;
                                 case 'review':
                                     return <ReviewCard
