@@ -13,7 +13,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
     await dbConnect();
 
-    // Check if slug is a valid ObjectId (backward compatibility)
     const isObjectId = /^[0-9a-fA-F]{24}$/.test(slug);
     let event;
 
@@ -29,19 +28,28 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         };
     }
 
+    const ogImage = event.banner || '/OG2_pathchakro.png';
+
     return {
-        title: event.title,
-        description: event.description,
-        openGraph: {
+        title: `${event.title} | PathChakro Events`,
+        description: (event.description || '').slice(0, 160), openGraph: {
             title: event.title,
             description: event.description,
-            images: event.banner ? [event.banner] : [],
+            type: 'article',
+            images: [
+                {
+                    url: ogImage,
+                    width: 1200,
+                    height: 630,
+                    alt: event.title,
+                },
+            ],
         },
         twitter: {
             card: 'summary_large_image',
             title: event.title,
             description: event.description,
-            images: event.banner ? [event.banner] : [],
+            images: [ogImage],
         },
     };
 }
@@ -59,13 +67,7 @@ export default async function EventPage(props: Props) {
     const eventData = await Event.findOne(query)
         .populate('organizer', 'name image rankTier')
         .populate('team', 'name')
-        .populate('roles.host.user', 'name image')
-        .populate('roles.anchor.user', 'name image')
-        .populate('roles.summarizer.user', 'name image')
-        .populate('roles.opener.user', 'name image')
-        .populate('roles.closer.user', 'name image')
-        .populate('roles.lecturers.user', 'name image')
-        .populate('listeners.user', 'name image')
+        .populate('roles.speakers.user', 'name image').populate('listeners.user', 'name image')
         .lean();
 
     if (!eventData) {
@@ -75,5 +77,54 @@ export default async function EventPage(props: Props) {
     // Convert ObjectIds to strings for passing to Client Component
     const serializedEvent = JSON.parse(JSON.stringify(eventData));
 
-    return <EventDetailClient slug={slug} initialData={serializedEvent} />;
+    // Structured Data for SEO
+    const jsonLd = {
+        '@context': 'https://schema.org',
+        '@type': 'EducationEvent',
+        name: eventData.title,
+        description: eventData.description,
+        startDate: eventData.startTime,
+        endDate: eventData.endTime,
+        eventStatus: 'https://schema.org/EventScheduled',
+        eventAttendanceMode: eventData.eventType === 'online' ? 'https://schema.org/OnlineEventAttendanceMode' : 'https://schema.org/OfflineEventAttendanceMode',
+        location: eventData.eventType === 'online' ? {
+            '@type': 'VirtualLocation',
+            url: eventData.meetingLink,
+        } : {
+            '@type': 'Place',
+            name: eventData.location,
+            address: {
+                '@type': 'PostalAddress',
+                addressLocality: 'Dhaka',
+                addressRegion: 'Dhaka',
+                addressCountry: 'BD',
+            },
+        },
+        image: [
+            eventData.banner || '/OG2_pathchakro.png'
+        ],
+        organizer: {
+            '@type': 'Organization',
+            name: 'PathChakro',
+            url: 'https://pathchakro.com',
+        },
+        performer: (eventData.roles?.speakers || []).map((s: any) => ({
+            '@type': 'Person',
+            name: s.user?.name || 'Speaker',
+        })),
+    };
+
+    // To prevent XSS, we need to escape '</' inside script tags.
+    // Replacing '<' with unicode escape '\u003c' is a safe way to do this.
+    const safeJsonLd = JSON.stringify(jsonLd).replace(/</g, '\\u003c');
+
+    return (
+        <>
+            <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{ __html: safeJsonLd }}
+            />
+            <EventDetailClient slug={slug} initialData={serializedEvent} />
+        </>
+    );
 }

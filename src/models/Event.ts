@@ -18,30 +18,9 @@ export interface IEvent {
 
     // Role-based participants
     roles: {
-        host?: {
-            user: string;
-            assignedAt: Date;
-        };
-        anchor?: {
-            user: string;
-            assignedAt: Date;
-        };
-        summarizer?: {
-            user: string;
-            assignedAt: Date;
-        };
-        opener?: {
-            user: string;
-            assignedAt: Date;
-        };
-        closer?: {
-            user: string;
-            assignedAt: Date;
-        };
-        lecturers: Array<{
+        speakers: Array<{
             user: string;
             topic: string;
-            duration: number; // in minutes (default 2)
             order: number;
             assignedAt: Date;
         }>;
@@ -113,42 +92,7 @@ const EventSchema = new Schema<IEvent>(
             default: 'public',
         },
         roles: {
-            host: {
-                user: {
-                    type: Schema.Types.ObjectId as any,
-                    ref: 'User',
-                },
-                assignedAt: Date,
-            },
-            anchor: {
-                user: {
-                    type: Schema.Types.ObjectId as any,
-                    ref: 'User',
-                },
-                assignedAt: Date,
-            },
-            summarizer: {
-                user: {
-                    type: Schema.Types.ObjectId as any,
-                    ref: 'User',
-                },
-                assignedAt: Date,
-            },
-            opener: {
-                user: {
-                    type: Schema.Types.ObjectId as any,
-                    ref: 'User',
-                },
-                assignedAt: Date,
-            },
-            closer: {
-                user: {
-                    type: Schema.Types.ObjectId as any,
-                    ref: 'User',
-                },
-                assignedAt: Date,
-            },
-            lecturers: [
+            speakers: [
                 {
                     user: {
                         type: Schema.Types.ObjectId as any,
@@ -158,12 +102,6 @@ const EventSchema = new Schema<IEvent>(
                     topic: {
                         type: String,
                         required: true,
-                    },
-                    duration: {
-                        type: Number,
-                        default: 2,
-                        min: 1,
-                        max: 10,
                     },
                     order: {
                         type: Number,
@@ -176,13 +114,28 @@ const EventSchema = new Schema<IEvent>(
                 },
             ],
         },
+        listeners: [
+            {
+                user: {
+                    type: Schema.Types.ObjectId as any,
+                    ref: 'User',
+                    required: true,
+                },
+                joinedAt: {
+                    type: Date,
+                    default: Date.now,
+                },
+            },
+        ],
     },
     {
         timestamps: true,
-    }
+        strictPopulate: false,
+        suppressReservedKeysWarning: true,
+    } as any
 );
 
-EventSchema.pre('validate', function(this: any) {
+EventSchema.pre('validate', function(this: IEvent) {
     if (this.privacy === 'team' && !this.team) {
         throw new Error('Team is required for team-only events');
     }
@@ -195,6 +148,13 @@ EventSchema.pre('validate', function(this: any) {
 EventSchema.index({ startTime: 1, status: 1 });
 EventSchema.index({ team: 1, privacy: 1, status: 1, startTime: 1 });
 EventSchema.index({ organizer: 1, createdAt: -1 });
+
+// Prevent overwrite warning in development
+if (process.env.NODE_ENV === 'development') {
+    if (models.Event) {
+        delete models.Event;
+    }
+}
 
 const Event = models.Event || model<IEvent>('Event', EventSchema);
 

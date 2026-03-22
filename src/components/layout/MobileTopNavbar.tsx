@@ -6,6 +6,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession, signIn, signOut } from 'next-auth/react';
 import { Search, BookOpen, User, Settings, LogOut, LayoutDashboard, DollarSign, Mic, MicOff } from 'lucide-react';
+import Logo from '@/components/logo';
 import { useVoiceSearch } from '@/hooks/useVoiceSearch';
 import { Chatbot } from '@/components/chatbot/Chatbot';
 import { usePathname } from 'next/navigation';
@@ -59,11 +60,7 @@ export function MobileTopNavbar() {
     return (
         <div className="md:hidden sticky top-0 z-50 w-full bg-card border-b px-2.5 h-10 flex items-center gap-2">
             {/* Left: Logo */}
-            <Link href="/" className="shrink-0">
-                <div className="h-6 w-6 rounded-full bg-primary flex items-center justify-center">
-                    <BookOpen className="h-3.5 w-3.5 text-primary-foreground" />
-                </div>
-            </Link>
+            <Logo />
 
             {/* Center: Search Bar */}
             <div className="flex-1">

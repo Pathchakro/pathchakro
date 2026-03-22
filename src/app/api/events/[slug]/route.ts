@@ -24,12 +24,7 @@ export async function GET(
             event = await Event.findOne({ _id: params.slug })
                 .populate('organizer', 'name image rankTier')
                 .populate('team', 'name')
-                .populate('roles.host.user', 'name image')
-                .populate('roles.anchor.user', 'name image')
-                .populate('roles.summarizer.user', 'name image')
-                .populate('roles.opener.user', 'name image')
-                .populate('roles.closer.user', 'name image')
-                .populate('roles.lecturers.user', 'name image')
+                .populate('roles.speakers.user', 'name image')
                 .populate('listeners.user', 'name image')
                 .lean();
         }
@@ -38,12 +33,7 @@ export async function GET(
             event = await Event.findOne({ slug: params.slug })
                 .populate('organizer', 'name image rankTier')
                 .populate('team', 'name')
-                .populate('roles.host.user', 'name image')
-                .populate('roles.anchor.user', 'name image')
-                .populate('roles.summarizer.user', 'name image')
-                .populate('roles.opener.user', 'name image')
-                .populate('roles.closer.user', 'name image')
-                .populate('roles.lecturers.user', 'name image')
+                .populate('roles.speakers.user', 'name image')
                 .populate('listeners.user', 'name image')
                 .lean();
         }

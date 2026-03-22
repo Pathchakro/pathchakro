@@ -34,7 +34,7 @@ interface EventCardProps {
             name: string;
         };
         roles: {
-            lecturers: any[];
+            speakers: any[];
         };
         listeners: any[];
     };

@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Bell, MessageCircle, Search, BookOpen, PlusCircle, User, Settings, LogOut, Mic, MicOff } from 'lucide-react';
+import Logo from '@/components/logo';
 import { toast } from 'sonner';
 import { useVoiceSearch } from '@/hooks/useVoiceSearch';
 import { NotificationDropdown } from '@/components/notifications/NotificationDropdown';
@@ -95,12 +96,7 @@ export function Navbar() {
             <div className="max-w-7xl mx-auto px-4">
                 <div className="flex items-center justify-between h-16">
                     {/* Logo */}
-                    <Link href="/" className="flex items-center gap-2">
-                        <div className="h-10 w-10 rounded-full bg-primary flex items-center justify-center">
-                            <BookOpen className="h-6 w-6 text-primary-foreground" />
-                        </div>
-                        <span className="text-xl font-bold hidden sm:block">Pathchakro</span>
-                    </Link>
+                    <Logo />
 
                     {/* Search Bar */}
                     <div className="flex-1 max-w-xl mx-4">

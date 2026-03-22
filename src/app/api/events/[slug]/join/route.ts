@@ -19,7 +19,7 @@ export async function POST(
             );
         }
 
-        const { role, topic, duration } = await request.json();
+        const { role, topic } = await request.json();
 
         if (!role) {
             return NextResponse.json(
@@ -39,41 +39,26 @@ export async function POST(
         let updateData: any = {};
 
         // Configure update based on role
-        if (role === 'lecturer') {
+        if (role === 'speaker') {
             if (!topic) {
                 return NextResponse.json(
-                    { error: 'Topic is required for lecturers' },
+                    { error: 'Topic is required for speakers' },
                     { status: 400 }
                 );
             }
 
-            // Conditions: User not already lecturer, Max 5 lecturers
+            // Conditions: User not already speaker, Max 5 speakers
             updateQuery = {
-                'roles.lecturers.user': { $ne: userId },
-                $expr: { $lt: [{ $size: '$roles.lecturers' }, 5] }
+                'roles.speakers.user': { $ne: userId },
+                $expr: { $lt: [{ $size: { $ifNull: ['$roles.speakers', []] } }, 5] }
             };
 
             updateData = {
                 $push: {
-                    'roles.lecturers': {
+                    'roles.speakers': {
                         user: userId,
                         topic,
-                        duration: duration ?? 2,
                         order: 0, // Placeholder, relying on array position
-                        assignedAt: new Date(),
-                    }
-                }
-            };
-        } else if (['host', 'anchor', 'summarizer', 'opener', 'closer'].includes(role)) {
-            // Condition: Role not already taken
-            updateQuery = {
-                [`roles.${role}.user`]: { $exists: false }
-            };
-
-            updateData = {
-                $set: {
-                    [`roles.${role}`]: {
-                        user: userId,
                         assignedAt: new Date(),
                     }
                 }
@@ -118,23 +103,18 @@ export async function POST(
             }
 
             // Diagnostic checks based on role
-            if (role === 'lecturer') {
-                if (existingEvent.roles.lecturers.some((l: any) => l.user.toString() === userId)) {
-                    return NextResponse.json({ error: 'You are already registered as a lecturer' }, { status: 400 });
+            if (role === 'speaker') {
+                if (existingEvent.roles?.speakers?.some((l: any) => l.user?.toString() === userId)) {
+                    return NextResponse.json({ error: 'You are already registered as a speaker' }, { status: 400 });
                 }
-                if (existingEvent.roles.lecturers.length >= 5) {
-                    return NextResponse.json({ error: 'Maximum 5 lecturers allowed' }, { status: 400 });
+                if ((existingEvent.roles?.speakers?.length || 0) >= 5) {
+                    return NextResponse.json({ error: 'Maximum 5 speakers allowed' }, { status: 400 });
                 }
             } else if (role === 'listener') {
-                if (existingEvent.listeners.some((l: any) => l.user.toString() === userId)) {
+                if (existingEvent.listeners?.some((l: any) => l.user?.toString() === userId)) {
                     return NextResponse.json({ error: 'You are already registered as a listener' }, { status: 400 });
                 }
-            } else {
-                if (existingEvent.roles[role]?.user) {
-                    return NextResponse.json({ error: `${role} role is already taken` }, { status: 400 });
-                }
             }
-
             // Fallback generic error
             return NextResponse.json(
                 { error: 'Failed to assign role (conditions not met)' },
@@ -151,6 +131,62 @@ export async function POST(
         console.error('Error assigning role:', error);
         return NextResponse.json(
             { error: 'Failed to assign role' },
+            { status: 500 }
+        );
+    }
+}
+
+export async function DELETE(
+    request: NextRequest,
+    props: { params: Promise<{ slug: string }> }
+) {
+    const params = await props.params;
+
+    try {
+        const session = await auth();
+
+        if (!session?.user?.id) {
+            return NextResponse.json(
+                { error: 'Unauthorized' },
+                { status: 401 }
+            );
+        }
+
+        await dbConnect();
+
+        const { slug } = params;
+        const isObjectId = /^[0-9a-fA-F]{24}$/.test(slug);
+        const queryBase = isObjectId ? { _id: slug } : { slug };
+        const userId = session.user.id;
+
+        // Atomic update to remove user from both potential arrays
+        const updatedEvent = await Event.findOneAndUpdate(
+            queryBase,
+            {
+                $pull: {
+                    'roles.speakers': { user: userId },
+                    'listeners': { user: userId }
+                }
+            },
+            { new: true }
+        );
+
+        if (!updatedEvent) {
+            return NextResponse.json(
+                { error: 'Event not found' },
+                { status: 404 }
+            );
+        }
+
+        return NextResponse.json({
+            message: 'Successfully cancelled participation',
+            success: true,
+        });
+
+    } catch (error: any) {
+        console.error('Error cancelling participation:', error);
+        return NextResponse.json(
+            { error: 'Failed to cancel participation' },
             { status: 500 }
         );
     }

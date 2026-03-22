@@ -18,7 +18,7 @@ interface Event {
     status: string;
     slug?: string;
     roles: {
-        lecturers: any[];
+        speakers: any[];
     };
     listeners: any[];
 }

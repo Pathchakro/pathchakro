@@ -39,6 +39,7 @@ export default function CreateEventPage() {
                 }
 
                 bannerUrl = uploadResult.displayUrl || uploadResult.url;
+                toast.success('Banner image uploaded successfully!');
                 setUploadingBanner(false);
             }
 
@@ -62,8 +63,9 @@ export default function CreateEventPage() {
 
             toast.success('Event created successfully!');
             router.push(`/events/${result.event.slug || result.event._id}`);
-        } catch (err: any) {
-            toast.error(err.message || 'An error occurred. Please try again.');
+        } catch (err: unknown) {
+            const error = err as Error;
+            toast.error(error.message || 'An error occurred. Please try again.');
         } finally {
             setIsLoading(false);
             setUploadingBanner(false);

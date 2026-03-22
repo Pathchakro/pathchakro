@@ -32,6 +32,7 @@ async function dbConnect(): Promise<typeof mongoose> {
             dbName: process.env.DB_NAME,
         };
 
+        mongoose.set('strictPopulate', false);
         cached.promise = mongoose.connect(MONGODB_URI, opts);
     }
 

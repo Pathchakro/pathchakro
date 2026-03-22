@@ -4,6 +4,9 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Calendar, MapPin, Video, ArrowRight } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
+import { Avatar, AvatarFallback, AvatarGroup, AvatarImage } from '@/components/ui/avatar';
+import { Tooltip } from '@/components/ui/tooltip';
+import { Button } from '@/components/ui/button';
 
 interface Event {
     _id: string;
@@ -12,6 +15,16 @@ interface Event {
     startTime: string | Date;
     eventType: 'online' | 'offline';
     location?: string;
+    roles?: {
+        speakers?: {
+            user?: {
+                _id: string;
+                name: string;
+                image?: string;
+            };
+            topic?: string;
+        }[];
+    };
 }
 
 export function UpcomingEventsCard() {
@@ -27,7 +40,7 @@ export function UpcomingEventsCard() {
                 }
                 const data = await response.json();
                 if (data.events) {
-                    setEvents(data.events.slice(0, 3));
+                    setEvents(data.events.slice(0, 1));
                 }
             } catch (error) {
                 console.error('Error fetching upcoming events:', error);
@@ -67,11 +80,17 @@ export function UpcomingEventsCard() {
             <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
                     <Calendar className="h-5 w-5 text-primary" />
-                    <h3 className="font-semibold text-sm">Upcoming Events</h3>
+                    <h3 className="font-semibold text-sm tracking-tight">Upcoming Event</h3>
                 </div>
-                <Link href="/events" className="text-xs text-primary hover:underline flex items-center gap-1">
-                    See all
-                </Link>
+                {events[0] && (
+                    <Link
+                        href={events[0].slug ? `/events/${events[0].slug}` : `/events/${events[0]._id}`}
+                        className="text-xs font-bold text-primary hover:underline flex items-center gap-1 group/join transition-all"
+                    >
+                        Join
+                        <ArrowRight className="h-3.5 w-3.5 group-hover/join:translate-x-1 transition-transform" />
+                    </Link>
+                )}
             </div>
 
             <div className="space-y-4">
@@ -96,7 +115,7 @@ export function UpcomingEventsCard() {
                                     <h4 className="text-sm font-bold truncate group-hover:text-primary transition-colors leading-tight mb-1">
                                         {event.title}
                                     </h4>
-                                    <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                                    <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground mb-3">
                                         {event.eventType === 'online' ? (
                                             <>
                                                 <Video className="h-3 w-3 text-blue-500" />
@@ -113,6 +132,30 @@ export function UpcomingEventsCard() {
                                             {eventDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
                                         </span>
                                     </div>
+
+                                    {(event.roles?.speakers?.length || 0) > 0 && (
+                                        <div className="flex items-center">
+                                            <AvatarGroup className="-ml-1.5 origin-left">
+                                                {event.roles?.speakers?.map((speaker, sIndex) => (
+                                                    <Tooltip
+                                                        key={sIndex}
+                                                        content={
+                                                            <div className="flex flex-col gap-0.5">
+
+                                                                <span className="text-primary-foreground font-bold">{speaker.topic || 'No topic'}</span>
+                                                                <span className="text-primary-foreground/80 text-[10px] italic">-{speaker.user?.name || 'Unknown'}</span>
+                                                            </div>
+                                                        }
+                                                    >
+                                                        <Avatar className="h-8 w-8 border-2 border-background">
+                                                            <AvatarImage src={speaker.user?.image} alt={speaker.user?.name} />
+                                                            <AvatarFallback className="text-[10px] bg-primary/5 text-primary font-bold">{speaker.user?.name?.charAt(0) || 'U'}</AvatarFallback>
+                                                        </Avatar>
+                                                    </Tooltip>
+                                                ))}
+                                            </AvatarGroup>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </Link>
@@ -120,9 +163,12 @@ export function UpcomingEventsCard() {
                 })}
             </div>
 
-            <Link href="/events" className="mt-4 pt-3 border-t block text-center text-xs font-medium text-muted-foreground hover:text-primary transition-colors group">
-                Find more events <ArrowRight className="h-3 w-3 inline ml-1 group-hover:translate-x-1 transition-transform" />
-            </Link>
+            <div className="mt-4 pt-3 border-t">
+                <Link href="/events" className="flex items-center justify-center gap-2 text-xs font-bold text-muted-foreground hover:text-primary transition-all group/see-all">
+                    See All Events
+                    <ArrowRight className="h-3.5 w-3.5 group-hover/see-all:translate-x-1 transition-transform" />
+                </Link>
+            </div>
         </div>
     );
 }

@@ -30,7 +30,7 @@ interface Event {
     endTime: string;
     status: string;
     roles: {
-        lecturers: any[];
+        speakers: any[];
     };
     listeners: any[];
 }
@@ -207,9 +207,9 @@ export default function EventsClient({ initialEvents }: { initialEvents: Event[]
 
                                     <div className="flex items-center gap-2">
                                         <Users className="h-4 w-4 text-muted-foreground" />
-                                        <span>{event.listeners.length} listeners</span>
-                                        {event.roles.lecturers.length > 0 && (
-                                            <span className="text-muted-foreground">• {event.roles.lecturers.length} lecturers</span>
+                                        <span>{event.listeners?.length || 0} listeners</span>
+                                        {(event.roles?.speakers?.length ?? 0) > 0 && (
+                                            <span className="text-muted-foreground">• {event.roles?.speakers?.length} speakers</span>
                                         )}
                                     </div>
                                 </div>
