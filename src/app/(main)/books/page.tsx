@@ -11,6 +11,8 @@ import Link from 'next/link';
 import { CATEGORIES } from '@/lib/constants';
 import { LoginModal } from '@/components/auth/LoginModal';
 import { BookCard, BookItem } from '@/components/BookCard';
+import LoadingSpinner from '@/components/ui/Loading';
+
 
 
 export default function BooksPage() {
@@ -180,9 +182,7 @@ export default function BooksPage() {
 
             {/* Books Grid */}
             {loading ? (
-                <div className="text-center py-12 text-muted-foreground">
-                    Loading books...
-                </div>
+                <LoadingSpinner />
             ) : books.length === 0 ? (
                 <div className="text-center py-12">
                     <Book className="h-16 w-16 text-muted-foreground mx-auto mb-4 opacity-50" />

@@ -10,6 +10,8 @@ import { formatDate } from '@/lib/utils';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { EventCard } from '@/components/events/EventCard';
+import LoadingSpinner from '@/components/ui/Loading';
+
 
 interface Event {
     _id: string;
@@ -142,9 +144,7 @@ export default function EventsClient({ initialEvents }: { initialEvents: Event[]
 
             {/* Events List */}
             {loading ? (
-                <div className="text-center py-12 text-muted-foreground">
-                    Loading events...
-                </div>
+                <LoadingSpinner />
             ) : events.length === 0 ? (
                 <div className="text-center py-12">
                     <Calendar className="h-16 w-16 text-muted-foreground mx-auto mb-4 opacity-50" />

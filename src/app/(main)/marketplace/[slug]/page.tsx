@@ -10,6 +10,8 @@ import { ShoppingBag, MapPin, Eye, ArrowLeft, User, Package } from 'lucide-react
 import { formatDate } from '@/lib/utils';
 import Link from 'next/link';
 import Image from 'next/image';
+import LoadingSpinner from '@/components/ui/Loading';
+
 
 interface Product {
     _id: string;
@@ -125,9 +127,7 @@ export default function ProductDetailPage() {
     if (loading) {
         return (
             <div className="max-w-6xl mx-auto p-4">
-                <div className="bg-card rounded-lg p-8 text-center">
-                    Loading product...
-                </div>
+                <LoadingSpinner />
             </div>
         );
     }

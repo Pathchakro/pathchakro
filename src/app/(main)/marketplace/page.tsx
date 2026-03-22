@@ -7,6 +7,8 @@ import { Select } from '@/components/ui/select';
 import { ShoppingBag, Plus, Search, MapPin, DollarSign } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
+import LoadingSpinner from '@/components/ui/Loading';
+
 
 interface Product {
     _id: string;
@@ -141,9 +143,7 @@ export default function MarketplacePage() {
 
             {/* Products Grid */}
             {loading ? (
-                <div className="text-center py-12 text-muted-foreground">
-                    Loading products...
-                </div>
+                <LoadingSpinner />
             ) : products.length === 0 ? (
                 <div className="text-center py-12">
                     <ShoppingBag className="h-16 w-16 text-muted-foreground mx-auto mb-4 opacity-50" />

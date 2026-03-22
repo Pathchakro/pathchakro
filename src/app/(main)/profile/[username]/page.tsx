@@ -14,6 +14,8 @@ import Image from 'next/image';
 import { useSession } from 'next-auth/react';
 
 import { IUser } from '@/types';
+import LoadingSpinner from '@/components/ui/Loading';
+
 
 interface Stats {
     posts: number;
@@ -116,9 +118,7 @@ export default function ProfilePage() {
     if (loading) {
         return (
             <div className="max-w-4xl mx-auto p-4">
-                <div className="bg-card rounded-lg p-8 text-center">
-                    Loading profile...
-                </div>
+                <LoadingSpinner />
             </div>
         );
     }

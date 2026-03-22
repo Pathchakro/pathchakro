@@ -14,6 +14,8 @@ import {
 } from "@/components/ui/select-radix";
 import { bdLocations } from "@/lib/bd-locations";
 import { Loader2, Mail, MapPin, Phone } from "lucide-react";
+import LoadingSpinner from '@/components/ui/Loading';
+
 
 interface User {
     _id: string;
@@ -189,9 +191,7 @@ export default function BloodBankPage() {
 
             {/* Content */}
             {loading ? (
-                <div className="flex justify-center py-20">
-                    <Loader2 className="h-10 w-10 animate-spin text-primary" />
-                </div>
+                <LoadingSpinner />
             ) : users.length === 0 ? (
                 <div className="text-center py-20 text-muted-foreground">
                     <p className="text-lg">No donors found matching your criteria.</p>

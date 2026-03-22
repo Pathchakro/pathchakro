@@ -6,6 +6,8 @@ import { Select } from '@/components/ui/select';
 import { Trophy, Calendar, Users, Award } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 import Link from 'next/link';
+import LoadingSpinner from '@/components/ui/Loading';
+
 
 interface Contest {
     _id: string;
@@ -129,9 +131,7 @@ export default function ContestsPage() {
 
             {/* Contests Grid */}
             {loading ? (
-                <div className="text-center py-12 text-muted-foreground">
-                    Loading contests...
-                </div>
+                <LoadingSpinner />
             ) : contests.length === 0 ? (
                 <div className="text-center py-12">
                     <Trophy className="h-16 w-16 text-muted-foreground mx-auto mb-4 opacity-50" />

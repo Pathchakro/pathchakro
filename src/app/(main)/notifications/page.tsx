@@ -6,6 +6,8 @@ import { Bell } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Select } from '@/components/ui/select';
 import { formatDate } from '@/lib/utils';
+import LoadingSpinner from '@/components/ui/Loading';
+
 
 interface Notification {
     _id: string;
@@ -106,9 +108,7 @@ export default function NotificationsPage() {
             </div>
 
             {loading ? (
-                <div className="text-center py-12 text-muted-foreground">
-                    Loading notifications...
-                </div>
+                <LoadingSpinner />
             ) : notifications.length === 0 ? (
                 <div className="text-center py-12">
                     <Bell className="h-16 w-16 text-muted-foreground mx-auto mb-4 opacity-50" />

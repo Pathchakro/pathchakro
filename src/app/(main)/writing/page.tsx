@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/button';
 import { PenTool, Plus, BookOpen, Eye, EyeOff, DollarSign } from 'lucide-react';
 import Link from 'next/link';
 import { WritingProjectCard } from '@/components/writing/WritingProjectCard';
+import LoadingSpinner from '@/components/ui/Loading';
+
 
 interface WritingProject {
     _id: string;
@@ -67,9 +69,7 @@ export default function WritingDashboardPage() {
             </div>
 
             {loading ? (
-                <div className="text-center py-12 text-muted-foreground">
-                    Loading projects...
-                </div>
+                <LoadingSpinner />
             ) : projects.length === 0 ? (
                 <div className="text-center py-12">
                     <PenTool className="h-16 w-16 text-muted-foreground mx-auto mb-4 opacity-50" />

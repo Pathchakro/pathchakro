@@ -11,6 +11,8 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2 } from 'lucide-react';
 import { CourseCard } from '@/components/courses/CourseCard';
 import { LoginModal } from '@/components/auth/LoginModal';
+import LoadingSpinner from '@/components/ui/Loading';
+
 
 // Simplified Course interface (matching what API returns populated)
 interface Course {

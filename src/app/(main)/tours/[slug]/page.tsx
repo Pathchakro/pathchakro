@@ -8,6 +8,8 @@ import { formatDate } from '@/lib/utils';
 import { useSession } from 'next-auth/react';
 import { LoginModal } from '@/components/auth/LoginModal';
 import Link from 'next/link';
+import LoadingSpinner from '@/components/ui/Loading';
+
 
 interface Tour {
     _id: string;
@@ -127,9 +129,7 @@ export default function TourDetailPage() {
     if (loading) {
         return (
             <div className="max-w-5xl mx-auto p-4">
-                <div className="bg-card rounded-lg p-8 text-center">
-                    Loading tour...
-                </div>
+                <LoadingSpinner />
             </div>
         );
     }

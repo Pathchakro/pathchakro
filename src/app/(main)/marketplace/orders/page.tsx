@@ -6,6 +6,8 @@ import { Select } from '@/components/ui/select';
 import { Package, ShoppingBag, User, MapPin, Phone, Calendar } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 import Image from 'next/image';
+import LoadingSpinner from '@/components/ui/Loading';
+
 
 interface Order {
     _id: string;
@@ -94,9 +96,7 @@ export default function OrdersPage() {
 
             {/* Orders List */}
             {loading ? (
-                <div className="text-center py-12 text-muted-foreground">
-                    Loading orders...
-                </div>
+                <LoadingSpinner />
             ) : orders.length === 0 ? (
                 <div className="text-center py-12">
                     <Package className="h-16 w-16 text-muted-foreground mx-auto mb-4 opacity-50" />

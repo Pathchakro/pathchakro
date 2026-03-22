@@ -8,6 +8,8 @@ import { Users, MapPin, Building2, Lock, Globe, Heart, MessageCircle, Share2, Bo
 import { formatDate } from '@/lib/utils';
 import { CommentSection } from '@/components/feed/CommentSection';
 import Link from 'next/link';
+import LoadingSpinner from '@/components/ui/Loading';
+
 
 interface Team {
     _id: string;
@@ -219,9 +221,7 @@ export default function TeamDetailPage() {
     if (loading) {
         return (
             <div className="max-w-5xl mx-auto p-4">
-                <div className="bg-card rounded-lg p-8 text-center">
-                    Loading team...
-                </div>
+                <LoadingSpinner />
             </div>
         );
     }

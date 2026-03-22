@@ -12,6 +12,8 @@ import Image from 'next/image';
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useSession } from 'next-auth/react';
 import { LoginModal } from '@/components/auth/LoginModal';
+import LoadingSpinner from '@/components/ui/Loading';
+
 
 interface Tour {
     _id: string;

@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Users, Search, Plus, MapPin, Building2 } from 'lucide-react';
+import LoadingSpinner from '@/components/ui/Loading';
+
 
 interface Team {
     _id: string;
@@ -168,9 +170,7 @@ export default function TeamsPage() {
 
             {/* Teams Table */}
             {loading ? (
-                <div className="text-center py-12 text-muted-foreground">
-                    Loading teams...
-                </div>
+                <LoadingSpinner />
             ) : teams.length === 0 ? (
                 <div className="text-center py-12">
                     <Users className="h-16 w-16 text-muted-foreground mx-auto mb-4" />

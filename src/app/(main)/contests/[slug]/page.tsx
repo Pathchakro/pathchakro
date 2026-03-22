@@ -9,6 +9,8 @@ import { Label } from '@/components/ui/label';
 import { Trophy, Calendar, Users, ThumbsUp, ArrowLeft, Award, Edit } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 import Link from 'next/link';
+import LoadingSpinner from '@/components/ui/Loading';
+
 
 interface Contest {
     _id: string;
@@ -144,9 +146,7 @@ export default function ContestDetailPage() {
     if (loading) {
         return (
             <div className="max-w-5xl mx-auto p-4">
-                <div className="bg-card rounded-lg p-8 text-center">
-                    Loading contest...
-                </div>
+                <LoadingSpinner />
             </div>
         );
     }
