@@ -160,11 +160,7 @@ export default function CoursesPage() {
             </Tabs>
 
             {loading ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {[1, 2, 3, 4].map(i => (
-                        <div key={i} className="h-[400px] bg-muted animate-pulse rounded-xl" />
-                    ))}
-                </div>
+                <LoadingSpinner />
             ) : filteredCourses.length === 0 ? (
                 <div className="text-center py-20 bg-muted/30 rounded-xl border border-dashed">
                     <h3 className="text-xl font-medium text-muted-foreground">No courses found.</h3>

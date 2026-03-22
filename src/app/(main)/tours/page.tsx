@@ -221,12 +221,7 @@ export default function ToursPage() {
 
             {/* Tours List */}
             {loading ? (
-                <div className="text-center py-12 text-muted-foreground">
-                    <div className="flex justify-center mb-4">
-                        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                    </div>
-                    Loading tours...
-                </div>
+                <LoadingSpinner />
             ) : tours.length === 0 ? (
                 <div className="text-center py-12">
                     <MapPin className="h-16 w-16 text-muted-foreground mx-auto mb-4 opacity-50" />
