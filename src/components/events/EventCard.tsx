@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import Image from 'next/image';
-import { Calendar, Clock, MapPin, Users, Video, MoreHorizontal, Heart, MessageCircle, Share2, Bookmark } from 'lucide-react';
+import { Calendar, Clock, MapPin, Users, Video, MoreHorizontal, Heart, MessageCircle, Share2, Bookmark, Mic } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 import { toast } from 'sonner';
 import { useSession } from 'next-auth/react';
@@ -11,6 +11,9 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { ShareDialog } from '@/components/feed/ShareDialog';
+import { Avatar, AvatarFallback, AvatarGroup, AvatarImage } from '@/components/ui/avatar';
+import { Tooltip } from '@/components/ui/tooltip';
 
 interface EventCardProps {
     event: {
@@ -61,7 +64,10 @@ export function EventCard({ event, onDelete }: EventCardProps) {
         }
 
         const alreadyJoined = (event.listeners || []).some(
-            (listener: any) => listener._id === session.user?.id || listener === session.user?.id
+            (listener: any) => {
+                const userId = listener.user?._id || listener.user || listener._id;
+                return userId === session.user?.id;
+            }
         );
         if (alreadyJoined) {
             toast.info("You have already joined this event");
@@ -175,119 +181,143 @@ export function EventCard({ event, onDelete }: EventCardProps) {
             </div>
 
             {/* Content Body */}
-            {/* Content Body */}
             <div className="mb-4">
-                <Link href={eventUrl}>
-                    {event.banner && (
-                        <div className="mb-3 rounded-lg overflow-hidden relative aspect-video w-full">
-                            <Image
-                                src={event.banner}
-                                alt={event.title}
-                                fill
-                                className="object-cover hover:scale-105 transition-transform duration-300"
-                            />
-                        </div>
-                    )}
-                    <div className="flex items-center justify-between mb-2">
-                        <h3 className="text-xl font-bold hover:text-primary transition-colors">
-                            {event.title}
-                        </h3>
-                        <span className={`text-xs px-2 py-1 rounded-full font-medium ml-2 ${getStatusColor(event.status)}`}>
-                            {event.status.toUpperCase()}
-                        </span>
-                    </div>
-
-                    <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
-                        {event.description}
-                    </p>
-
-                    <div className="bg-accent/10 rounded-md p-3 space-y-2 text-sm border">
-                        <div className="flex items-center gap-2">
-                            <Calendar className="h-4 w-4 text-muted-foreground" />
-                            <span>{formatDate(event.startTime)}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <Clock className="h-4 w-4 text-muted-foreground" />
-                            <span>
-                                {new Date(event.startTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
-                                {' - '}
-                                {new Date(event.endTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                <Link href={eventUrl} className="block relative group">
+                    <div className="mb-3 rounded-lg overflow-hidden relative aspect-video w-full">
+                        <Image
+                            src={event.banner || "/OG2_pathchakro.png"}
+                            alt={event.title}
+                            fill
+                            className="object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                        <div className="absolute top-2 right-2 flex flex-col gap-2 items-end z-10">
+                            <span className={`text-[10px] px-2.5 py-1 rounded-full font-bold shadow-md uppercase tracking-wider backdrop-blur-md bg-background/80 ${getStatusColor(event.status).replace('bg-', 'text-').replace('text-', 'text-')}`}>
+                                {event.status}
                             </span>
                         </div>
-                        {event.eventType === 'online' ? (
-                            <div className="flex items-center gap-2">
-                                <Video className="h-4 w-4 text-blue-500" />
-                                <span className="text-blue-600">Online Event</span>
+                    </div>
+                    <div className="flex items-center justify-between mb-2 gap-2">
+                        <h3 className="text-xl font-bold hover:text-primary transition-colors line-clamp-2">
+                            {event.title}
+                        </h3>
+                        <button
+                            onClick={(e) => {
+                                e.preventDefault();
+                                handleJoin();
+                            }}
+                            aria-label="Join"
+                            className="flex-shrink-0 flex items-center cursor-pointer gap-1.5 px-4 py-1.5 rounded-full bg-[#f97316] text-white hover:bg-[#ea580c] transition-all shadow-sm text-sm font-semibold"
+                        >
+                            <Users className="h-4 w-4" />
+                            Join
+                        </button>
+                    </div>
+
+
+                    <div className="bg-accent/10 rounded-lg p-3.5 border border-border/50 text-sm">
+                        <div className="grid grid-cols-2 gap-x-4 gap-y-3 mb-1">
+                            {/* Row 1: Date | Time */}
+                            <div className="flex flex-col gap-0.5">
+                                <span className="text-[10px] uppercase font-bold text-muted-foreground flex items-center gap-1">
+                                    <Calendar className="h-3 w-3" />
+                                    Date
+                                </span>
+                                <span className="font-bold text-sm truncate">{formatDate(event.startTime)}</span>
                             </div>
-                        ) : (
-                            <div className="flex items-center gap-2">
-                                <MapPin className="h-4 w-4 text-green-500" />
-                                <span>{event.location}</span>
+                            <div className="flex flex-col gap-0.5">
+                                <span className="text-[10px] uppercase font-bold text-muted-foreground flex items-center gap-1">
+                                    <Clock className="h-3 w-3" />
+                                    Time
+                                </span>
+                                <span className="font-bold text-sm truncate">
+                                    {new Date(event.startTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                                </span>
                             </div>
-                        )}
+
+                            {/* Row 2: Status | Participants */}
+                            <div className="pt-2.5 border-t border-border/20 flex flex-col gap-0.5">
+                                <span className="text-[10px] uppercase font-bold text-muted-foreground flex items-center gap-1">
+                                    {event.eventType === 'online' ? (
+                                        <Video className="h-3 w-3" />
+                                    ) : (
+                                        <MapPin className="h-3 w-3" />
+                                    )}
+                                    Status
+                                </span>
+                                {event.eventType === 'online' ? (
+                                    <span className="text-blue-600 font-bold text-sm truncate">Online Event</span>
+                                ) : (
+                                    <span className="font-bold text-sm truncate">{event.location}</span>
+                                )}
+                            </div>
+                            <div className="pt-2.5 border-t border-border/20 flex flex-col gap-0.5">
+                                <span className="text-[10px] uppercase font-bold text-muted-foreground flex items-center gap-1">
+                                    <Users className="h-3 w-3" />
+                                    Audience
+                                </span>
+                                <span className="text-[#2563eb] font-bold text-sm truncate">
+                                    {event.listeners?.length || 0} {event.listeners?.length === 1 ? 'Participant' : 'Participants'}
+                                </span>
+                            </div>
+                        </div>
                     </div>
                 </Link>
             </div>
 
-            {/* Stats (Placeholder for now since we don't have likes/comments on events yet) */}
-            <div className="flex items-center justify-between text-sm text-muted-foreground mb-3 pb-3 border-b">
-                <div className="flex items-center gap-2">
-                    <Users className="h-4 w-4" />
-                    <span>{(event.listeners?.length || 0)} listeners</span>
+            {/* Stats & Footer Actions */}
+            <div className="flex items-center justify-between pt-3 border-t">
+                <div className="flex flex-col gap-1 origin-left">
+                    <span className="text-[10px] uppercase font-bold text-muted-foreground flex items-center gap-1">
+                        <Mic className="h-3 w-3" />
+                        Speaker
+                    </span>
+                    {/* Speaker Avatars Group */}
+                    {(event.roles?.speakers?.length ?? 0) > 0 && (
+                        <AvatarGroup>
+                            {event.roles.speakers.slice(0, 5).map((speaker: any, i: number) => {
+                                const user = speaker.user || {};
+                                return (
+                                    <Tooltip
+                                        key={user._id || i}
+                                        content={
+                                            <div className="flex flex-col gap-0.5">
+                                                <span className="font-bold">{speaker.topic || 'No topic'}</span>
+                                                <span className="text-[10px] opacity-80 italic">-{user.name || 'Unknown'}</span>
+                                            </div>
+                                        }
+                                    >
+                                        <Avatar className="h-7 w-7 border-2 border-background">
+                                            <AvatarImage src={user.image} alt={user.name} />
+                                            <AvatarFallback className="text-[10px] bg-primary/5 text-primary font-bold">
+                                                {(user.name || "?")[0]?.toUpperCase()}
+                                            </AvatarFallback>
+                                        </Avatar>
+                                    </Tooltip>
+                                );
+                            })}
+                        </AvatarGroup>
+                    )}
                 </div>
-                <div className="flex gap-3">
-                    {/* Placeholder stats */}
-                </div>
-            </div>
 
-            {/* Actions (Mocked to match PostCard visual) */}
-            {/* Actions */}
-            <div className="flex items-center justify-between mb-3">
                 <div className="flex gap-2">
-                    <button
-                        onClick={handleJoin}
-                        aria-label="Join"
-                        className="flex items-center gap-2 px-2 py-1 md:px-3 md:py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
-                    >
-                        <Users className="h-4 w-4 md:h-5 md:w-5" />
-                        <span className="text-sm font-medium hidden md:inline">Join</span>
-                    </button>
-                    <Link 
-                        href={eventUrl} 
-                        aria-label="Discussion"
-                        className="flex items-center gap-2 px-2 py-1 md:px-3 md:py-2 rounded-lg hover:bg-muted transition-colors"
-                    >
-                        <MessageCircle className="h-4 w-4 md:h-5 md:w-5" />
-                        <span className="text-sm font-medium hidden md:inline">Discussion</span>
-                    </Link>
-                    <button 
-                        aria-label="Share"
-                        onClick={() => {
-                            if (!session) {
-                                toast.error("Please login to continue");
-                                return;
-                            }
-                            toast.info("Share feature coming soon!");
+                    <ShareDialog
+                        basePath="/events"
+                        post={{
+                            _id: event._id,
+                            title: event.title,
+                            slug: event.slug,
+                            description: event.description
                         }}
-                        className="flex items-center gap-2 px-2 py-1 md:px-3 md:py-2 rounded-lg hover:bg-muted transition-colors"
-                    >
-                        <Share2 className="h-4 w-4 md:h-5 md:w-5" />
-                        <span className="text-sm font-medium hidden md:inline">Share</span>
-                    </button>
-                </div>
-                <button 
-                    aria-label="Bookmark"
-                    onClick={() => {
-                        if (!session) {
-                            toast.error("Please login to continue");
-                            return;
+                        trigger={
+                            <button
+                                aria-label="Share"
+                                className="p-1.5 rounded-full cursor-pointer hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                            >
+                                <Share2 className="h-4 w-4" />
+                            </button>
                         }
-                        toast.info("Bookmark feature coming soon!");
-                    }}
-                    className="p-1.5 md:p-2 rounded-lg hover:bg-muted transition-colors"
-                >
-                    <Bookmark className="h-4 w-4 md:h-5 md:w-5" />
-                </button>
+                    />
+                </div>
             </div>
         </div>
     );

@@ -9,6 +9,7 @@ import { Calendar, MapPin, Users, Video, Plus, Clock } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { EventCard } from '@/components/events/EventCard';
 
 interface Event {
     _id: string;
@@ -159,72 +160,13 @@ export default function EventsClient({ initialEvents }: { initialEvents: Event[]
                 </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {events.map((event) => {
-                        return (
-                            <Link
-                                key={event._id}
-                                href={`/events/${event._id}`}
-                                className="bg-card border rounded-lg p-4 hover:shadow-md transition-shadow"
-                            >
-                                <div className="flex items-start justify-between mb-3">
-                                    <div className="flex-1">
-                                        <h3 className="font-semibold text-lg mb-1 line-clamp-2">{event.title}</h3>
-                                        <p className="text-sm text-muted-foreground line-clamp-2">
-                                            {event.description}
-                                        </p>
-                                    </div>
-                                    <span className={`text-xs px-2 py-1 rounded-full font-medium ml-2 ${getStatusColor(event.status)}`}>
-                                        {event.status.toUpperCase()}
-                                    </span>
-                                </div>
-
-                                <div className="space-y-2 text-sm mb-3">
-                                    <div className="flex items-center gap-2">
-                                        <Calendar className="h-4 w-4 text-muted-foreground" />
-                                        <span>{formatDate(event.startTime)}</span>
-                                    </div>
-
-                                    <div className="flex items-center gap-2">
-                                        <Clock className="h-4 w-4 text-muted-foreground" />
-                                        <span>
-                                            {new Date(event.startTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
-                                            {' - '}
-                                            {new Date(event.endTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
-                                        </span>
-                                    </div>
-
-                                    {event.eventType === 'online' ? (
-                                        <div className="flex items-center gap-2">
-                                            <Video className="h-4 w-4 text-blue-500" />
-                                            <span className="text-blue-600">Online Event</span>
-                                        </div>
-                                    ) : (
-                                        <div className="flex items-center gap-2">
-                                            <MapPin className="h-4 w-4 text-green-500" />
-                                            <span>{event.location || 'Location TBA'}</span>
-                                        </div>
-                                    )}
-
-                                    <div className="flex items-center gap-2">
-                                        <Users className="h-4 w-4 text-muted-foreground" />
-                                        <span>{event.listeners?.length || 0} listeners</span>
-                                        {(event.roles?.speakers?.length ?? 0) > 0 && (
-                                            <span className="text-muted-foreground">• {event.roles?.speakers?.length} speakers</span>
-                                        )}
-                                    </div>
-                                </div>
-
-                                <div className="flex items-center justify-between pt-3 border-t text-xs text-muted-foreground">
-                                    <span>By {event.organizer.name}</span>
-                                    {event.team && <span>Team: {event.team.name}</span>}
-                                </div>
-                            </Link>
-                        );
-                    })}
+                    {events.map((event) => (
+                        <EventCard key={event._id} event={event as any} />
+                    ))}
                 </div>
             )}
-            <LoginModal 
-                open={showLoginModal} 
+            <LoginModal
+                open={showLoginModal}
                 onOpenChange={setShowLoginModal}
                 title="Login to Create Events"
                 description="Join the community to organize and share exciting educational events."

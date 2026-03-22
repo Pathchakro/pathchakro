@@ -19,14 +19,16 @@ interface ShareDialogProps {
         _id: string;
         title?: string;
         slug?: string;
-        content: string;
+        content?: string;
+        description?: string;
     };
+    basePath?: string;
     trigger?: React.ReactNode;
     isOpen?: boolean;
     onOpenChange?: (open: boolean) => void;
 }
 
-export function ShareDialog({ post, trigger, isOpen, onOpenChange }: ShareDialogProps) {
+export function ShareDialog({ post, trigger, isOpen, onOpenChange, basePath = '/posts' }: ShareDialogProps) {
     const [copied, setCopied] = useState(false);
 
     // Construct URL
@@ -34,9 +36,9 @@ export function ShareDialog({ post, trigger, isOpen, onOpenChange }: ShareDialog
     // or use window.location.origin inside event handlers to avoid SSR issues
     const getShareUrl = () => {
         if (typeof window !== 'undefined') {
-            return `${window.location.origin}/posts/${post.slug || post._id}`;
+            return `${window.location.origin}${basePath}/${post.slug || post._id}`;
         }
-        return `https://pathchakro.com/posts/${post.slug || post._id}`; // Fallback/Demo URL
+        return `https://pathchakro.com${basePath}/${post.slug || post._id}`; // Fallback/Demo URL
     };
 
     const handleCopy = () => {
