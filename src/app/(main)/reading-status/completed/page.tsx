@@ -19,6 +19,8 @@ import { Trophy, Calendar as CalendarIcon, ArrowRight, ArrowLeft, BookOpen, Sear
 import Link from 'next/link';
 import Image from 'next/image';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
+import LoadingSpinner from '@/components/ui/Loading';
+
 
 interface CompletedBook {
     _id: string;
@@ -149,7 +151,7 @@ function CompletedLeaderboardContent() {
                 </CardHeader>
                 <CardContent>
                     {loading ? (
-                        <div className="text-center py-12">Loading champions...</div>
+                        <LoadingSpinner />
                     ) : (
                         <Table>
                             <TableHeader>
@@ -224,7 +226,7 @@ function CompletedLeaderboardContent() {
 
 export default function CompletedLeaderboardPage() {
     return (
-        <Suspense fallback={<div>Loading...</div>}>
+        <Suspense fallback={<LoadingSpinner />}>
             <CompletedLeaderboardContent />
         </Suspense>
     );

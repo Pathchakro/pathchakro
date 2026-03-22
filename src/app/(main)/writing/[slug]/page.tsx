@@ -29,6 +29,8 @@ import {
 } from '@/components/ui/dialog';
 import { ImageUploader } from '@/components/uploads/ImageUploader';
 import { SortableChapterList } from './SortableChapterList';
+import LoadingSpinner from '@/components/ui/Loading';
+
 
 interface WritingProject {
     _id: string;
@@ -336,7 +338,7 @@ export default function WritingProjectPage() {
     if (loading) {
         return (
             <div className="max-w-7xl mx-auto p-4">
-                <div className="bg-card rounded-lg p-8 text-center">Loading project...</div>
+                <LoadingSpinner />
             </div>
         );
     }

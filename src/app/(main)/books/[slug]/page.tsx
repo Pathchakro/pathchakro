@@ -17,6 +17,8 @@ import { BookCover } from '@/components/books/BookCover';
 import { useSession } from 'next-auth/react';
 import { toast } from 'sonner';
 import { LoginModal } from '@/components/auth/LoginModal';
+import LoadingSpinner from '@/components/ui/Loading';
+
 
 interface Book {
     _id: string;
@@ -285,7 +287,7 @@ export default function BookDetailPage() {
     if (loading) {
         return (
             <div className="max-w-7xl mx-auto p-4">
-                <div className="bg-card rounded-lg p-8 text-center">Loading book...</div>
+                <LoadingSpinner />
             </div>
         );
     }

@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
+import LoadingSpinner from '@/components/ui/Loading';
+
 
 interface User {
     _id: string;
@@ -95,7 +97,7 @@ export default function BookUsersPage() {
             </div>
 
             {loading ? (
-                <div className="text-center py-12">Loading...</div>
+                <LoadingSpinner />
             ) : users.length === 0 ? (
                 <div className="text-center py-12 bg-card rounded-lg border">
                     <p className="text-muted-foreground">No users found with this status.</p>

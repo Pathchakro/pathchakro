@@ -18,6 +18,8 @@ import { Users, Search, BookOpen, UserX, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
+import LoadingSpinner from '@/components/ui/Loading';
+
 
 interface ActiveBook {
     _id: string;
@@ -145,7 +147,7 @@ export default function UserReadingStatusPage() {
                 </CardHeader>
                 <CardContent>
                     {loading ? (
-                        <div className="text-center py-8">Loading users...</div>
+                        <LoadingSpinner />
                     ) : (
                         <Table>
                             <TableHeader>

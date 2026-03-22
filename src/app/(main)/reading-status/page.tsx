@@ -19,6 +19,8 @@ import { Activity, Book, BarChart3, Users, Heart, CheckCircle, Search, BookOpen,
 import Link from 'next/link';
 import Image from 'next/image';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
+import LoadingSpinner from '@/components/ui/Loading';
+
 
 interface BookStat {
     _id: string;
@@ -248,7 +250,7 @@ function ReadingStatusContent() {
                 </CardHeader>
                 <CardContent>
                     {loading ? (
-                        <div className="text-center py-8">Loading stats...</div>
+                        <LoadingSpinner />
                     ) : (
                         <div className="overflow-x-auto">
                             <Table>
@@ -333,7 +335,7 @@ function ReadingStatusContent() {
 
 export default function ReadingStatusPage() {
     return (
-        <Suspense fallback={<div>Loading...</div>}>
+        <Suspense fallback={<LoadingSpinner />}>
             <ReadingStatusContent />
         </Suspense>
     );

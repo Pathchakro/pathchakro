@@ -6,6 +6,8 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { MessageCircle, Send, User, Search } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
+import LoadingSpinner from '@/components/ui/Loading';
+
 
 interface Message {
     _id: string;
@@ -154,7 +156,7 @@ export default function MessagesPage() {
 
                     <div className="overflow-y-auto flex-1">
                         {loading ? (
-                            <div className="p-4 text-center text-muted-foreground">Loading...</div>
+                            <LoadingSpinner />
                         ) : filteredConversations.length === 0 ? (
                             <div className="p-4 text-center text-muted-foreground">
                                 <MessageCircle className="h-12 w-12 mx-auto mb-2 opacity-50" />

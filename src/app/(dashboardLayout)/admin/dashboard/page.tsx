@@ -11,6 +11,8 @@ import {
     Book, PenTool, Calendar, Activity, Download, FileText
 } from 'lucide-react';
 import { format, subDays } from 'date-fns';
+import LoadingSpinner from '@/components/ui/Loading';
+
 
 interface Analytics {
     period: string;
@@ -129,7 +131,7 @@ export default function AdminDashboardPage() {
     if (loading) {
         return (
             <div className="max-w-7xl mx-auto p-4">
-                <div className="bg-card rounded-lg p-8 text-center">Loading analytics...</div>
+                <LoadingSpinner />
             </div>
         );
     }

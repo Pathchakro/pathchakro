@@ -15,6 +15,8 @@ import Image from 'next/image';
 // import { INTERESTS_LIST } from '@/lib/constants';
 import { useDynamicConfig } from '@/hooks/useDynamicConfig';
 import { InstituteSearch } from '@/components/profile/InstituteSearch';
+import LoadingSpinner from '@/components/ui/Loading';
+
 
 export default function EditProfilePage() {
     const router = useRouter();
@@ -410,7 +412,7 @@ export default function EditProfilePage() {
     const divisions = dynamicLocations;
 
     if (configLoading) {
-        return <div className="p-8 text-center"><p>Loading configuration...</p></div>;
+        return <LoadingSpinner />;
     }
 
     return (

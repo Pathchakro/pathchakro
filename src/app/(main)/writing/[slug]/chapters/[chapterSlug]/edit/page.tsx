@@ -15,6 +15,8 @@ import { ImageUploader } from '@/components/uploads/ImageUploader';
 import NovelEditor from '@/components/editor/NovelEditor';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
+import LoadingSpinner from '@/components/ui/Loading';
+
 
 const chapterSchema = z.object({
     title: z.string().min(1, 'Chapter title is required'),
@@ -175,7 +177,7 @@ export default function EditChapterPage() {
     };
 
     if (isLoading) {
-        return <div className="max-w-4xl mx-auto p-8 text-center">Loading chapter details...</div>;
+        return <LoadingSpinner />;
     }
 
     if (!project) {

@@ -11,6 +11,8 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { BookCard } from '@/components/BookCard';
 import { CATEGORIES } from '@/lib/constants';
+import LoadingSpinner from '@/components/ui/Loading';
+
 
 interface LibraryItem {
     _id: string;
@@ -196,9 +198,7 @@ export default function MyLibraryPage() {
 
             {/* Books Grid */}
             {loading ? (
-                <div className="text-center py-12 text-muted-foreground">
-                    Loading library...
-                </div>
+                <LoadingSpinner />
             ) : filteredLibrary.length === 0 ? (
                 <div className="text-center py-12">
                     <Library className="h-16 w-16 text-muted-foreground mx-auto mb-4 opacity-50" />

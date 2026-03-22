@@ -13,6 +13,8 @@ import { MapPin, Plus, Trash2, ArrowLeft, Upload, X } from 'lucide-react';
 import { z } from 'zod';
 import Link from 'next/link';
 import Image from 'next/image';
+import LoadingSpinner from '@/components/ui/Loading';
+
 
 const tourSchema = z.object({
     title: z.string().min(5, 'Title must be at least 5 characters'),
@@ -153,7 +155,7 @@ export default function EditTourPage() {
     };
 
     if (isLoading) {
-        return <div className="p-8 text-center">Loading tour details...</div>;
+        return <LoadingSpinner />;
     }
 
     return (
