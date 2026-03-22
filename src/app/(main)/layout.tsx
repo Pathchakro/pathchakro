@@ -4,6 +4,7 @@ import { RightSidebar } from '@/components/layout/RightSidebar';
 import { MobileTopNavbar } from '@/components/layout/MobileTopNavbar';
 import { MobileBottomNavbar } from '@/components/layout/MobileBottomNavbar';
 import { GlobalDialogs } from '@/components/layout/GlobalDialogs';
+import { NavigationProgress } from '@/components/layout/NavigationProgress';
 import { Suspense } from 'react';
 
 export default function MainLayout({
@@ -13,6 +14,10 @@ export default function MainLayout({
 }) {
     return (
         <div className="min-h-screen bg-background">
+            {/* Navigation progress bar - fires on every client-side route change */}
+            <Suspense fallback={null}>
+                <NavigationProgress />
+            </Suspense>
             <Suspense fallback={<div className="h-16 w-full border-b bg-card" />}>
                 <Navbar />
                 <MobileTopNavbar />
