@@ -96,7 +96,7 @@ export function ReviewCard({
 
     const handleBookmark = async () => {
         if (!currentUserId) {
-            toast.error("Please login to bookmark reviews");
+            toast.error("Please login to continue");
             return;
         }
 
@@ -126,14 +126,26 @@ export function ReviewCard({
     };
 
     const handleHelpfulClick = () => {
+        if (!currentUserId) {
+            toast.error("Please login to continue");
+            return;
+        }
         toast.info("Helpful feature coming soon!");
     };
 
     const handleCommentClick = () => {
+        if (!currentUserId) {
+            toast.error("Please login to continue");
+            return;
+        }
         toast.info("Comment feature coming soon!");
     };
 
     const handleShareClick = () => {
+        if (!currentUserId) {
+            toast.error("Please login to continue");
+            return;
+        }
         toast.info("Share feature coming soon!");
     };
 

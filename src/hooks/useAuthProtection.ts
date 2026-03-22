@@ -68,8 +68,8 @@ export function useAuthProtection(options: AuthProtectionOptions = {}) {
 
     const checkAuth = useCallback(() => {
         if (!session) {
-            // Trigger login
-            signIn('google', { callbackUrl: pathname });
+            // Trigger login modal instead of direct redirect
+            setShowLoginModal(true);
             return false;
         }
 
@@ -84,7 +84,7 @@ export function useAuthProtection(options: AuthProtectionOptions = {}) {
         }
 
         return true;
-    }, [session, pathname, requireProfileCompletion]);
+    }, [session, requireProfileCompletion]);
 
     return {
         isAuthorized,
@@ -92,6 +92,8 @@ export function useAuthProtection(options: AuthProtectionOptions = {}) {
         isAuthenticated: !!session,
         showProfileModal,
         setShowProfileModal,
+        showLoginModal,
+        setShowLoginModal,
         checkAuth
     };
 }

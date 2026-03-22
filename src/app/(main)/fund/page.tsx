@@ -218,7 +218,7 @@ export default function FundPage() {
 
             {/* Main Content Tabs */}
             <Tabs defaultValue="verify" className="w-full">
-                <TabsList className="grid w-full grid-cols-2 max-w-md mx-auto mb-8">
+                <TabsList className="grid w-full grid-cols-3 max-w-lg mx-auto mb-8">
                     <TabsTrigger value="verify">Verify Payment</TabsTrigger>
                     <TabsTrigger value="leaderboard">Leaderboard</TabsTrigger>
                     <TabsTrigger value="apply">Apply for Fund</TabsTrigger>

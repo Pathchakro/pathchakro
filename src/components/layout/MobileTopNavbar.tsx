@@ -28,12 +28,12 @@ export function MobileTopNavbar() {
     const [localSearchQuery, setLocalSearchQuery] = useState('');
     const router = useRouter();
 
-    const handleSearchChange = useCallback((value: string) => {
+    const handleSearchChange = useCallback((value: string, shouldRedirect = false) => {
         setLocalSearchQuery(value);
         dispatch(setGlobalSearchQuery(value));
         
         // If not on home page and typing, redirect to home
-        if (value.trim() && pathname !== '/') {
+        if (shouldRedirect && value.trim() && pathname !== '/') {
             router.push('/');
         }
     }, [pathname, router, dispatch]);
@@ -72,7 +72,7 @@ export function MobileTopNavbar() {
                     <input
                         type="search"
                         value={localSearchQuery}
-                        onChange={(e) => handleSearchChange(e.target.value)}
+                        onChange={(e) => handleSearchChange(e.target.value, true)}
                         placeholder="Search books, posts, reviews..."
                         className="w-full h-6.5 pl-7 pr-7 rounded-full bg-muted border-0 text-[10px] focus:outline-none focus:ring-1 focus:ring-primary"
                     />

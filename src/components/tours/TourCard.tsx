@@ -2,6 +2,8 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { DollarSign, MapPin, Users, MoreHorizontal, Heart, MessageCircle, Share2, Bookmark, Plane } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
+import { useSession } from 'next-auth/react';
+import { toast } from 'sonner';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -28,6 +30,7 @@ interface TourCardProps {
 }
 
 export function TourCard({ tour }: TourCardProps) {
+    const { data: session } = useSession();
     const getStatusColor = (status: string) => {
         switch (status) {
             case 'planning': return 'bg-blue-500';
@@ -36,6 +39,15 @@ export function TourCard({ tour }: TourCardProps) {
             case 'completed': return 'bg-gray-500';
             case 'cancelled': return 'bg-red-500';
             default: return 'bg-gray-500';
+        }
+    };
+
+    const handleActionClick = (e: React.MouseEvent, action: string) => {
+        if (!session) {
+            e.preventDefault();
+            e.stopPropagation();
+            toast.error("Please login to continue");
+            return;
         }
     };
 
@@ -125,6 +137,7 @@ export function TourCard({ tour }: TourCardProps) {
                 <div className="flex gap-2">
                     <button 
                         aria-label="Interested"
+                        onClick={(e) => handleActionClick(e, 'interested')}
                         className="flex items-center gap-2 px-2 py-1 md:px-3 md:py-2 rounded-lg hover:bg-muted transition-colors"
                     >
                         <Heart className="h-4 w-4 md:h-5 md:w-5" />
@@ -133,6 +146,7 @@ export function TourCard({ tour }: TourCardProps) {
                     <Link 
                         href={linkHref} 
                         aria-label="Discuss"
+                        onClick={(e) => handleActionClick(e, 'discuss')}
                         className="flex items-center gap-2 px-2 py-1 md:px-3 md:py-2 rounded-lg hover:bg-muted transition-colors"
                     >
                         <MessageCircle className="h-4 w-4 md:h-5 md:w-5" />
@@ -140,6 +154,7 @@ export function TourCard({ tour }: TourCardProps) {
                     </Link>
                     <button 
                         aria-label="Share"
+                        onClick={(e) => handleActionClick(e, 'share')}
                         className="flex items-center gap-2 px-2 py-1 md:px-3 md:py-2 rounded-lg hover:bg-muted transition-colors"
                     >
                         <Share2 className="h-4 w-4 md:h-5 md:w-5" />
@@ -148,6 +163,7 @@ export function TourCard({ tour }: TourCardProps) {
                 </div>
                 <button 
                     aria-label="Bookmark"
+                    onClick={(e) => handleActionClick(e, 'bookmark')}
                     className="p-1.5 md:p-2 rounded-lg hover:bg-muted transition-colors"
                 >
                     <Bookmark className="h-4 w-4 md:h-5 md:w-5" />

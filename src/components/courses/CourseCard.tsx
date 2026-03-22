@@ -189,7 +189,13 @@ export function CourseCard({ course, currentUserId, isBookmarked = false, onTogg
             <div className="flex items-center justify-between pt-3 border-t mt-auto">
                 <div className="flex gap-2">
                     <button
-                        onClick={onToggleBookmark}
+                        onClick={() => {
+                            if (!currentUserId) {
+                                toast.error('Please login to continue');
+                                return;
+                            }
+                            onToggleBookmark?.();
+                        }}
                         className="flex items-center gap-2 px-2 py-1 md:px-3 md:py-2 rounded-lg hover:bg-muted transition-colors"
                         aria-label={isBookmarked ? "Unsave course" : "Save course"}
                     >

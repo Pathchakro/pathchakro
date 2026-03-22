@@ -83,6 +83,10 @@ export function BookCard({
     }, [book.completedCount]);
 
     const handleStatusUpdate = (newStatus: string) => {
+        if (!session) {
+            toast.error('Please login to continue');
+            return;
+        }
         // Optimistic update for completed count
         if (currentStatus === 'completed' && newStatus !== 'completed') {
             setLocalCompletedCount(prev => Math.max(0, prev - 1));
@@ -95,6 +99,10 @@ export function BookCard({
     };
 
     const handleToggleLibrary = (action: 'add' | 'remove') => {
+        if (!session) {
+            toast.error('Please login to continue');
+            return;
+        }
         if (action === 'add') {
             setIsLibraryOwned(true);
             setLocalCopies(prev => prev + 1);
@@ -116,6 +124,10 @@ export function BookCard({
 
 
     const handleUploadClick = () => {
+        if (!session) {
+            toast.error('Please login to continue');
+            return;
+        }
         const fileInput = document.getElementById(`pdf-upload-${book._id}`) as HTMLInputElement;
         if (fileInput) {
             fileInput.click();

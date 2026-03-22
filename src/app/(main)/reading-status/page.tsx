@@ -140,7 +140,7 @@ function ReadingStatusContent() {
                 </div>
 
                 {/* Date Range Filter - Reverted to Top Right */}
-                <div className="flex items-center gap-2 bg-card p-2 rounded-lg border shadow-sm self-start md:self-auto">
+                <div className="flex flex-wrap items-center gap-2 bg-card p-2 rounded-lg border shadow-sm self-start md:self-auto">
                     <div className="flex items-center gap-2">
                         <CalendarIcon className="h-4 w-4 text-muted-foreground" />
                         <span className="text-sm font-medium hidden sm:inline-block">Range:</span>
@@ -250,7 +250,8 @@ function ReadingStatusContent() {
                     {loading ? (
                         <div className="text-center py-8">Loading stats...</div>
                     ) : (
-                        <Table>
+                        <div className="overflow-x-auto">
+                            <Table>
                             <TableHeader>
                                 <TableRow>
                                     <TableHead className="w-[300px]">Book Name</TableHead>
@@ -322,6 +323,7 @@ function ReadingStatusContent() {
                                 )}
                             </TableBody>
                         </Table>
+                        </div>
                     )}
                 </CardContent>
             </Card>

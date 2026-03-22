@@ -12,6 +12,8 @@ import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select-radix';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { useSession } from 'next-auth/react';
+import { LoginModal } from '@/components/auth/LoginModal';
 
 export default function EnrollmentPage({ params }: { params: Promise<{ slug: string }> }) {
     const { slug } = use(params);
@@ -20,12 +22,14 @@ export default function EnrollmentPage({ params }: { params: Promise<{ slug: str
     const [loading, setLoading] = useState(false);
     const [uploading, setUploading] = useState(false);
 
+    const { data: session, status } = useSession();
     // Form
     const [method, setMethod] = useState('');
     const [verificationType, setVerificationType] = useState('transaction');
     const [transactionId, setTransactionId] = useState('');
     const [mobileNumber, setMobileNumber] = useState('');
     const [proofFile, setProofFile] = useState<File | null>(null);
+    const [showLoginModal, setShowLoginModal] = useState(false);
 
     const handleUpload = async (file: File): Promise<string | null> => {
         try {
@@ -48,6 +52,12 @@ export default function EnrollmentPage({ params }: { params: Promise<{ slug: str
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        if (status === 'loading') return;
+        if (!session) {
+            setShowLoginModal(true);
+            return;
+        }
 
         if (!method) {
             toast.error('Please select a payment method');
@@ -241,6 +251,12 @@ export default function EnrollmentPage({ params }: { params: Promise<{ slug: str
                     </form>
                 </CardContent>
             </Card>
+            <LoginModal 
+                open={showLoginModal} 
+                onOpenChange={setShowLoginModal}
+                title="Login to Enroll"
+                description="Please sign in to complete your enrollment and access the course materials."
+            />
         </div>
     );
 }

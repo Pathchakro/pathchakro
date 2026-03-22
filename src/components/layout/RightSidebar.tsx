@@ -1,11 +1,15 @@
 'use client';
 
 import Link from 'next/link';
-import { TrendingUp } from 'lucide-react';
+import { TrendingUp, Calendar } from 'lucide-react';
+import { UpcomingEventsCard } from '@/components/events/UpcomingEventsCard';
 
 export function RightSidebar() {
     return (
-        <aside className="hidden xl:block w-80 sticky top-16 h-[calc(100vh-4rem)] overflow-y-auto p-4">
+        <aside className="hidden xl:block w-80 sticky top-16 h-[calc(100vh-4rem)] overflow-y-auto p-4 custom-scrollbar">
+            {/* Upcoming Events */}
+            <UpcomingEventsCard />
+
             {/* Trending Reviews */}
             <div className="bg-card rounded-lg p-4 mb-4 shadow-sm border">
                 <div className="flex items-center gap-2 mb-3">

@@ -14,6 +14,7 @@ import { toast } from 'sonner';
 import { useDynamicConfig } from '@/hooks/useDynamicConfig';
 import { useAuthProtection } from '@/hooks/useAuthProtection';
 import { ProfileCompletionModal } from '@/components/auth/ProfileCompletionModal';
+import { LoginModal } from '@/components/auth/LoginModal';
 
 interface CreatePostDialogProps {
     open: boolean;
@@ -23,9 +24,9 @@ interface CreatePostDialogProps {
 export function CreatePostDialog({ open, onOpenChange }: CreatePostDialogProps) {
     const { data: session } = useSession();
     const { categories } = useDynamicConfig();
-    const { checkAuth, showProfileModal, setShowProfileModal } = useAuthProtection({
+    const { checkAuth, showProfileModal, setShowProfileModal, showLoginModal, setShowLoginModal } = useAuthProtection({
         requireProfileCompletion: true,
-        requireAuth: true,
+        requireAuth: false,
         checkOnMount: false
     });
 
@@ -150,6 +151,12 @@ export function CreatePostDialog({ open, onOpenChange }: CreatePostDialogProps) 
             <ProfileCompletionModal
                 open={showProfileModal}
                 onOpenChange={setShowProfileModal}
+            />
+            <LoginModal 
+                open={showLoginModal} 
+                onOpenChange={setShowLoginModal}
+                title="Login to Create Post"
+                description="Sign in to share your thoughts, photos, and updates with the Pathchakro community."
             />
             <Dialog open={open} onOpenChange={onOpenChange}>
                 <DialogContent className="sm:max-w-4xl max-h-[80vh] flex flex-col">

@@ -73,6 +73,10 @@ export function PostCard({ initialPost, currentUserId, onDelete, initialIsBookma
     }, [post.media]);
 
     const handleLike = async () => {
+        if (!currentUserId) {
+            toast.error('Please login to continue');
+            return;
+        }
         try {
             const slugOrId = (post as any).slug || post._id;
             const response = await fetch(`/api/posts/slug/${slugOrId}/like`, {
@@ -83,8 +87,8 @@ export function PostCard({ initialPost, currentUserId, onDelete, initialIsBookma
             setPost(prev => ({
                 ...prev,
                 likes: data.liked
-                    ? [...prev.likes, currentUserId || 'current-user']
-                    : prev.likes.filter(id => id !== (currentUserId || 'current-user'))
+                    ? [...prev.likes, currentUserId]
+                    : prev.likes.filter(id => id !== currentUserId)
             }));
         } catch (error) {
             console.error('Error liking post:', error);
@@ -92,6 +96,10 @@ export function PostCard({ initialPost, currentUserId, onDelete, initialIsBookma
     };
 
     const handleBookmark = async () => {
+        if (!currentUserId) {
+            toast.error('Please login to continue');
+            return;
+        }
         // Optimistic update
         const previousState = isBookmarked;
         const newState = !previousState;

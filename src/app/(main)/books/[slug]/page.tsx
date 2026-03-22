@@ -16,6 +16,7 @@ import Image from 'next/image';
 import { BookCover } from '@/components/books/BookCover';
 import { useSession } from 'next-auth/react';
 import { toast } from 'sonner';
+import { LoginModal } from '@/components/auth/LoginModal';
 
 interface Book {
     _id: string;
@@ -79,6 +80,7 @@ export default function BookDetailPage() {
     const [loading, setLoading] = useState(true);
     const [showReviewForm, setShowReviewForm] = useState(false);
     const [showPDFUpload, setShowPDFUpload] = useState(false);
+    const [showLoginModal, setShowLoginModal] = useState(false);
 
     // Review form
     const [rating, setRating] = useState(5);
@@ -324,7 +326,17 @@ export default function BookDetailPage() {
                             </div>
                         </div>
                         <div className="p-4 space-y-2">
-                            <Button onClick={handleAddToLibrary} className="w-full" variant="outline">
+                            <Button 
+                                onClick={() => {
+                                    if (!session) {
+                                        setShowLoginModal(true);
+                                    } else {
+                                        handleAddToLibrary();
+                                    }
+                                }} 
+                                className="w-full" 
+                                variant="outline"
+                            >
                                 <Library className="h-4 w-4 mr-2" />
                                 Add to My Library
                             </Button>
@@ -460,7 +472,13 @@ export default function BookDetailPage() {
 
                         {/* Reviews Tab */}
                         <TabsContent value="reviews" className="space-y-4">
-                            <Button onClick={() => setShowReviewForm(!showReviewForm)} className="w-full">
+                            <Button onClick={() => {
+                                if (!session) {
+                                    setShowLoginModal(true);
+                                } else {
+                                    setShowReviewForm(!showReviewForm);
+                                }
+                            }} className="w-full">
                                 <Plus className="h-4 w-4 mr-2" />
                                 Write a Review
                             </Button>
@@ -525,7 +543,13 @@ export default function BookDetailPage() {
 
                         {/* PDFs Tab */}
                         <TabsContent value="pdfs" className="space-y-4">
-                            <Button onClick={() => setShowPDFUpload(!showPDFUpload)} className="w-full">
+                            <Button onClick={() => {
+                                if (!session) {
+                                    setShowLoginModal(true);
+                                } else {
+                                    setShowPDFUpload(!showPDFUpload);
+                                }
+                            }} className="w-full">
                                 <Upload className="h-4 w-4 mr-2" />
                                 Upload PDF
                             </Button>
@@ -602,6 +626,12 @@ export default function BookDetailPage() {
                     </Tabs>
                 </div>
             </div>
+            <LoginModal 
+                open={showLoginModal} 
+                onOpenChange={setShowLoginModal}
+                title="Login to Interact with Books"
+                description="Sign in to write reviews, upload PDFs, and manage your library."
+            />
         </div>
     );
 }

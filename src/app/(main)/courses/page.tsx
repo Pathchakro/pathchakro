@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2 } from 'lucide-react';
 import { CourseCard } from '@/components/courses/CourseCard';
+import { LoginModal } from '@/components/auth/LoginModal';
 
 // Simplified Course interface (matching what API returns populated)
 interface Course {
@@ -31,6 +32,14 @@ export default function CoursesPage() {
     const [search, setSearch] = useState('');
     const [activeTab, setActiveTab] = useState('all');
     const [savedCourseIds, setSavedCourseIds] = useState<string[]>([]);
+    const [showLoginModal, setShowLoginModal] = useState(false);
+
+    const handleCreateCourseClick = (e: React.MouseEvent) => {
+        if (!session) {
+            e.preventDefault();
+            setShowLoginModal(true);
+        }
+    };
 
     useEffect(() => {
         fetchCourses();
@@ -123,19 +132,24 @@ export default function CoursesPage() {
                             onChange={(e) => setSearch(e.target.value)}
                         />
                     </div>
-                    {session && (
-                        <Button asChild>
-                            <Link href="/courses/create">
-                                <Plus className="mr-2 h-4 w-4" />
-                                Create Course
-                            </Link>
+                    <Link href="/courses/create" onClick={handleCreateCourseClick}>
+                        <Button>
+                            <Plus className="mr-2 h-4 w-4" />
+                            Create Course
                         </Button>
-                    )}
+                    </Link>
                 </div>
             </div>
 
+            <LoginModal 
+                open={showLoginModal} 
+                onOpenChange={setShowLoginModal}
+                title="Login to Create Courses"
+                description="Join the community to share your knowledge and teach others by creating a course."
+            />
+
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                <TabsList className="grid w-full grid-cols-4">
+                <TabsList className="flex w-full overflow-x-auto overflow-y-hidden md:grid md:grid-cols-4 no-scrollbar h-auto md:h-10 py-1 md:py-0">
                     <TabsTrigger value="all">All Courses</TabsTrigger>
                     <TabsTrigger value="enrolled" disabled={!session?.user}>Enrolled</TabsTrigger>
                     <TabsTrigger value="mine" disabled={!session?.user}>My Courses</TabsTrigger>

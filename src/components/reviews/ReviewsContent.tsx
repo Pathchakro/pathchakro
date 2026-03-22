@@ -134,7 +134,7 @@ export default function ReviewsContent({
     return (
         <div className="space-y-6">
             {/* Header with Search and Tabs */}
-            <div className="space-y-4 mb-6 sticky top-20 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 py-2">
+            <div className="space-y-4 mb-6 py-2">
                 <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input

@@ -1,10 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { MapPin, Calendar, DollarSign, Users, Clock, ArrowLeft, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
+import { useSession } from 'next-auth/react';
+import { LoginModal } from '@/components/auth/LoginModal';
 import Link from 'next/link';
 
 interface Tour {
@@ -46,6 +48,7 @@ interface Tour {
 }
 
 export default function TourDetailPage() {
+    const { data: session, status } = useSession();
     const params = useParams();
     const tourSlug = params.slug as string;
 
@@ -53,12 +56,9 @@ export default function TourDetailPage() {
     const [loading, setLoading] = useState(true);
     const [isJoining, setIsJoining] = useState(false);
     const [activeTab, setActiveTab] = useState('itinerary');
+    const [showLoginModal, setShowLoginModal] = useState(false);
 
-    useEffect(() => {
-        if (tourSlug) fetchTourData();
-    }, [tourSlug]);
-
-    const fetchTourData = async () => {
+    const fetchTourData = useCallback(async () => {
         try {
             const response = await fetch(`/api/tours/slug/${tourSlug}`);
             const data = await response.json();
@@ -71,9 +71,18 @@ export default function TourDetailPage() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [tourSlug]);
+
+    useEffect(() => {
+        if (tourSlug) fetchTourData();
+    }, [tourSlug, fetchTourData]);
 
     const handleJoinTour = async () => {
+        if (status === 'loading') return;
+        if (!session) {
+            setShowLoginModal(true);
+            return;
+        }
         setIsJoining(true);
         try {
             const response = await fetch(`/api/tours/${tourSlug}/join`, {
@@ -130,7 +139,7 @@ export default function TourDetailPage() {
             <div className="max-w-5xl mx-auto p-4">
                 <div className="bg-card rounded-lg p-8 text-center">
                     <h2 className="text-xl font-semibold mb-2">Tour not found</h2>
-                    <p className="text-muted-foreground mb-4">The tour you're looking for doesn't exist.</p>
+                    <p className="text-muted-foreground mb-4">The tour you&apos;re looking for doesn&apos;t exist.</p>
                     <Link href="/tours">
                         <Button>Browse Tours</Button>
                     </Link>
@@ -309,6 +318,12 @@ export default function TourDetailPage() {
                     </div>
                 )}
             </div>
+            <LoginModal 
+                open={showLoginModal} 
+                onOpenChange={setShowLoginModal}
+                title="Login to Join Tour"
+                description="Join the community to plan and share exciting educational tours with others."
+            />
         </div>
     );
 }

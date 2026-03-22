@@ -54,13 +54,12 @@ export function Navbar() {
         };
     }, []);
 
-    const handleSearchChange = useCallback((value: string) => {
+    const handleSearchChange = useCallback((value: string, shouldRedirect = false) => {
         setLocalSearchQuery(value);
         dispatch(setGlobalSearchQuery(value));
         
-        // If not on home page and typing, redirect to home
-        // Use replace instead of push to avoid polluting history on every keystroke
-        if (value.trim() && pathname !== '/') {
+        // If not on home page and explicitly typing, redirect to home
+        if (shouldRedirect && value.trim() && pathname !== '/') {
             router.replace('/');
         }
     }, [dispatch, pathname, router]);
@@ -69,7 +68,7 @@ export function Navbar() {
     useEffect(() => {
         const query = searchParams?.get('q');
         if (query && query !== globalSearchQuery) {
-            handleSearchChange(query);
+            handleSearchChange(query, false); // Don't redirect on initial load from URL
         }
     }, [searchParams, globalSearchQuery, handleSearchChange]);
 
@@ -110,7 +109,7 @@ export function Navbar() {
                             <input
                                 type="search"
                                 value={localSearchQuery}
-                                onChange={(e) => handleSearchChange(e.target.value)}
+                                onChange={(e) => handleSearchChange(e.target.value, true)}
                                 placeholder="Search books, posts, reviews..."
                                 className="w-full h-10 pl-10 pr-10 rounded-full bg-muted border-0 focus:outline-none focus:ring-2 focus:ring-primary"
                             />

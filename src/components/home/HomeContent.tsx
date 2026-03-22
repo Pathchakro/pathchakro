@@ -169,7 +169,7 @@ export default function HomeContent({
                     </div>
 
                     {/* Unified Category Dropdown */}
-                    <div className="mb-6 sticky top-16 bg-background z-10 py-2 border-b">
+                    <div className="sticky top-16 bg-background z-10 mb-6 py-2 border-b">
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                                 <Button variant="outline" className="w-full sm:w-auto flex items-center justify-between gap-3 px-4 py-2 bg-muted/30 border-primary/20 hover:border-primary/50 transition-all rounded-xl shadow-sm group">
@@ -229,15 +229,15 @@ export default function HomeContent({
                                     {(activeSearchTab === 'all' || activeSearchTab === 'posts') && searchResults.posts?.length > 0 && (
                                         <div className="space-y-6">
                                             {searchResults.posts.map((post: any) => (
-                                                <PostCard 
-                                                    key={post._id} 
-                                                    initialPost={post} 
-                                                    currentUserId={session?.user?.id} 
+                                                <PostCard
+                                                    key={post._id}
+                                                    initialPost={post}
+                                                    currentUserId={session?.user?.id}
                                                     initialIsBookmarked={myBookmarkedIds.includes(post._id)}
                                                     onToggleBookmark={(postId, bookmarked) => {
-                                                        setMyBookmarkedIds(prev => 
-                                                            bookmarked 
-                                                                ? [...prev, postId] 
+                                                        setMyBookmarkedIds(prev =>
+                                                            bookmarked
+                                                                ? [...prev, postId]
                                                                 : prev.filter(id => id !== postId)
                                                         );
                                                     }}
@@ -367,9 +367,9 @@ export default function HomeContent({
                                         onDelete={handleDeleteItem}
                                         initialIsBookmarked={myBookmarkedIds.includes(item._id)}
                                         onToggleBookmark={(postId, bookmarked) => {
-                                            setMyBookmarkedIds(prev => 
-                                                bookmarked 
-                                                    ? [...prev, postId] 
+                                            setMyBookmarkedIds(prev =>
+                                                bookmarked
+                                                    ? [...prev, postId]
                                                     : prev.filter(id => id !== postId)
                                             );
                                         }}

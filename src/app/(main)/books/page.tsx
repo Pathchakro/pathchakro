@@ -1,25 +1,34 @@
 'use client';
 
-import { toast } from "sonner";
-
 import { useState, useEffect } from 'react';
+import { useSession } from 'next-auth/react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Book, Search, Plus, Star } from 'lucide-react';
 import Link from 'next/link';
 import { CATEGORIES } from '@/lib/constants';
-
+import { LoginModal } from '@/components/auth/LoginModal';
 import { BookCard, BookItem } from '@/components/BookCard';
 
 
 export default function BooksPage() {
+    const { data: session } = useSession();
     const [books, setBooks] = useState<BookItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const [categoryFilter, setCategoryFilter] = useState('');
     const [authorFilter, setAuthorFilter] = useState('');
     const [libraryMap, setLibraryMap] = useState<Record<string, { status: string; isOwned: boolean }>>({});
+    const [showLoginModal, setShowLoginModal] = useState(false);
+
+    const handleAddBookClick = (e: React.MouseEvent) => {
+        if (!session) {
+            e.preventDefault();
+            setShowLoginModal(true);
+        }
+    };
 
     useEffect(() => {
         fetchBooks();
@@ -131,7 +140,7 @@ export default function BooksPage() {
                         </h1>
                         <p className="text-muted-foreground">Discover, review, and share books</p>
                     </div>
-                    <Link href="/books/add">
+                    <Link href="/books/add" onClick={handleAddBookClick}>
                         <Button className="gap-2">
                             <Plus className="h-4 w-4" />
                             Add New Book
@@ -183,7 +192,7 @@ export default function BooksPage() {
                             ? 'Try adjusting your search filters'
                             : 'Be the first to add a book!'}
                     </p>
-                    <Link href="/books/add">
+                    <Link href="/books/add" onClick={handleAddBookClick}>
                         <Button>Add a Book</Button>
                     </Link>
                 </div>
@@ -201,6 +210,12 @@ export default function BooksPage() {
                     ))}
                 </div >
             )}
+            <LoginModal 
+                open={showLoginModal} 
+                onOpenChange={setShowLoginModal}
+                title="Login to Add Books"
+                description="Share your favorite books with the community and keep track of your reading."
+            />
         </div >
     );
 }

@@ -85,9 +85,9 @@ export function Chatbot() {
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 20, scale: 0.95 }}
                         transition={{ duration: 0.2 }}
-                        className="fixed bottom-20 right-4 z-50 w-[350px] sm:w-[400px] shadow-2xl"
+                        className="fixed bottom-20 right-4 z-50 w-[calc(100vw-2rem)] sm:w-[400px] shadow-2xl"
                     >
-                        <Card className="border-primary/20 bg-background/95 backdrop-blur-md h-[500px] flex flex-col overflow-hidden ring-1 ring-primary/10">
+                        <Card className="border-primary/20 bg-background/95 backdrop-blur-md max-h-[calc(100vh-120px)] h-[500px] flex flex-col overflow-hidden ring-1 ring-primary/10">
                             <CardHeader className="bg-gradient-to-r from-primary/10 to-orange-500/10 p-4 border-b border-primary/10">
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-2">

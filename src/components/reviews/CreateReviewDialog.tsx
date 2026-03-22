@@ -13,6 +13,7 @@ import { BookSearch } from '@/components/books/BookSearch';
 import { toast } from 'sonner';
 import { useAuthProtection } from '@/hooks/useAuthProtection';
 import { ProfileCompletionModal } from '@/components/auth/ProfileCompletionModal';
+import { LoginModal } from '@/components/auth/LoginModal';
 
 interface CreateReviewDialogProps {
     open: boolean;
@@ -27,9 +28,9 @@ interface Book {
 }
 
 export function CreateReviewDialog({ open, onOpenChange }: CreateReviewDialogProps) {
-    const { checkAuth, showProfileModal, setShowProfileModal } = useAuthProtection({
+    const { checkAuth, showProfileModal, setShowProfileModal, showLoginModal, setShowLoginModal } = useAuthProtection({
         requireProfileCompletion: true,
-        requireAuth: true,
+        requireAuth: false,
         checkOnMount: false
     });
 
@@ -172,6 +173,12 @@ export function CreateReviewDialog({ open, onOpenChange }: CreateReviewDialogPro
             <ProfileCompletionModal
                 open={showProfileModal}
                 onOpenChange={setShowProfileModal}
+            />
+            <LoginModal 
+                open={showLoginModal} 
+                onOpenChange={setShowLoginModal}
+                title="Login to Write Review"
+                description="Sign in to share your thoughts on books and help the community discover great reads."
             />
             <Dialog open={open} onOpenChange={onOpenChange}>
                 <DialogContent className="sm:max-w-4xl max-h-[80vh] overflow-y-auto">

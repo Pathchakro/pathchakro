@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
+import { EnrollButton } from '@/components/courses/EnrollButton';
 
 // Helper to fetch course
 async function getCourse(slug: string) {
@@ -157,9 +158,7 @@ export default async function CourseDetailsPage({ params }: { params: Promise<{ 
                                 </div>
                             </div>
 
-                            <Button className="w-full text-lg font-semibold h-12 shadow-md hover:shadow-xl transition-all" asChild>
-                                <Link href={`/courses/${slug}/enroll`}>Enroll Now</Link>
-                            </Button>
+                            <EnrollButton slug={slug} />
 
                             <div className="pt-4">
                                 <h4 className="text-sm font-semibold mb-3 flex items-center gap-2">

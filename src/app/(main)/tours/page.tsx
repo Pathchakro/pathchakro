@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
@@ -10,6 +11,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useSession } from 'next-auth/react';
+import { LoginModal } from '@/components/auth/LoginModal';
 
 interface Tour {
     _id: string;
@@ -38,13 +40,16 @@ export default function ToursPage() {
     const [statusFilter, setStatusFilter] = useState('');
     const [showUpcoming, setShowUpcoming] = useState(true);
     const [activeTab, setActiveTab] = useState('all');
-    const [savedTourIds, setSavedTourIds] = useState<string[]>([]);
-
-    // Auth context would be better passed as prop or fetched if we were in a server component wrapper,
-    // but here we are in a client component. We can fetch user's saved tours on mount if session exists.
-    // However, `useSession` is the standard way in client components.
-    // I need to import useSession.
     const { data: session } = useSession();
+    const [savedTourIds, setSavedTourIds] = useState<string[]>([]);
+    const [showLoginModal, setShowLoginModal] = useState(false);
+
+    const handleCreateTourClick = (e: React.MouseEvent) => {
+        if (!session) {
+            e.preventDefault();
+            setShowLoginModal(true);
+        }
+    };
 
     useEffect(() => {
         fetchTours();
@@ -104,7 +109,7 @@ export default function ToursPage() {
         e.stopPropagation();
 
         if (!session?.user) {
-            alert('Please login to bookmark tours');
+            toast.error('Please login to bookmark tours');
             return;
         }
 
@@ -156,7 +161,7 @@ export default function ToursPage() {
                         <h1 className="text-3xl font-bold">Tours & Trips</h1>
                         <p className="text-muted-foreground">Plan and join educational tours</p>
                     </div>
-                    <Link href="/tours/create">
+                    <Link href="/tours/create" onClick={handleCreateTourClick}>
                         <Button className="gap-2">
                             <Plus className="h-4 w-4" />
                             Create Tour
@@ -203,7 +208,7 @@ export default function ToursPage() {
 
                 {/* Tabs */}
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full mb-6">
-                    <TabsList className="grid w-full grid-cols-4">
+                    <TabsList className="flex w-full overflow-x-auto overflow-y-hidden md:grid md:grid-cols-4 no-scrollbar h-auto md:h-10 py-1 md:py-0">
                         <TabsTrigger value="all">All Tours</TabsTrigger>
                         <TabsTrigger value="mine" disabled={!session?.user}>My Tours</TabsTrigger>
                         <TabsTrigger value="booked" disabled={!session?.user}>Booked</TabsTrigger>
@@ -229,7 +234,7 @@ export default function ToursPage() {
                             ? 'Try adjusting your filters or tabs'
                             : 'Be the first to create a tour!'}
                     </p>
-                    <Link href="/tours/create">
+                    <Link href="/tours/create" onClick={handleCreateTourClick}>
                         <Button>Create Tour</Button>
                     </Link>
                 </div>
@@ -302,6 +307,12 @@ export default function ToursPage() {
                     ))}
                 </div>
             )}
+        <LoginModal 
+            open={showLoginModal} 
+            onOpenChange={setShowLoginModal}
+            title="Login to Create Tours"
+            description="Join the community to plan and share exciting educational tours with others."
+        />
         </div>
     );
 }

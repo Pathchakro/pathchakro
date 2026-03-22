@@ -184,7 +184,7 @@ export default function MyLibraryPage() {
 
                 {/* Status Tabs */}
                 <Tabs value={statusTab} onValueChange={setStatusTab}>
-                    <TabsList className="grid w-full grid-cols-5">
+                    <TabsList className="flex w-full overflow-x-auto overflow-y-hidden md:grid md:grid-cols-5 no-scrollbar h-auto md:h-10 py-1 md:py-0">
                         <TabsTrigger value="all">All ({counts.all})</TabsTrigger>
                         <TabsTrigger value="owned">My Collection ({counts.owned})</TabsTrigger>
                         <TabsTrigger value="want-to-read">Want to Read ({counts['want-to-read']})</TabsTrigger>

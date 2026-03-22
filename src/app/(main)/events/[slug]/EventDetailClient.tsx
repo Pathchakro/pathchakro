@@ -7,6 +7,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Calendar, MapPin, Video, Users, Clock, ArrowLeft, User, Mic } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
+import { useSession } from 'next-auth/react';
+import { LoginModal } from '@/components/auth/LoginModal';
 import Link from 'next/link';
 import Image from 'next/image';
 
@@ -48,14 +50,15 @@ interface Event {
     }>;
     createdAt: string;
 }
-
 export default function EventDetailClient({ slug, initialData }: { slug: string; initialData?: Event }) {
+    const { data: session } = useSession();
     const [event, setEvent] = useState<Event | null>(initialData || null);
     const [loading, setLoading] = useState(!initialData);
     const [isJoining, setIsJoining] = useState(false);
     const [selectedRole, setSelectedRole] = useState('');
     const [lectureTopic, setLectureTopic] = useState('');
     const [lectureDuration, setLectureDuration] = useState(2);
+    const [showLoginModal, setShowLoginModal] = useState(false);
 
     useEffect(() => {
         if (!initialData) {
@@ -87,6 +90,11 @@ export default function EventDetailClient({ slug, initialData }: { slug: string;
 
     const handleJoinRole = async () => {
         if (!event) return;
+
+        if (!session) {
+            setShowLoginModal(true);
+            return;
+        }
 
         if (!selectedRole) {
             alert('Please select a role');
@@ -380,6 +388,12 @@ export default function EventDetailClient({ slug, initialData }: { slug: string;
                     </div>
                 </div>
             </div>
+            <LoginModal 
+                open={showLoginModal} 
+                onOpenChange={setShowLoginModal}
+                title="Login to Join Event"
+                description="Join the community to participate in exciting educational events and meetups."
+            />
         </div>
     );
 }

@@ -1,11 +1,14 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useSession } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
+import { LoginModal } from '@/components/auth/LoginModal';
 import { Select } from '@/components/ui/select';
 import { Calendar, MapPin, Users, Video, Plus, Clock } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 interface Event {
     _id: string;
@@ -33,11 +36,21 @@ interface Event {
 }
 
 export default function EventsClient({ initialEvents }: { initialEvents: Event[] }) {
+    const { data: session } = useSession();
+    const router = useRouter();
     const [events, setEvents] = useState<Event[]>(initialEvents);
     const [loading, setLoading] = useState(false);
     const [statusFilter, setStatusFilter] = useState('');
     const [showUpcoming, setShowUpcoming] = useState(true);
     const [isFirstLoad, setIsFirstLoad] = useState(true);
+    const [showLoginModal, setShowLoginModal] = useState(false);
+
+    const handleCreateEventClick = (e: React.MouseEvent) => {
+        if (!session) {
+            e.preventDefault();
+            setShowLoginModal(true);
+        }
+    };
 
     const fetchEvents = useCallback(async () => {
         setLoading(true);
@@ -91,7 +104,7 @@ export default function EventsClient({ initialEvents }: { initialEvents: Event[]
                         <h1 className="text-3xl font-bold">Events</h1>
                         <p className="text-muted-foreground">Educational events and meetups</p>
                     </div>
-                    <Link href="/events/create">
+                    <Link href="/events/create" onClick={handleCreateEventClick}>
                         <Button className="gap-2">
                             <Plus className="h-4 w-4" />
                             Create Event
@@ -140,7 +153,7 @@ export default function EventsClient({ initialEvents }: { initialEvents: Event[]
                             ? 'Try adjusting your filters'
                             : 'Be the first to create an event!'}
                     </p>
-                    <Link href="/events/create">
+                    <Link href="/events/create" onClick={handleCreateEventClick}>
                         <Button>Create Event</Button>
                     </Link>
                 </div>
@@ -210,6 +223,12 @@ export default function EventsClient({ initialEvents }: { initialEvents: Event[]
                     })}
                 </div>
             )}
+            <LoginModal 
+                open={showLoginModal} 
+                onOpenChange={setShowLoginModal}
+                title="Login to Create Events"
+                description="Join the community to organize and share exciting educational events."
+            />
         </div>
     );
 }
