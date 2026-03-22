@@ -271,10 +271,10 @@ export default function EventDetailClient({ slug, initialData }: { slug: string;
                         <div>
                             <p className="text-[11px] uppercase tracking-wider text-muted-foreground/80">Time</p>
                             <p className="text-sm font-semibold leading-tight">
-                                {new Date(event.startTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                                {event.startTime ? new Date(event.startTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : 'TBA'}
                                 <br className="sm:hidden" />
                                 <span className="hidden sm:inline"> - </span>
-                                {new Date(event.endTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                                {event.endTime ? new Date(event.endTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : 'TBA'}
                             </p>
                         </div>
                     </div>
@@ -310,7 +310,7 @@ export default function EventDetailClient({ slug, initialData }: { slug: string;
 
                 <div className="mt-4 pt-4 border-t flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <p className="text-sm text-muted-foreground leading-relaxed">
-                        Organized by <span className="font-medium text-foreground">{event.organizer.name}</span>
+                        Organized by <span className="font-medium text-foreground">{event.organizer?.name || 'Unknown'}</span>
                         {event.team && <><br className="sm:hidden" /> • Team: <span className="font-medium text-foreground">{event.team.name}</span></>}
                     </p>
 
@@ -448,9 +448,10 @@ export default function EventDetailClient({ slug, initialData }: { slug: string;
                     <TabsContent value="listeners" className="space-y-4">
                         {(event.listeners?.length || 0) > 0 ? (
                             <div className="bg-card rounded-xl border divide-y overflow-hidden">
-                                {(event.listeners || []).map((listener) => (
-                                    <div key={listener.user._id} className="flex items-center justify-between p-4 hover:bg-muted/30 transition-colors">                                        <div className="flex items-center gap-4">
-                                        <Avatar className="h-10 w-10 border">
+                                {(event.listeners || []).map((listener, i) => (
+                                    <div key={listener.user?._id || `listener-${i}`} className="flex items-center justify-between p-4 hover:bg-muted/30 transition-colors">                                        
+                                        <div className="flex items-center gap-4">
+                                            <Avatar className="h-10 w-10 border">
                                             <AvatarImage src={listener.user?.image} alt={listener.user?.name} />
                                             <AvatarFallback>{listener.user?.name?.charAt(0) || 'L'}</AvatarFallback>
                                         </Avatar>
