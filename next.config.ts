@@ -17,19 +17,20 @@ const withPWA = withPWAInit({
       // Cache all navigations (HTML pages) — stale-while-revalidate
       // so previously visited pages load offline instantly
       {
-        urlPattern: /^https:\/\/[^/]+\/((?!api\/).)*$/,
-        handler: "StaleWhileRevalidate" as const,
+        urlPattern: /^https?:\/\/[^/]+\/((?!api\/).)*$/,
+        handler: "NetworkFirst" as const,
         options: {
           cacheName: "pages-cache",
           expiration: {
-            maxEntries: 64,
-            maxAgeSeconds: 24 * 60 * 60, // 24 hours
+            maxEntries: 128,
+            maxAgeSeconds: 30 * 24 * 60 * 60, // 30 days
           },
+          networkTimeoutSeconds: 15,
         },
       },
       // Cache API GET responses — network-first with cache fallback
       {
-        urlPattern: /^https:\/\/[^/]+\/api\//,
+        urlPattern: /^https?:\/\/[^/]+\/api\//,
         handler: "NetworkFirst" as const,
         method: "GET",
         options: {
