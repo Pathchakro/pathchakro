@@ -10,6 +10,9 @@ import { cn } from '@/lib/utils';
 export function MobileBottomNavbar() {
     const pathname = usePathname();
     const dispatch = useAppDispatch();
+    const checkActive = (href: string) => {
+        return pathname === href || (href !== '/' && pathname.startsWith(href));
+    };
 
     return (
         <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-card border-t px-1 h-10 flex items-center justify-between shadow-[0_-2px_10px_rgba(0,0,0,0.05)] pb-safe">
@@ -18,7 +21,7 @@ export function MobileBottomNavbar() {
                 href="/" 
                 className={cn(
                     "flex flex-1 items-center justify-center h-full transition-colors", 
-                    pathname === '/' ? "text-primary" : "text-muted-foreground"
+                    checkActive('/') ? "text-primary" : "text-muted-foreground hover:text-primary"
                 )}
                 aria-label="Home"
             >
@@ -29,7 +32,7 @@ export function MobileBottomNavbar() {
                 href="/library" 
                 className={cn(
                     "flex flex-1 items-center justify-center h-full transition-colors", 
-                    pathname === '/library' ? "text-primary" : "text-muted-foreground"
+                    checkActive('/library') ? "text-primary" : "text-muted-foreground hover:text-primary"
                 )}
                 aria-label="Library"
             >
@@ -40,7 +43,7 @@ export function MobileBottomNavbar() {
                 href="/books" 
                 className={cn(
                     "flex flex-1 items-center justify-center h-full transition-colors", 
-                    pathname === '/books' ? "text-primary" : "text-muted-foreground"
+                    checkActive('/books') ? "text-primary" : "text-muted-foreground hover:text-primary"
                 )}
                 aria-label="Books"
             >
@@ -62,7 +65,7 @@ export function MobileBottomNavbar() {
                 href="/events" 
                 className={cn(
                     "flex flex-1 items-center justify-center h-full transition-colors", 
-                    pathname === '/events' ? "text-primary" : "text-muted-foreground"
+                    checkActive('/events') ? "text-primary" : "text-muted-foreground hover:text-primary"
                 )}
                 aria-label="Events"
             >
@@ -73,7 +76,7 @@ export function MobileBottomNavbar() {
                 href="/writing" 
                 className={cn(
                     "flex flex-1 items-center justify-center h-full transition-colors", 
-                    pathname === '/writing' ? "text-primary" : "text-muted-foreground"
+                    checkActive('/writing') ? "text-primary" : "text-muted-foreground hover:text-primary"
                 )}
                 aria-label="Writing"
             >

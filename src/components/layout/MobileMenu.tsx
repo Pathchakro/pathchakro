@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/sheet';
 import { useAppSelector, useAppDispatch } from '@/store';
 import { setMobileMenuOpen } from '@/store/slices/uiSlice';
+import { usePathname } from 'next/navigation';
 
 const QUICK_LINKS = [
     { icon: Pen, label: 'Posts', href: '/posts' },
@@ -30,6 +31,7 @@ const QUICK_LINKS = [
 export function MobileMenu() {
     const dispatch = useAppDispatch();
     const isOpen = useAppSelector((state) => state.ui.isMobileMenuOpen);
+    const pathname = usePathname();
 
     const onOpenChange = (open: boolean) => {
         dispatch(setMobileMenuOpen(open));
@@ -47,19 +49,25 @@ export function MobileMenu() {
                 <div className="flex-1 overflow-y-auto px-1.5 py-1 space-y-1">
                     {/* Navigation Links (Filtered to remove duplicates in bottom navbar) */}
                     <div className="grid grid-cols-1 gap-0 pt-1">
-                        {QUICK_LINKS.map((link) => (
+                        {QUICK_LINKS.map((link) => {
+                            const isActive = pathname === link.href || (link.href !== '/' && pathname.startsWith(link.href));
+                            return (
                             <Link
                                 key={link.href}
                                 href={link.href}
                                 onClick={() => onOpenChange(false)}
-                                className="flex items-center gap-2.5 px-2.5 py-1 rounded-md hover:bg-primary/10 hover:text-primary transition-all group"
+                                className={`flex items-center gap-2.5 px-2.5 py-1 rounded-md transition-all group ${
+                                    isActive ? 'bg-primary/10 text-primary' : 'hover:bg-primary/10 hover:text-primary text-muted-foreground'
+                                }`}
                             >
-                                <div className="h-6 w-6 rounded-md bg-muted flex items-center justify-center group-hover:bg-primary/20 group-hover:text-primary">
-                                    <link.icon className="h-3.5 w-3.5" />
+                                <div className={`h-6 w-6 rounded-md flex items-center justify-center transition-colors ${
+                                    isActive ? 'bg-primary/20 text-primary' : 'bg-muted text-muted-foreground group-hover:bg-primary/20 group-hover:text-primary'
+                                }`}>
+                                    <link.icon className={`h-3.5 w-3.5 ${isActive ? 'text-primary' : ''}`} />
                                 </div>
-                                <span className="font-medium text-[11px]">{link.label}</span>
+                                <span className={`font-medium text-[11px] ${isActive ? 'text-primary' : ''}`}>{link.label}</span>
                             </Link>
-                        ))}
+                        )})}
                     </div>
                 </div>
 
