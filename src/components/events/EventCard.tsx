@@ -60,7 +60,7 @@ export function EventCard({ event, onDelete }: EventCardProps) {
             return;
         }
 
-        const alreadyJoined = event.listeners.some(
+        const alreadyJoined = (event.listeners || []).some(
             (listener: any) => listener._id === session.user?.id || listener === session.user?.id
         );
         if (alreadyJoined) {
@@ -233,7 +233,7 @@ export function EventCard({ event, onDelete }: EventCardProps) {
             <div className="flex items-center justify-between text-sm text-muted-foreground mb-3 pb-3 border-b">
                 <div className="flex items-center gap-2">
                     <Users className="h-4 w-4" />
-                    <span>{event.listeners.length} listeners</span>
+                    <span>{(event.listeners?.length || 0)} listeners</span>
                 </div>
                 <div className="flex gap-3">
                     {/* Placeholder stats */}
