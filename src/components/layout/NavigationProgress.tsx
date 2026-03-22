@@ -10,13 +10,14 @@ export function NavigationProgress() {
     const [progress, setProgress] = useState(0);
     const timerRef = useRef<NodeJS.Timeout | null>(null);
     const progressTimerRef = useRef<NodeJS.Timeout | null>(null);
+    const finishTimerRef = useRef<NodeJS.Timeout | null>(null);
 
     useEffect(() => {
         // When route changes, start progress bar
         setIsLoading(true);
         setProgress(10);
 
-        // Simulate incremental progress
+        // Simulate incremental progress toward 85%
         let current = 10;
         progressTimerRef.current = setInterval(() => {
             current = current + (90 - current) * 0.15;
@@ -26,10 +27,13 @@ export function NavigationProgress() {
             setProgress(Math.min(current, 85));
         }, 100);
 
-        // Complete the bar after a short delay on route settle
+        // Complete the bar after the route settles
         timerRef.current = setTimeout(() => {
+            // Stop the interval first so it can't roll the bar back after we set 100
+            clearInterval(progressTimerRef.current!);
             setProgress(100);
-            setTimeout(() => {
+            // Fade out and reset after the completion animation
+            finishTimerRef.current = setTimeout(() => {
                 setIsLoading(false);
                 setProgress(0);
             }, 300);
@@ -38,6 +42,7 @@ export function NavigationProgress() {
         return () => {
             clearInterval(progressTimerRef.current!);
             clearTimeout(timerRef.current!);
+            clearTimeout(finishTimerRef.current!);
         };
     }, [pathname, searchParams]);
 

@@ -5,8 +5,46 @@ const withPWA = withPWAInit({
   dest: "public",
   disable: process.env.NODE_ENV === "development",
   register: true,
+  reloadOnOnline: true,
+  fallbacks: {
+    // App Router offline fallback page
+    document: "/~offline",
+  },
   workboxOptions: {
     skipWaiting: true,
+    // Extend the default caching strategies
+    runtimeCaching: [
+      // Cache all navigations (HTML pages) — stale-while-revalidate
+      // so previously visited pages load offline instantly
+      {
+        urlPattern: /^https:\/\/[^/]+\/((?!api\/).)*$/,
+        handler: "StaleWhileRevalidate" as const,
+        options: {
+          cacheName: "pages-cache",
+          expiration: {
+            maxEntries: 64,
+            maxAgeSeconds: 24 * 60 * 60, // 24 hours
+          },
+        },
+      },
+      // Cache API GET responses — network-first with cache fallback
+      {
+        urlPattern: /^https:\/\/[^/]+\/api\//,
+        handler: "NetworkFirst" as const,
+        method: "GET",
+        options: {
+          cacheName: "api-cache",
+          networkTimeoutSeconds: 10,
+          expiration: {
+            maxEntries: 32,
+            maxAgeSeconds: 60 * 60, // 1 hour
+          },
+          cacheableResponse: {
+            statuses: [0, 200],
+          },
+        },
+      },
+    ],
   },
 });
 
