@@ -10,6 +10,7 @@ import { Trophy, Calendar, Users, ThumbsUp, ArrowLeft, Award, Edit } from 'lucid
 import { formatDate } from '@/lib/utils';
 import Link from 'next/link';
 import LoadingSpinner from '@/components/ui/Loading';
+import { toast } from 'sonner';
 
 
 interface Contest {

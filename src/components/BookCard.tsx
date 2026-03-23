@@ -139,7 +139,7 @@ export function BookCard({
         if (!file) return;
 
         if (file.type !== 'application/pdf') {
-            alert('Please select a PDF file');
+            toast.error('Please select a PDF file');
             return;
         }
 
@@ -180,7 +180,7 @@ export function BookCard({
 
         } catch (error) {
             console.error('Upload failed:', error);
-            alert('Failed to upload PDF. Please try again.');
+            toast.error('Failed to upload PDF. Please try again.');
         } finally {
             setIsUploading(false);
             // Reset input

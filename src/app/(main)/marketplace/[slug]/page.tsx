@@ -11,7 +11,7 @@ import { formatDate } from '@/lib/utils';
 import Link from 'next/link';
 import Image from 'next/image';
 import LoadingSpinner from '@/components/ui/Loading';
-
+import { toast } from 'sonner';
 
 interface Product {
     _id: string;
@@ -83,12 +83,12 @@ export default function ProductDetailPage() {
 
     const handleOrder = async () => {
         if (!buyerPhone || !deliveryAddress) {
-            alert('Please fill in all required fields');
+            toast.error('Please fill in all required fields');
             return;
         }
 
         if (quantity < 1 || (product && quantity > product.stock)) {
-            alert(`Please enter a valid quantity (1-${product?.stock})`);
+            toast.error(`Please enter a valid quantity (1-${product?.stock})`);
             return;
         }
 
@@ -111,14 +111,14 @@ export default function ProductDetailPage() {
             const data = await response.json();
 
             if (response.ok) {
-                alert('Order placed successfully! The seller will contact you soon.');
+                toast.success('Order placed successfully! The seller will contact you soon.');
                 router.push('/marketplace/orders');
             } else {
-                alert(data?.error ?? 'An error occurred');
+                toast.error(data?.error ?? 'An error occurred');
             }
         } catch (error) {
             console.error('Error placing order:', error);
-            alert('Failed to place order');
+            toast.error('Failed to place order');
         } finally {
             setIsOrdering(false);
         }

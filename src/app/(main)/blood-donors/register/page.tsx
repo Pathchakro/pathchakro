@@ -13,6 +13,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Droplet, ArrowLeft } from 'lucide-react';
 import { z } from 'zod';
 import Link from 'next/link';
+import { toast } from 'sonner';
 
 const donorSchema = z.object({
     bloodGroup: z.string().min(1, 'Blood group is required'),
@@ -63,7 +64,7 @@ export default function RegisterDonorPage() {
                 return;
             }
 
-            alert(result.message);
+            toast.success(result.message);
             router.push('/blood-donors');
         } catch (err) {
             setError('An error occurred. Please try again.');

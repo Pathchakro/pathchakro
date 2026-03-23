@@ -204,10 +204,22 @@ export function PostCard({ initialPost, currentUserId, onDelete, initialIsBookma
         }
     };
 
-    const handleHide = () => {
+    const handleHide = async () => {
         // Just hide visually for this session
         // In a real app, this would probably call an API to hide for the user permanently
-        if (confirm('Hide this post?')) {
+        const result = await Swal.fire({
+            title: 'Hide post?',
+            text: "Are you sure you want to hide this post?",
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Yes, hide it!',
+            background: 'hsl(var(--card))',
+            color: 'hsl(var(--foreground))'
+        });
+
+        if (result.isConfirmed) {
             const element = document.getElementById(`post-${post._id}`);
             if (element) {
                 element.style.display = 'none';

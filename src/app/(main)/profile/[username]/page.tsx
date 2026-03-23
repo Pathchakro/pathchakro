@@ -12,6 +12,8 @@ import { MapPin, Calendar, Edit, Trash2, Briefcase, GraduationCap, Globe, Github
 import { formatDate } from '@/lib/utils';
 import Image from 'next/image';
 import { useSession } from 'next-auth/react';
+import { toast } from 'sonner';
+import Swal from 'sweetalert2';
 
 import { IUser } from '@/types';
 import LoadingSpinner from '@/components/ui/Loading';
@@ -95,7 +97,19 @@ export default function ProfilePage() {
     };
 
     const handleDeleteTour = async (tourId: string) => {
-        if (!confirm('Are you sure you want to delete this tour?')) return;
+        const result = await Swal.fire({
+            title: 'Delete Tour?',
+            text: "Are you sure you want to delete this tour?",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Yes, delete it!',
+            background: 'hsl(var(--card))',
+            color: 'hsl(var(--foreground))'
+        });
+
+        if (!result.isConfirmed) return;
 
         try {
             const response = await fetch(`/api/tours/${tourId}`, {
@@ -104,12 +118,13 @@ export default function ProfilePage() {
 
             if (response.ok) {
                 setTours(prev => prev.filter(t => t._id !== tourId));
+                toast.success('Tour deleted successfully');
             } else {
-                alert('Failed to delete tour');
+                toast.error('Failed to delete tour');
             }
         } catch (error) {
             console.error('Error deleting tour:', error);
-            alert('Error deleting tour');
+            toast.error('Error deleting tour');
         }
     };
 

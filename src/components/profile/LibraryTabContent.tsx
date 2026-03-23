@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
+import Swal from 'sweetalert2';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
@@ -67,7 +68,19 @@ export function LibraryTabContent({ userId, isOwnProfile }: LibraryTabContentPro
     };
 
     const handleRemoveBook = async (itemId: string) => {
-        if (!confirm('Remove this book from your library?')) return;
+        const result = await Swal.fire({
+            title: 'Remove Book?',
+            text: "Are you sure you want to remove this book from your library?",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Yes, remove it!',
+            background: 'hsl(var(--card))',
+            color: 'hsl(var(--foreground))'
+        });
+
+        if (!result.isConfirmed) return;
 
         try {
             const response = await fetch(`/api/library/${itemId}`, {

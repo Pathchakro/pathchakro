@@ -12,6 +12,7 @@ import { LoginModal } from '@/components/auth/LoginModal';
 import Link from 'next/link';
 import Image from 'next/image';
 import { toast } from 'sonner';
+import Swal from 'sweetalert2';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import LoadingSpinner from '@/components/ui/Loading';
 import {
@@ -159,7 +160,19 @@ export default function EventDetailClient({ slug, initialData }: { slug: string;
     const handleCancelParticipation = async () => {
         if (!event || !session) return;
 
-        if (!confirm('Are you sure you want to cancel your participation?')) {
+        const result = await Swal.fire({
+            title: 'Are you sure?',
+            text: "You want to cancel your participation?",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Yes, cancel it!',
+            background: 'hsl(var(--card))',
+            color: 'hsl(var(--foreground))'
+        });
+
+        if (!result.isConfirmed) {
             return;
         }
 

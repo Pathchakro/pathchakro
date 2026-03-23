@@ -12,6 +12,7 @@ import { Loader2 } from 'lucide-react';
 import { CourseCard } from '@/components/courses/CourseCard';
 import { LoginModal } from '@/components/auth/LoginModal';
 import LoadingSpinner from '@/components/ui/Loading';
+import { toast } from 'sonner';
 
 
 // Simplified Course interface (matching what API returns populated)
@@ -91,7 +92,7 @@ export default function CoursesPage() {
 
     const toggleBookmark = async (courseId: string) => {
         if (!session?.user) {
-            alert("Please login to save courses");
+            toast.error("Please login to save courses");
             return;
         }
 

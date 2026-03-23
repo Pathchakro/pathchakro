@@ -9,6 +9,8 @@ import { formatDate } from '@/lib/utils';
 import { CommentSection } from '@/components/feed/CommentSection';
 import Link from 'next/link';
 import LoadingSpinner from '@/components/ui/Loading';
+import { toast } from 'sonner';
+import Swal from 'sweetalert2';
 
 
 interface Team {
@@ -141,10 +143,11 @@ export default function TeamDetailPage() {
                 setPosts([data.post, ...posts]);
                 setNewPost('');
             } else {
-                alert(data.error || 'Failed to create post');
+                toast.error(data.error || 'Failed to create post');
             }
         } catch (error) {
             console.error('Error creating post:', error);
+            toast.error('Failed to create post');
         } finally {
             setIsPosting(false);
         }
@@ -164,19 +167,32 @@ export default function TeamDetailPage() {
                     setIsMember(true);
                     fetchTeamData();
                 }
-                alert(data.message);
+                toast.success(data.message);
             } else {
-                alert(data.error);
+                toast.error(data.error);
             }
         } catch (error) {
             console.error('Error joining team:', error);
+            toast.error('Failed to join team');
         } finally {
             setIsJoining(false);
         }
     };
 
     const handleLeaveTeam = async () => {
-        if (!confirm('Are you sure you want to leave this team?')) return;
+        const result = await Swal.fire({
+            title: 'Leave Team?',
+            text: "Are you sure you want to leave this team?",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Yes, leave it!',
+            background: 'hsl(var(--card))',
+            color: 'hsl(var(--foreground))'
+        });
+
+        if (!result.isConfirmed) return;
 
         try {
             const response = await fetch(`/api/teams/${teamIdentifier}/leave`, {
@@ -188,12 +204,13 @@ export default function TeamDetailPage() {
             if (response.ok) {
                 setIsMember(false);
                 fetchTeamData();
-                alert(data.message);
+                toast.success(data.message);
             } else {
-                alert(data.error);
+                toast.error(data.error);
             }
         } catch (error) {
             console.error('Error leaving team:', error);
+            toast.error('Failed to leave team');
         }
     };
 

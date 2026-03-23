@@ -9,6 +9,7 @@ import { useSession } from 'next-auth/react';
 import { LoginModal } from '@/components/auth/LoginModal';
 import Link from 'next/link';
 import LoadingSpinner from '@/components/ui/Loading';
+import { toast } from 'sonner';
 
 
 interface Tour {
@@ -94,13 +95,14 @@ export default function TourDetailPage() {
             const data = await response.json();
 
             if (response.ok) {
-                alert(data.message);
+                toast.success(data.message);
                 fetchTourData();
             } else {
-                alert(data.error);
+                toast.error(data.error);
             }
         } catch (error) {
             console.error('Error joining tour:', error);
+            toast.error('Failed to join tour');
         } finally {
             setIsJoining(false);
         }

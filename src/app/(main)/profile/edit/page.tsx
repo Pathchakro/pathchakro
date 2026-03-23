@@ -11,11 +11,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../../../components
 import { User, GraduationCap, Briefcase, Globe, Heart, ArrowLeft, MapPin, ShieldCheck, X } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
-// import { bdLocations } from '@/lib/bd-locations';
-// import { INTERESTS_LIST } from '@/lib/constants';
 import { useDynamicConfig } from '@/hooks/useDynamicConfig';
 import { InstituteSearch } from '@/components/profile/InstituteSearch';
 import LoadingSpinner from '@/components/ui/Loading';
+import { toast } from 'sonner';
 
 
 export default function EditProfilePage() {
@@ -203,13 +202,14 @@ export default function EditProfilePage() {
 
             if (res.ok) {
                 setImage(data.displayUrl || data.url);
+                toast.success('Image uploaded successfully');
             } else {
                 console.error('Upload failed', data.error);
-                alert('Failed to upload image: ' + data.error);
+                toast.error('Failed to upload image: ' + data.error);
             }
         } catch (error) {
             console.error('Error uploading image', error);
-            alert('Error uploading image');
+            toast.error('Error uploading image');
         } finally {
             setIsImageUploading(false);
         }
@@ -354,10 +354,11 @@ export default function EditProfilePage() {
             const data = await response.json();
 
             if (response.ok) {
-                alert('Profile updated successfully!');
+                toast.success('Profile updated successfully!');
                 router.push('/profile/me');
             } else {
                 setError(data.error || 'Failed to update profile');
+                toast.error(data.error || 'Failed to update profile');
             }
         } catch (err: any) {
             setError(err.message || 'An error occurred. Please try again.');
@@ -1053,3 +1054,4 @@ export default function EditProfilePage() {
         </div>
     );
 }
+

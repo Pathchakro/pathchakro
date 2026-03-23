@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
+import Swal from 'sweetalert2';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
@@ -66,7 +67,19 @@ export default function MyLibraryPage() {
     };
 
     const handleRemoveBook = async (itemId: string) => {
-        if (!confirm('Remove this book from your library?')) return;
+        const result = await Swal.fire({
+            title: 'Remove Book?',
+            text: "Are you sure you want to remove this book from your library?",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Yes, remove it!',
+            background: 'hsl(var(--card))',
+            color: 'hsl(var(--foreground))'
+        });
+
+        if (!result.isConfirmed) return;
 
         try {
             const response = await fetch(`/api/library/${itemId}`, {
@@ -74,9 +87,13 @@ export default function MyLibraryPage() {
             });
 
             if (response.ok) {
+                toast.success("Book removed from library");
                 fetchLibrary(); // Re-fetch all items to update state
+            } else {
+                toast.error("Failed to remove book");
             }
         } catch (error) {
+            toast.error("Something went wrong");
             console.error('Error removing book:', error);
         }
     };

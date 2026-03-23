@@ -1,10 +1,12 @@
 import Link from 'next/link';
 import Image from 'next/image';
-import { Calendar, Clock, MapPin, Users, Video, MoreHorizontal, Heart, MessageCircle, Share2, Bookmark, Mic } from 'lucide-react';
+import { Calendar, Clock, MapPin, Users, Video, MoreHorizontal, Heart, MessageCircle, Share2, Bookmark, Mic, Trash2, Edit } from 'lucide-react';
+import Swal from 'sweetalert2';
 import { formatDate, formatTime } from '@/lib/utils';
 import { toast } from 'sonner';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -47,6 +49,7 @@ interface EventCardProps {
 export function EventCard({ event, onDelete }: EventCardProps) {
     const { data: session } = useSession();
     const router = useRouter();
+    const [isDeleting, setIsDeleting] = useState(false); // Added state for isDeleting
     const isOwner = session?.user?.id === event.organizer._id;
     const isAdmin = session?.user?.role === 'admin';
     const canEdit = isOwner || isAdmin;
@@ -92,9 +95,22 @@ export function EventCard({ event, onDelete }: EventCardProps) {
             toast.error(error.message);
         }
     };
-    const handleDelete = async () => {
-        if (!confirm('Are you sure you want to delete this event? This action cannot be undone.')) return;
+    const handleDeleteEvent = async () => {
+        const result = await Swal.fire({
+            title: 'Are you sure?',
+            text: "Are you sure you want to delete this event? This action cannot be undone.",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Yes, delete it!',
+            background: 'hsl(var(--card))',
+            color: 'hsl(var(--foreground))'
+        });
 
+        if (!result.isConfirmed) return;
+
+        setIsDeleting(true);
         try {
             const response = await fetch(`/api/events/${event._id}`, {
                 method: 'DELETE',
@@ -170,7 +186,7 @@ export function EventCard({ event, onDelete }: EventCardProps) {
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
                                     className="text-red-600 focus:text-red-600 cursor-pointer"
-                                    onClick={handleDelete}
+                                    onClick={handleDeleteEvent}
                                 >
                                     Delete Event
                                 </DropdownMenuItem>

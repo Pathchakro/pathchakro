@@ -242,7 +242,19 @@ export default function WritingProjectPage() {
     };
 
     const handleDeleteChapter = async (chapterId: string) => {
-        if (!window.confirm('Are you sure you want to delete this chapter?')) return;
+        const result = await Swal.fire({
+            title: 'Delete Chapter?',
+            text: "Are you sure you want to delete this chapter?",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Yes, delete it!',
+            background: 'hsl(var(--card))',
+            color: 'hsl(var(--foreground))'
+        });
+
+        if (!result.isConfirmed) return;
 
         try {
             const response = await fetch(`/api/writing/${projectId}/chapters`, {
@@ -289,7 +301,19 @@ export default function WritingProjectPage() {
     };
 
     const handleDeleteProject = async () => {
-        if (!window.confirm('Are you sure you want to delete this project? This action cannot be undone.')) return;
+        const result = await Swal.fire({
+            title: 'Delete Project?',
+            text: "Are you sure you want to delete this project? This action cannot be undone.",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Yes, delete it!',
+            background: 'hsl(var(--card))',
+            color: 'hsl(var(--foreground))'
+        });
+
+        if (!result.isConfirmed) return;
 
         try {
             const response = await fetch(`/api/writing/${project?._id}`, { method: 'DELETE' });

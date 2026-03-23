@@ -16,6 +16,8 @@ import {
 } from "lucide-react";
 import { Command, createSuggestionItems, renderItems } from "novel";
 import { uploadFn } from "./image-upload";
+import { toast } from "sonner";
+import Swal from "sweetalert2";
 
 export const suggestionItems = createSuggestionItems([
 
@@ -151,26 +153,38 @@ export const suggestionItems = createSuggestionItems([
         searchTerms: ["video", "youtube", "embed"],
         icon: <Youtube size={18} />,
         command: ({ editor, range }) => {
-            const videoLink = prompt("Please enter Youtube Video Link");
-            //From https://regexr.com/3dj5t
-            const ytregex = new RegExp(
-                /^((?:https?:)?\/\/)?((?:www|m)\.)?((?:youtube\.com|youtu.be))(\/(?:[\w\-]+\?v=|embed\/|v\/)?)([\w\-]+)(\S+)?$/,
-            );
-
-            if (ytregex.test(videoLink || "")) {
-                editor
-                    .chain()
-                    .focus()
-                    .deleteRange(range)
-                    .setYoutubeVideo({
-                        src: videoLink || "",
-                    })
-                    .run();
-            } else {
-                if (videoLink !== null) {
-                    alert("Please enter a correct Youtube Video Link");
+            Swal.fire({
+                title: 'Embed Youtube Video',
+                input: 'text',
+                inputPlaceholder: 'Please enter Youtube Video Link',
+                showCancelButton: true,
+                confirmButtonText: 'Embed',
+                background: 'hsl(var(--card))',
+                color: 'hsl(var(--foreground))',
+                inputAttributes: {
+                    autocapitalize: 'off'
                 }
-            }
+            }).then((result) => {
+                if (result.isConfirmed && result.value) {
+                    const videoLink = result.value;
+                    const ytregex = new RegExp(
+                        /^((?:https?:)?\/\/)?((?:www|m)\.)?((?:youtube\.com|youtu.be))(\/(?:[\w\-]+\?v=|embed\/|v\/)?)([\w\-]+)(\S+)?$/,
+                    );
+
+                    if (ytregex.test(videoLink)) {
+                        editor
+                            .chain()
+                            .focus()
+                            .deleteRange(range)
+                            .setYoutubeVideo({
+                                src: videoLink,
+                            })
+                            .run();
+                    } else {
+                        toast.error("Please enter a correct Youtube Video Link");
+                    }
+                }
+            });
         },
     },
 

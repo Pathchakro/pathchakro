@@ -18,6 +18,7 @@ import { useSession } from 'next-auth/react';
 import { toast } from 'sonner';
 import { LoginModal } from '@/components/auth/LoginModal';
 import LoadingSpinner from '@/components/ui/Loading';
+import Swal from 'sweetalert2';
 
 
 interface Book {
@@ -31,7 +32,6 @@ interface Book {
     description?: string;
     averageRating: number;
     totalReviews: number;
-    desc?: string; // This line seems to be missing in my view, but I'll target 'addedBy' which I see.
     addedBy?: string;
     stats?: {
         reading: number;
@@ -150,10 +150,8 @@ export default function BookDetailPage() {
 
     const handleSubmitReview = async () => {
         if (!reviewContent.trim()) {
-            if (!reviewContent.trim()) {
-                toast.error('Please write a review');
-                return;
-            }
+            toast.error('Please write a review');
+            return;
         }
 
         if (videoUrl && !isValidYouTubeUrl(videoUrl)) {
@@ -201,7 +199,7 @@ export default function BookDetailPage() {
 
         setIsUploading(true);
         try {
-            const response = await fetch(`/api/books/${book?._id}/pdfs`, { // Use book._id
+            const response = await fetch(`/api/books/${book?._id}/pdfs`, { 
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -260,15 +258,24 @@ export default function BookDetailPage() {
     };
 
     const handleDelete = async () => {
-        if (!confirm('Are you sure you want to delete this book? This action cannot be undone.')) {
-            return;
-        }
+        const result = await Swal.fire({
+            title: 'Delete Book?',
+            text: "Are you sure you want to delete this book? This action cannot be undone.",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Yes, delete it!',
+            background: 'hsl(var(--card))',
+            color: 'hsl(var(--foreground))'
+        });
+
+        if (!result.isConfirmed) return;
 
         try {
             const res = await fetch(`/api/books/${book?._id}`, {
                 method: 'DELETE',
             });
-            // ...
 
             if (!res.ok) {
                 const error = await res.json();
@@ -276,7 +283,7 @@ export default function BookDetailPage() {
             }
 
             toast.success('Book deleted successfully');
-            window.location.href = '/books'; // Redirect to books list
+            window.location.href = '/books'; 
 
         } catch (error: any) {
             console.error('Delete failed:', error);
@@ -342,8 +349,6 @@ export default function BookDetailPage() {
                                 <Library className="h-4 w-4 mr-2" />
                                 Add to My Library
                             </Button>
-
-
 
                             <Button className="w-full">
                                 <ShoppingCart className="h-4 w-4 mr-2" />
@@ -416,7 +421,7 @@ export default function BookDetailPage() {
                             )}
                         </div>
 
-                        {/* Stats Section - Moved here */}
+                        {/* Stats Section */}
                         {book.stats && (
                             <div className="flex flex-wrap gap-4 mb-4 border-b pb-4">
                                 <Link

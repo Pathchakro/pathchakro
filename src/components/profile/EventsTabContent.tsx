@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Calendar, MapPin, Video, Users, Trash2, Edit } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import Swal from 'sweetalert2';
 import { formatDate } from '@/lib/utils'; // Try to import from lib/utils first, or define it locally if not exported
 
 interface Event {
@@ -54,7 +55,19 @@ export function EventsTabContent({ userId, isOwnProfile }: EventsTabContentProps
     };
 
     const handleDelete = async (eventId: string) => {
-        if (!confirm('Are you sure you want to delete this event?')) return;
+        const result = await Swal.fire({
+            title: 'Are you sure?',
+            text: "Are you sure you want to delete this event?",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Yes, delete it!',
+            background: 'hsl(var(--card))',
+            color: 'hsl(var(--foreground))'
+        });
+
+        if (!result.isConfirmed) return;
 
         setDeletingId(eventId);
         try {
