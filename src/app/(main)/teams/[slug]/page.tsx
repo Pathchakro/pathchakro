@@ -188,8 +188,8 @@ export default function TeamDetailPage() {
             confirmButtonColor: '#d33',
             cancelButtonColor: '#3085d6',
             confirmButtonText: 'Yes, leave it!',
-            background: 'hsl(var(--card))',
-            color: 'hsl(var(--foreground))'
+            background: 'var(--card)',
+            color: 'var(--foreground)'
         });
 
         if (!result.isConfirmed) return;

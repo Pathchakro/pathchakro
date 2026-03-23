@@ -2,6 +2,7 @@ import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import EventDetailClient from './EventDetailClient';
 import dbConnect from '@/lib/mongodb';
+import { extractPlainText } from '@/lib/utils';
 import Event from '@/models/Event';
 
 interface Props {
@@ -28,13 +29,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         };
     }
 
-    const ogImage = event.banner || '/OG2_pathchakro.png';
+    const ogImage = event.banner || '/OG_pathchakro.png';
+    const cleanDescription = extractPlainText(event.description || '');
 
     return {
         title: `${event.title} | PathChakro Events`,
-        description: (event.description || '').slice(0, 160), openGraph: {
+        description: cleanDescription.slice(0, 160), 
+        openGraph: {
             title: event.title,
-            description: event.description,
+            description: cleanDescription.slice(0, 200),
             type: 'article',
             images: [
                 {
@@ -48,7 +51,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         twitter: {
             card: 'summary_large_image',
             title: event.title,
-            description: event.description,
+            description: cleanDescription.slice(0, 200),
             images: [ogImage],
         },
     };
@@ -78,13 +81,13 @@ export default async function EventPage(props: Props) {
     const serializedEvent = JSON.parse(JSON.stringify(eventData));
 
     // Structured Data for SEO
+    const cleanDescription = extractPlainText(eventData.description || '');
     const jsonLd = {
         '@context': 'https://schema.org',
         '@type': 'EducationEvent',
         name: eventData.title,
-        description: eventData.description,
+        description: cleanDescription,
         startDate: eventData.startTime,
-        endDate: eventData.endTime,
         eventStatus: 'https://schema.org/EventScheduled',
         eventAttendanceMode: eventData.eventType === 'online' ? 'https://schema.org/OnlineEventAttendanceMode' : 'https://schema.org/OfflineEventAttendanceMode',
         location: eventData.eventType === 'online' ? {
@@ -101,7 +104,7 @@ export default async function EventPage(props: Props) {
             },
         },
         image: [
-            eventData.banner || '/OG2_pathchakro.png'
+            eventData.banner || '/OG_pathchakro.png'
         ],
         organizer: {
             '@type': 'Organization',

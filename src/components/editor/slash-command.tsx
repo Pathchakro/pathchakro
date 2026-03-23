@@ -159,8 +159,8 @@ export const suggestionItems = createSuggestionItems([
                 inputPlaceholder: 'Please enter Youtube Video Link',
                 showCancelButton: true,
                 confirmButtonText: 'Embed',
-                background: 'hsl(var(--card))',
-                color: 'hsl(var(--foreground))',
+                background: 'var(--card)',
+                color: 'var(--foreground)',
                 inputAttributes: {
                     autocapitalize: 'off'
                 }

@@ -75,8 +75,8 @@ export default function MyLibraryPage() {
             confirmButtonColor: '#d33',
             cancelButtonColor: '#3085d6',
             confirmButtonText: 'Yes, remove it!',
-            background: 'hsl(var(--card))',
-            color: 'hsl(var(--foreground))'
+            background: 'var(--card)',
+            color: 'var(--foreground)'
         });
 
         if (!result.isConfirmed) return;

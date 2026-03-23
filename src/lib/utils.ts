@@ -114,3 +114,67 @@ export function isValidStatus(status: string): boolean {
 export function escapeRegExp(string: string): string {
   return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
+
+export function extractPlainText(description: string | any): string {
+  if (!description) return "";
+
+  try {
+    let content = description;
+
+    // Handle stringified JSON (including potentially double-stringified)
+    if (typeof content === "string") {
+      try {
+        let parsed = JSON.parse(content);
+        if (typeof parsed === "string") {
+          try {
+            parsed = JSON.parse(parsed);
+          } catch (e) {
+            // ignore second parse error
+          }
+        }
+        content = parsed;
+      } catch (e) {
+        // content is already plain text
+        return content;
+      }
+    }
+
+    // Ensure content matches Tiptap schema structure
+    if (!content || typeof content !== "object") {
+      return String(content || "");
+    }
+
+    // Handle both { type: 'doc', content: [...] } and direct array
+    const nodes = Array.isArray(content) ? content : content.content;
+
+    if (!Array.isArray(nodes)) {
+      return "";
+    }
+
+    const processNodes = (nodeList: any[]): string => {
+      return nodeList
+        .map((node: any) => {
+          if (node.type === "text") {
+            return node.text || "";
+          }
+          if (node.content && Array.isArray(node.content)) {
+            return processNodes(node.content);
+          }
+          if (node.type === "hardBreak") {
+            return "\n";
+          }
+          // Add spacing for block elements
+          if (["paragraph", "heading", "listItem"].includes(node.type)) {
+            return processNodes(node.content || []) + "\n";
+          }
+          return "";
+        })
+        .join("");
+    };
+
+    return processNodes(nodes).trim();
+  } catch (e) {
+    console.error("Error extracting plain text:", e);
+    return typeof description === "string" ? description : "";
+  }
+}

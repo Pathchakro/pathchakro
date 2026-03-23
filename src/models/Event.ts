@@ -10,7 +10,6 @@ export interface IEvent {
     location?: string;
     meetingLink?: string;
     startTime: Date;
-    endTime: Date;
     banner?: string;
     slug: string;
     status: 'upcoming' | 'ongoing' | 'completed' | 'cancelled';
@@ -67,10 +66,6 @@ const EventSchema = new Schema<IEvent>(
             type: Date,
             required: [true, 'Start time is required'],
             index: true,
-        },
-        endTime: {
-            type: Date,
-            required: [true, 'End time is required'],
         },
         banner: {
             type: String,

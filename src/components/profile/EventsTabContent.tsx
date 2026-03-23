@@ -13,7 +13,6 @@ interface Event {
     title: string;
     description: string;
     startTime: string;
-    endTime: string;
     eventType: string;
     location?: string;
     status: string;
@@ -63,8 +62,8 @@ export function EventsTabContent({ userId, isOwnProfile }: EventsTabContentProps
             confirmButtonColor: '#d33',
             cancelButtonColor: '#3085d6',
             confirmButtonText: 'Yes, delete it!',
-            background: 'hsl(var(--card))',
-            color: 'hsl(var(--foreground))'
+            background: 'var(--card)',
+            color: 'var(--foreground)'
         });
 
         if (!result.isConfirmed) return;

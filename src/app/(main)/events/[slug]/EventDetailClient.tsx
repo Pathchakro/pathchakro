@@ -12,6 +12,8 @@ import { LoginModal } from '@/components/auth/LoginModal';
 import Link from 'next/link';
 import Image from 'next/image';
 import { toast } from 'sonner';
+import { useRouter } from 'next/navigation';
+import { generateHtml } from '@/lib/server-html';
 import Swal from 'sweetalert2';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import LoadingSpinner from '@/components/ui/Loading';
@@ -35,7 +37,7 @@ import {
     DialogTitle,
     DialogTrigger,
 } from '@/components/ui/dialog';
-import { MoreVertical, Trash2, Mic, Users as UsersIcon, UserPlus } from 'lucide-react';
+import { MoreVertical, Trash2, Mic, Users as UsersIcon, UserPlus, MoreHorizontal, Edit } from 'lucide-react';
 
 interface Event {
     _id: string;
@@ -54,7 +56,6 @@ interface Event {
     location?: string;
     meetingLink?: string;
     startTime: string;
-    endTime: string;
     status: string;
     banner?: string;
     roles: {
@@ -72,6 +73,7 @@ interface Event {
 }
 export default function EventDetailClient({ slug, initialData }: { slug: string; initialData?: Event }) {
     const { data: session } = useSession();
+    const router = useRouter();
     const [event, setEvent] = useState<Event | null>(initialData || null);
     const [loading, setLoading] = useState(!initialData);
     const [isJoining, setIsJoining] = useState(false);
@@ -145,6 +147,7 @@ export default function EventDetailClient({ slug, initialData }: { slug: string;
                 toast.success(data.message);
                 setSelectedRole('');
                 setLectureTopic('');
+                setIsRegisterOpen(false);
                 fetchEvent();
             } else {
                 toast.error(data.error);
@@ -168,8 +171,8 @@ export default function EventDetailClient({ slug, initialData }: { slug: string;
             confirmButtonColor: '#3085d6',
             cancelButtonColor: '#d33',
             confirmButtonText: 'Yes, cancel it!',
-            background: 'hsl(var(--card))',
-            color: 'hsl(var(--foreground))'
+            background: 'var(--card)',
+            color: 'var(--foreground)'
         });
 
         if (!result.isConfirmed) {
@@ -196,6 +199,42 @@ export default function EventDetailClient({ slug, initialData }: { slug: string;
             toast.error('Failed to cancel participation. Please try again.');
         } finally {
             setIsJoining(false);
+        }
+    };
+
+    const handleDeleteEvent = async () => {
+        if (!event) return;
+
+        const result = await Swal.fire({
+            title: 'Are you sure?',
+            text: "Are you sure you want to delete this event? This action cannot be undone.",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Yes, delete it!',
+            background: 'var(--card)',
+            color: 'var(--foreground)'
+        });
+
+        if (!result.isConfirmed) return;
+
+        setLoading(true);
+        try {
+            const response = await fetch(`/api/events/${event._id}`, {
+                method: 'DELETE',
+            });
+
+            if (!response.ok) {
+                const data = await response.json();
+                throw new Error(data.error || 'Failed to delete event');
+            }
+
+            toast.success('Event deleted successfully');
+            router.push('/events');
+        } catch (error: any) {
+            toast.error(error.message || 'An error occurred while deleting');
+            setLoading(false);
         }
     };
 
@@ -234,33 +273,51 @@ export default function EventDetailClient({ slug, initialData }: { slug: string;
 
             {/* Event Header */}
             <div className="bg-card rounded-lg shadow-sm border p-6 mb-4">
-                {event.banner && (
-                    <div className="mb-6 rounded-xl overflow-hidden w-full aspect-[1200/630] relative shadow-inner bg-muted">
-                        <Image
-                            src={event.banner}
-                            alt={event.title}
-                            fill
-                            className="object-cover"
-                            priority
-                        />
-                        <div className="absolute top-3 right-3 sm:hidden">
-                            <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider shadow-sm ${event.status === 'upcoming' ? 'bg-blue-600 text-white' :
-                                event.status === 'ongoing' ? 'bg-green-600 text-white' :
-                                    event.status === 'completed' ? 'bg-gray-600 text-white' :
-                                        'bg-red-600 text-white'
-                                }`}>
-                                {event.status}
-                            </span>
-                        </div>
-                    </div>
-                )}
+                <div className="mb-6 rounded-xl overflow-hidden w-full aspect-[1200/630] relative shadow-inner bg-muted">
+                    <Image
+                        src={event.banner || "/OG_pathchakro.png"}
+                        alt={event.title}
+                        fill
+                        className="object-cover"
+                        priority
+                    />
+                    <div className="absolute bottom-3 right-3 flex items-center gap-2">
+                        {(session?.user?.id === event.organizer._id || session?.user?.role === 'admin') && (
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <button className="text-white hover:text-white/80 p-1.5 transition-all">
+                                        <MoreHorizontal className="h-6 w-6" />
+                                    </button>
+                                </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                                <DropdownMenuItem asChild>
+                                    <Link href={`/events/${slug}/edit`} className="w-full flex items-center cursor-pointer">
+                                        <Edit className="h-4 w-4 mr-2" />
+                                        Edit Event
+                                    </Link>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                    className="text-red-600 focus:text-red-600 cursor-pointer flex items-center"
+                                    onClick={handleDeleteEvent}
+                                >
+                                    <Trash2 className="h-4 w-4 mr-2" />
+                                    Delete Event
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    )}
+                </div>
+                </div>
 
                 <div className="flex items-start justify-between mb-4 gap-4">
                     <div className="flex-1 min-w-0">
                         <h1 className="text-xl sm:text-3xl font-bold mb-2 break-words leading-tight">{event.title}</h1>
-                        <p className="text-sm sm:text-base text-muted-foreground line-clamp-2 sm:line-clamp-none">{event.description}</p>
+                        <div
+                            className="text-sm sm:text-base text-muted-foreground prose prose-sm sm:prose-base dark:prose-invert max-w-none"
+                            dangerouslySetInnerHTML={{ __html: generateHtml(event.description) }}
+                        />
                     </div>
-                    <span className={`hidden sm:inline-block px-3 py-1 rounded-full text-sm font-medium ${event.status === 'upcoming' ? 'bg-blue-100 text-blue-700' :
+                    <span className={`px-2 py-1 h-fit rounded-full text-xs sm:text-sm font-medium ${event.status === 'upcoming' ? 'bg-blue-100 text-blue-700' :
                         event.status === 'ongoing' ? 'bg-green-100 text-green-700' :
                             event.status === 'completed' ? 'bg-gray-100 text-gray-700' :
                                 'bg-red-100 text-red-700'
@@ -284,9 +341,6 @@ export default function EventDetailClient({ slug, initialData }: { slug: string;
                             <p className="text-[11px] uppercase tracking-wider text-muted-foreground/80">Time</p>
                             <p className="text-sm font-semibold leading-tight">
                                 {event.startTime ? formatTime(event.startTime) : 'TBA'}
-                                <br className="sm:hidden" />
-                                <span className="hidden sm:inline"> - </span>
-                                {event.endTime ? formatTime(event.endTime) : 'TBA'}
                             </p>
                         </div>
                     </div>
@@ -331,68 +385,90 @@ export default function EventDetailClient({ slug, initialData }: { slug: string;
                         {event.team && <><br className="sm:hidden" /> • Team: <span className="font-medium text-foreground">{event.team.name}</span></>}
                     </p>
 
-                    <Dialog open={isRegisterOpen} onOpenChange={setIsRegisterOpen}>
-                        <DialogTrigger asChild>
-                            <Button size="sm" className="w-full sm:w-auto gap-2 shadow-sm font-semibold h-10 px-6">
-                                <UserPlus className="h-4 w-4" />
-                                Register Now
-                            </Button>
-                        </DialogTrigger>
-                        <DialogContent className="sm:max-w-md">
-                            <DialogHeader>
-                                <DialogTitle className="text-2xl font-bold">Register for Event</DialogTitle>
-                                <DialogDescription>
-                                    Select your role and join the discussion in this community meetup.
-                                </DialogDescription>
-                            </DialogHeader>
+                    {(() => {
+                        const isSpeaker = event.roles?.speakers?.some(s => (s.user?._id || s.user)?.toString() === session?.user?.id);
+                        const isListener = event.listeners?.some(l => (l.user?._id || l.user)?.toString() === session?.user?.id);
+                        const isRegistered = isSpeaker || isListener;
 
-                            <div className="space-y-6 pt-4">
-                                <div className="space-y-4">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="role">Choose Your Role</Label>
-                                        <select
-                                            id="role"
-                                            value={selectedRole}
-                                            onChange={(e) => setSelectedRole(e.target.value)}
-                                            className="w-full px-4 py-3 bg-background border rounded-lg focus:ring-2 focus:ring-primary outline-none transition-all cursor-pointer"
-                                        >
-                                            <option value="">Select a role...</option>
-                                            {availableRoles.map((role) => (
-                                                <option key={role.id} value={role.id} disabled={role.taken}>
-                                                    {role.label} {role.taken && '(Taken)'}
-                                                </option>
-                                            ))}
-                                        </select>
-                                    </div>
+                        if (isRegistered) {
+                            return (
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="w-full sm:w-auto gap-2 border border-primary shadow-sm font-semibold h-10 px-6 opacity-70 cursor-not-allowed"
+                                    disabled={true}
+                                >
+                                    <User className="h-4 w-4" />
+                                    Registered
+                                </Button>
+                            );
+                        }
 
-                                    {selectedRole === 'speaker' && (
-                                        <div className="animate-in fade-in slide-in-from-top-2 duration-300 space-y-2">
-                                            <Label htmlFor="topic">What is your topic? *</Label>
-                                            <Input
-                                                id="topic"
-                                                value={lectureTopic}
-                                                onChange={(e) => setLectureTopic(e.target.value)}
-                                                placeholder="Enter your topic name..."
-                                                className="py-6 px-4 text-lg"
-                                            />
-                                        </div>
-                                    )}
-
-                                    <Button
-                                        onClick={handleJoinRole}
-                                        disabled={!selectedRole || isJoining}
-                                        className="w-full py-6 text-lg font-bold shadow-lg shadow-primary/20 hover:scale-[1.01] active:scale-[0.99] transition-all"
-                                    >
-                                        {isJoining ? 'Processing...' : 'Confirm Registration'}
+                        return (
+                            <Dialog open={isRegisterOpen} onOpenChange={setIsRegisterOpen}>
+                                <DialogTrigger asChild>
+                                    <Button size="sm" className="w-full sm:w-auto gap-2 shadow-sm font-semibold h-10 px-6">
+                                        <UserPlus className="h-4 w-4" />
+                                        Register Now
                                     </Button>
+                                </DialogTrigger>
+                                <DialogContent className="sm:max-w-md">
+                                    <DialogHeader>
+                                        <DialogTitle className="text-2xl font-bold">Register for Event</DialogTitle>
+                                        <DialogDescription>
+                                            Select your role and join the discussion in this community meetup.
+                                        </DialogDescription>
+                                    </DialogHeader>
 
-                                    <p className="text-xs text-center text-muted-foreground">
-                                        Note: You can only register for one role per event.
-                                    </p>
-                                </div>
-                            </div>
-                        </DialogContent>
-                    </Dialog>
+                                    <div className="space-y-6 pt-4">
+                                        <div className="space-y-4">
+                                            <div className="space-y-2">
+                                                <Label htmlFor="role">Choose Your Role</Label>
+                                                <select
+                                                    id="role"
+                                                    value={selectedRole}
+                                                    onChange={(e) => setSelectedRole(e.target.value)}
+                                                    className="w-full px-4 py-3 bg-background border rounded-lg focus:ring-2 focus:ring-primary outline-none transition-all cursor-pointer"
+                                                >
+                                                    <option value="">Select a role...</option>
+                                                    {availableRoles.map((role) => (
+                                                        <option key={role.id} value={role.id} disabled={role.taken}>
+                                                            {role.label} {role.taken && '(Taken)'}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                            </div>
+
+                                            {selectedRole === 'speaker' && (
+                                                <div className="animate-in fade-in slide-in-from-top-2 duration-300 space-y-2">
+                                                    <Label htmlFor="topic">What is your topic? *</Label>
+                                                    <Input
+                                                        id="topic"
+                                                        value={lectureTopic}
+                                                        onChange={(e) => setLectureTopic(e.target.value)}
+                                                        placeholder="Enter your topic name..."
+                                                        className="py-6 px-4 text-lg"
+                                                    />
+                                                </div>
+                                            )}
+
+                                            <Button
+                                                onClick={handleJoinRole}
+                                                disabled={!selectedRole || isJoining}
+                                                className="w-full py-6 text-lg font-bold shadow-lg shadow-primary/20 hover:scale-[1.01] active:scale-[0.99] transition-all"
+                                            >
+                                                {isJoining ? 'Processing...' : 'Confirm Registration'}
+                                            </Button>
+
+                                            <p className="text-xs text-center text-muted-foreground">
+                                                Note: You can only register for one role per event.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </DialogContent>
+                            </Dialog>
+                        );
+                    })()}
                 </div>
             </div>
 
@@ -477,35 +553,35 @@ export default function EventDetailClient({ slug, initialData }: { slug: string;
                                         return !event.roles?.speakers?.some(s => (s.user?._id || s.user)?.toString() === lId);
                                     })
                                     .map((listener, i) => (
-                                    <div key={listener.user?._id || `listener-${i}`} className="flex items-center justify-between p-4 hover:bg-muted/30 transition-colors">
-                                        <div className="flex items-center gap-4">
-                                            <Avatar className="h-10 w-10 border">
-                                                <AvatarImage src={listener.user?.image} alt={listener.user?.name} />
-                                                <AvatarFallback>{listener.user?.name?.charAt(0) || 'L'}</AvatarFallback>
-                                            </Avatar>
-                                            <span className="font-medium">{listener.user?.name || 'Anonymous'}</span>
-                                        </div>
+                                        <div key={listener.user?._id || `listener-${i}`} className="flex items-center justify-between p-4 hover:bg-muted/30 transition-colors">
+                                            <div className="flex items-center gap-4">
+                                                <Avatar className="h-10 w-10 border">
+                                                    <AvatarImage src={listener.user?.image} alt={listener.user?.name} />
+                                                    <AvatarFallback>{listener.user?.name?.charAt(0) || 'L'}</AvatarFallback>
+                                                </Avatar>
+                                                <span className="font-medium">{listener.user?.name || 'Anonymous'}</span>
+                                            </div>
 
-                                        {session?.user?.id === listener.user?._id && (
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger asChild>
-                                                    <Button variant="ghost" size="icon" className="h-8 w-8">
-                                                        <MoreVertical className="h-4 w-4" />
-                                                    </Button>
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent align="end">
-                                                    <DropdownMenuItem
-                                                        className="text-destructive focus:text-destructive"
-                                                        onClick={handleCancelParticipation}
-                                                    >
-                                                        <Trash2 className="h-4 w-4 mr-2" />
-                                                        Cancel Participation
-                                                    </DropdownMenuItem>
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
-                                        )}
-                                    </div>
-                                ))}
+                                            {session?.user?.id === listener.user?._id && (
+                                                <DropdownMenu>
+                                                    <DropdownMenuTrigger asChild>
+                                                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                                                            <MoreVertical className="h-4 w-4" />
+                                                        </Button>
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent align="end">
+                                                        <DropdownMenuItem
+                                                            className="text-destructive focus:text-destructive"
+                                                            onClick={handleCancelParticipation}
+                                                        >
+                                                            <Trash2 className="h-4 w-4 mr-2" />
+                                                            Cancel Participation
+                                                        </DropdownMenuItem>
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
+                                            )}
+                                        </div>
+                                    ))}
                             </div>
                         ) : (
                             <div className="text-center py-12 bg-muted/30 rounded-xl border border-dashed">

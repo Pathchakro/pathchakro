@@ -30,7 +30,6 @@ interface Event {
     location?: string;
     meetingLink?: string;
     startTime: string;
-    endTime: string;
     status: string;
     roles: {
         speakers: any[];
@@ -144,7 +143,9 @@ export default function EventsClient({ initialEvents }: { initialEvents: Event[]
 
             {/* Events List */}
             {loading ? (
-                <LoadingSpinner />
+                <div className="flex justify-center py-12">
+                     <LoadingSpinner />
+                </div>
             ) : events.length === 0 ? (
                 <div className="text-center py-12">
                     <Calendar className="h-16 w-16 text-muted-foreground mx-auto mb-4 opacity-50" />

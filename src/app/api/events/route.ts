@@ -78,13 +78,13 @@ export async function POST(request: NextRequest) {
             eventType,
             location,
             meetingLink,
+            startDate,
             startTime,
-            endTime,
             teamId,
             banner,
         } = body;
 
-        if (!title || !description || !eventType || !startTime || !endTime) {
+        if (!title || !description || !eventType || !startDate || !startTime) {
             return NextResponse.json(
                 { error: 'All required fields must be provided' },
                 { status: 400 }
@@ -136,8 +136,7 @@ export async function POST(request: NextRequest) {
                     eventType,
                     location,
                     meetingLink,
-                    startTime: new Date(startTime),
-                    endTime: new Date(endTime),
+                    startTime: new Date(`${startDate}T${startTime}`),
                     banner,
                     status: 'upcoming',
                     roles: {

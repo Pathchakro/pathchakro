@@ -94,7 +94,7 @@ export async function PUT(
         const body = await request.json();
         const {
             title, description, eventType, location,
-            meetingLink, startTime, endTime, banner
+            meetingLink, startDate, startTime, banner
         } = body;
 
         const updateData: any = {};
@@ -103,8 +103,13 @@ export async function PUT(
         if (eventType !== undefined) updateData.eventType = eventType;
         if (location !== undefined) updateData.location = location;
         if (meetingLink !== undefined) updateData.meetingLink = meetingLink;
-        if (startTime !== undefined) updateData.startTime = startTime;
-        if (endTime !== undefined) updateData.endTime = endTime;
+        if (startDate !== undefined || startTime !== undefined) {
+            const currentEvent = await Event.findById(event._id);
+            const currentStart = new Date(currentEvent.startTime);
+            const d = startDate || currentStart.toISOString().split('T')[0];
+            const t = startTime || currentStart.toTimeString().slice(0, 5);
+            updateData.startTime = new Date(`${d}T${t}`);
+        }
         if (banner !== undefined) updateData.banner = banner;
 
         const updatedEvent = await Event.findByIdAndUpdate(

@@ -97,7 +97,9 @@ export function WritingProjectCard({ project, isOwnProfile }: WritingProjectCard
             showCancelButton: true,
             confirmButtonColor: '#d33',
             cancelButtonColor: '#3085d6',
-            confirmButtonText: 'Yes, delete it!'
+            confirmButtonText: 'Yes, delete it!',
+            background: 'var(--card)',
+            color: 'var(--foreground)'
         });
 
         if (!result.isConfirmed) return;

@@ -14,6 +14,7 @@ import { z } from 'zod';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import NovelEditor from '@/components/editor/NovelEditor';
 
 const eventSchema = z.object({
     title: z.string().min(5, 'Title must be at least 5 characters'),
@@ -21,14 +22,25 @@ const eventSchema = z.object({
     eventType: z.enum(['online', 'offline']),
     location: z.string().optional(),
     meetingLink: z.string().optional(),
-    startTime: z.string().min(1, 'Start time is required'),
-    endTime: z.string().min(1, 'End time is required'),
+    startDate: z.string().min(1, 'Date is required'),
+    startTime: z.string().min(1, 'Time is required'),
 });
 
-export type EventData = z.infer<typeof eventSchema>;
+export type EventFormValues = z.infer<typeof eventSchema>;
+
+export interface EventData {
+    title: string;
+    description: string;
+    eventType: 'online' | 'offline';
+    location?: string;
+    meetingLink?: string;
+    startDate: string;
+    startTime: string;
+    banner?: string;
+}
 
 interface EventFormProps {
-    initialData?: EventData & { banner?: string };
+    initialData?: Partial<EventData>;
     onSubmit: (data: EventData, bannerFile: File | null) => Promise<void>;
     isLoading: boolean;
     uploadingBanner: boolean;
@@ -47,37 +59,37 @@ export function EventForm({ initialData, onSubmit, isLoading, uploadingBanner, m
         watch,
         setValue,
         formState: { errors },
-    } = useForm<EventData>({
+    } = useForm<EventFormValues>({
         resolver: zodResolver(eventSchema),
         defaultValues: {
             eventType: 'online',
-            ...initialData,
         }
     });
 
     const eventType = watch('eventType');
 
-    // Handle initial data for date fields which need specific formatting for datetime-local
+    // Handle initial data for date fields
     useEffect(() => {
         if (initialData) {
+            if (initialData.title) setValue('title', initialData.title);
+            if (initialData.description) setValue('description', initialData.description);
+            if (initialData.eventType) setValue('eventType', initialData.eventType);
+            if (initialData.location) setValue('location', initialData.location);
+            if (initialData.meetingLink) setValue('meetingLink', initialData.meetingLink);
+
             if (initialData.startTime) {
                 const start = new Date(initialData.startTime);
                 if (!isNaN(start.getTime())) {
-                    // Format to YYYY-MM-DDThh:mm for datetime-local input
-                    const formattedStart = start.toISOString().slice(0, 16);
-                    setValue('startTime', formattedStart);
-                }
-            }
-            if (initialData.endTime) {
-                const end = new Date(initialData.endTime);
-                if (!isNaN(end.getTime())) {
-                    const formattedEnd = end.toISOString().slice(0, 16);
-                    setValue('endTime', formattedEnd);
+                    // Split into YYYY-MM-DD and HH:mm
+                    const datePart = start.toISOString().split('T')[0];
+                    const timePart = start.toTimeString().slice(0, 5);
+                    setValue('startDate', datePart);
+                    setValue('startTime', timePart);
                 }
             }
         }
     }, [initialData, setValue]);
-    
+
     // Cleanup preview URL to avoid memory leaks
     useEffect(() => {
         return () => {
@@ -134,11 +146,24 @@ export function EventForm({ initialData, onSubmit, isLoading, uploadingBanner, m
         if (fileInput) fileInput.value = '';
     };
 
-    const onFormSubmit = (data: EventData) => {
+    const onFormSubmit = (values: EventFormValues) => {
+        // Merge date and time
+        const startTime = new Date(`${values.startDate}T${values.startTime}`).toISOString();
+
+        const data: EventData = {
+            title: values.title,
+            description: values.description,
+            eventType: values.eventType,
+            location: values.location,
+            meetingLink: values.meetingLink,
+            startDate: values.startDate,
+            startTime: values.startTime,
+        };
+
         onSubmit(data, bannerFile);
     };
 
-    const onErrors = (errors: FieldErrors<EventData>) => {
+    const onErrors = (errors: FieldErrors<EventFormValues>) => {
         console.error('Validation Errors:', errors);
         const firstError = Object.values(errors)[0];
         toast.error(firstError?.message?.toString() || 'Please check the form for errors');
@@ -165,7 +190,7 @@ export function EventForm({ initialData, onSubmit, isLoading, uploadingBanner, m
 
                     <div className="space-y-4">
                         <Label htmlFor="banner">Event Banner (Optional)</Label>
-                        
+
                         {previewUrl ? (
                             <div className="relative group rounded-lg overflow-hidden border bg-muted aspect-[1200/630] max-h-[300px]">
                                 <Image
@@ -175,17 +200,17 @@ export function EventForm({ initialData, onSubmit, isLoading, uploadingBanner, m
                                     className="object-cover"
                                 />
                                 <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                                    <Button 
-                                        type="button" 
-                                        variant="secondary" 
+                                    <Button
+                                        type="button"
+                                        variant="secondary"
                                         size="sm"
                                         onClick={() => document.getElementById('banner')?.click()}
                                     >
                                         Change Image
                                     </Button>
-                                    <Button 
-                                        type="button" 
-                                        variant="destructive" 
+                                    <Button
+                                        type="button"
+                                        variant="destructive"
                                         size="sm"
                                         onClick={removeBanner}
                                     >
@@ -195,16 +220,15 @@ export function EventForm({ initialData, onSubmit, isLoading, uploadingBanner, m
                                 </div>
                             </div>
                         ) : (
-                            <div 
+                            <div
                                 onClick={() => document.getElementById('banner')?.click()}
                                 onDragOver={handleDragOver}
                                 onDragLeave={handleDragLeave}
                                 onDrop={handleDrop}
-                                className={`border-2 border-dashed rounded-lg p-8 flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors ${
-                                    isDragging 
-                                        ? 'border-primary bg-primary/5' 
+                                className={`border-2 border-dashed rounded-lg p-8 flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors ${isDragging
+                                        ? 'border-primary bg-primary/5'
                                         : 'hover:bg-accent/50'
-                                }`}
+                                    }`}
                             >
                                 <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
                                     <ImageIcon className="h-5 w-5 text-primary" />
@@ -241,12 +265,9 @@ export function EventForm({ initialData, onSubmit, isLoading, uploadingBanner, m
 
                     <div className="space-y-2">
                         <Label htmlFor="description">Description *</Label>
-                        <Textarea
-                            id="description"
-                            placeholder="Describe the event, agenda, and what participants will learn..."
-                            rows={4}
-                            {...register('description')}
-                            disabled={isLoading}
+                        <NovelEditor
+                            initialValue={watch('description') && watch('description') !== '' ? JSON.parse(watch('description') as string) : undefined}
+                            onChange={(val) => setValue('description', val, { shouldValidate: true })}
                         />
                         {errors.description && (
                             <p className="text-sm text-red-500">{errors.description.message}</p>
@@ -296,28 +317,28 @@ export function EventForm({ initialData, onSubmit, isLoading, uploadingBanner, m
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-2">
-                            <Label htmlFor="startTime">Start Date & Time *</Label>
+                            <Label htmlFor="startDate">Event Date *</Label>
+                            <Input
+                                id="startDate"
+                                type="date"
+                                {...register('startDate')}
+                                disabled={isLoading}
+                            />
+                            {errors.startDate && (
+                                <p className="text-sm text-red-500">{errors.startDate.message}</p>
+                            )}
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="startTime">Start Time *</Label>
                             <Input
                                 id="startTime"
-                                type="datetime-local"
+                                type="time"
                                 {...register('startTime')}
                                 disabled={isLoading}
                             />
                             {errors.startTime && (
                                 <p className="text-sm text-red-500">{errors.startTime.message}</p>
-                            )}
-                        </div>
-
-                        <div className="space-y-2">
-                            <Label htmlFor="endTime">End Date & Time *</Label>
-                            <Input
-                                id="endTime"
-                                type="datetime-local"
-                                {...register('endTime')}
-                                disabled={isLoading}
-                            />
-                            {errors.endTime && (
-                                <p className="text-sm text-red-500">{errors.endTime.message}</p>
                             )}
                         </div>
                     </div>
@@ -328,7 +349,7 @@ export function EventForm({ initialData, onSubmit, isLoading, uploadingBanner, m
                             Participants can register for these roles after the event is created:
                         </p>
                         <ul className="text-sm space-y-1 text-muted-foreground">
-                            <li>• Up to 5 Speakers (2 minutes each with topic)</li>
+                            <li>• Up to 5 Speakers (20 minutes each with topic)</li>
                             <li>• Unlimited Listeners</li>
                         </ul>
                     </div>

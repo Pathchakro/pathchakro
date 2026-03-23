@@ -19,7 +19,7 @@ const createSlug = (text: string): string => {
     // Fallback for non-ASCII (e.g. Bengali)
     const manualSlug = text.trim().toLowerCase()
         .replace(/[\s-]+/g, '-')
-        .replace(/[^a-z0-9-]/g, '') // Keep it safe for a slug
+        .replace(/[^\p{L}\p{N}-]/gu, '') // Keep all Unicode letters and numbers
         .replace(/^-+|-+$/g, '');
 
     return manualSlug || `untitled-${Date.now()}`;

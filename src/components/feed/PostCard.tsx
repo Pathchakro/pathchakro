@@ -174,7 +174,9 @@ export function PostCard({ initialPost, currentUserId, onDelete, initialIsBookma
             showCancelButton: true,
             confirmButtonColor: '#3085d6',
             cancelButtonColor: '#d33',
-            confirmButtonText: 'Yes, delete it!'
+            confirmButtonText: 'Yes, delete it!',
+            background: 'var(--card)',
+            color: 'var(--foreground)'
         });
 
         if (!result.isConfirmed) return;
@@ -215,8 +217,8 @@ export function PostCard({ initialPost, currentUserId, onDelete, initialIsBookma
             confirmButtonColor: '#3085d6',
             cancelButtonColor: '#d33',
             confirmButtonText: 'Yes, hide it!',
-            background: 'hsl(var(--card))',
-            color: 'hsl(var(--foreground))'
+            background: 'var(--card)',
+            color: 'var(--foreground)'
         });
 
         if (result.isConfirmed) {

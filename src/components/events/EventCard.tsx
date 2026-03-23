@@ -25,7 +25,6 @@ interface EventCardProps {
         description: string;
         status: string;
         startTime: string | Date;
-        endTime: string | Date;
         eventType: string;
         location?: string;
         meetingLink?: string;
@@ -104,8 +103,8 @@ export function EventCard({ event, onDelete }: EventCardProps) {
             confirmButtonColor: '#d33',
             cancelButtonColor: '#3085d6',
             confirmButtonText: 'Yes, delete it!',
-            background: 'hsl(var(--card))',
-            color: 'hsl(var(--foreground))'
+            background: 'var(--card)',
+            color: 'var(--foreground)'
         });
 
         if (!result.isConfirmed) return;
@@ -201,7 +200,7 @@ export function EventCard({ event, onDelete }: EventCardProps) {
                 <Link href={eventUrl} className="block relative group">
                     <div className="mb-3 rounded-lg overflow-hidden relative aspect-video w-full">
                         <Image
-                            src={event.banner || "/OG2_pathchakro.png"}
+                            src={event.banner || "/OG_pathchakro.png"}
                             alt={event.title}
                             fill
                             className="object-cover group-hover:scale-105 transition-transform duration-300"
@@ -213,7 +212,7 @@ export function EventCard({ event, onDelete }: EventCardProps) {
                         </div>
                     </div>
                     <div className="flex items-center justify-between mb-2 gap-2">
-                        <h3 className="text-xl font-bold hover:text-primary transition-colors line-clamp-2">
+                        <h3 className="text-lg font-bold hover:text-primary transition-colors line-clamp-2">
                             {event.title}
                         </h3>
                         <button
