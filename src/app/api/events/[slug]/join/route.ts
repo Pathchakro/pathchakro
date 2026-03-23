@@ -61,6 +61,9 @@ export async function POST(
                         order: 0, // Placeholder, relying on array position
                         assignedAt: new Date(),
                     }
+                },
+                $pull: {
+                    listeners: { user: userId }
                 }
             };
         } else if (role === 'listener') {
@@ -75,6 +78,9 @@ export async function POST(
                         user: userId,
                         joinedAt: new Date(),
                     }
+                },
+                $pull: {
+                    'roles.speakers': { user: userId }
                 }
             };
         } else {

@@ -302,14 +302,19 @@ export default function EventDetailClient({ slug, initialData }: { slug: string;
                         <Users className="h-4 w-4 mt-0.5 text-muted-foreground" />
                         <div>
                             <p className="text-[11px] uppercase tracking-wider text-muted-foreground/80">Participants</p>
-                            <p className="text-sm font-semibold">{event.listeners?.length || 0} joined</p>
+                            <p className="text-sm font-semibold">{
+                                (event.listeners || []).filter(l => {
+                                    const lId = (l.user?._id || l.user)?.toString();
+                                    return !event.roles?.speakers?.some(s => (s.user?._id || s.user)?.toString() === lId);
+                                }).length
+                            } joined</p>
                         </div>
                     </div>
                 </div>
 
                 <div className="mt-4 pt-4 border-t flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <p className="text-sm text-muted-foreground leading-relaxed">
-                        Organized by <span className="font-medium text-foreground">{event.organizer?.name || 'Unknown'}</span>
+                        Created by <span className="font-medium text-foreground">{event.organizer?.name || 'Unknown'}</span>
                         {event.team && <><br className="sm:hidden" /> • Team: <span className="font-medium text-foreground">{event.team.name}</span></>}
                     </p>
 
@@ -388,7 +393,10 @@ export default function EventDetailClient({ slug, initialData }: { slug: string;
                         </TabsTrigger>
                         <TabsTrigger value="listeners" className="flex items-center gap-2">
                             <UsersIcon className="h-4 w-4" />
-                            Listeners ({(event.listeners?.length || 0)})
+                            Listeners ({(event.listeners || []).filter(l => {
+                                const lId = (l.user?._id || l.user)?.toString();
+                                return !event.roles?.speakers?.some(s => (s.user?._id || s.user)?.toString() === lId);
+                            }).length})
                         </TabsTrigger>
                     </TabsList>
 
@@ -445,17 +453,25 @@ export default function EventDetailClient({ slug, initialData }: { slug: string;
                     </TabsContent>
 
                     <TabsContent value="listeners" className="space-y-4">
-                        {(event.listeners?.length || 0) > 0 ? (
+                        {((event.listeners || []).filter(l => {
+                            const lId = (l.user?._id || l.user)?.toString();
+                            return !event.roles?.speakers?.some(s => (s.user?._id || s.user)?.toString() === lId);
+                        }).length) > 0 ? (
                             <div className="bg-card rounded-xl border divide-y overflow-hidden">
-                                {(event.listeners || []).map((listener, i) => (
-                                    <div key={listener.user?._id || `listener-${i}`} className="flex items-center justify-between p-4 hover:bg-muted/30 transition-colors">                                        
+                                {(event.listeners || [])
+                                    .filter(l => {
+                                        const lId = (l.user?._id || l.user)?.toString();
+                                        return !event.roles?.speakers?.some(s => (s.user?._id || s.user)?.toString() === lId);
+                                    })
+                                    .map((listener, i) => (
+                                    <div key={listener.user?._id || `listener-${i}`} className="flex items-center justify-between p-4 hover:bg-muted/30 transition-colors">
                                         <div className="flex items-center gap-4">
                                             <Avatar className="h-10 w-10 border">
-                                            <AvatarImage src={listener.user?.image} alt={listener.user?.name} />
-                                            <AvatarFallback>{listener.user?.name?.charAt(0) || 'L'}</AvatarFallback>
-                                        </Avatar>
-                                        <span className="font-medium">{listener.user?.name || 'Anonymous'}</span>
-                                    </div>
+                                                <AvatarImage src={listener.user?.image} alt={listener.user?.name} />
+                                                <AvatarFallback>{listener.user?.name?.charAt(0) || 'L'}</AvatarFallback>
+                                            </Avatar>
+                                            <span className="font-medium">{listener.user?.name || 'Anonymous'}</span>
+                                        </div>
 
                                         {session?.user?.id === listener.user?._id && (
                                             <DropdownMenu>

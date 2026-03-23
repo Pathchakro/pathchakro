@@ -12,7 +12,7 @@ export function formatDate(input: string | number | Date): string {
     day: "numeric",
     year: "numeric",
     timeZone: "Asia/Dhaka"
-  })
+  }).replace(/\u202f/g, ' ')
 }
 
 export function formatTime(input: string | number | Date): string {
@@ -21,7 +21,7 @@ export function formatTime(input: string | number | Date): string {
     hour: "2-digit",
     minute: "2-digit",
     timeZone: "Asia/Dhaka"
-  })
+  }).replace(/\u202f/g, ' ')
 }
 
 export function slugify(text: string): string {

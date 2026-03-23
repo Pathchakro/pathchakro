@@ -256,7 +256,12 @@ export function EventCard({ event, onDelete }: EventCardProps) {
                                     Audience
                                 </span>
                                 <span className="text-[#2563eb] font-bold text-sm truncate">
-                                    {event.listeners?.length || 0} {event.listeners?.length === 1 ? 'Participant' : 'Participants'}
+                                    {(() => {
+                                        const listenerCount = (event.listeners || []).filter(
+                                            (l: any) => !event.roles?.speakers?.some((s: any) => (s.user?._id || s.user) === (l.user?._id || l.user))
+                                        ).length;
+                                        return `${listenerCount} ${listenerCount === 1 ? 'Participant' : 'Participants'}`;
+                                    })()}
                                 </span>
                             </div>
                         </div>
