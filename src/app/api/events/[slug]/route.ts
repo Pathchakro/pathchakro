@@ -3,6 +3,7 @@ import { revalidatePath, revalidateTag } from 'next/cache';
 import { auth } from '@/auth';
 import dbConnect from '@/lib/mongodb';
 import Event from '@/models/Event';
+import { generateUniqueSlug } from '@/lib/slug-utils';
 
 export const dynamic = 'force-dynamic';
 

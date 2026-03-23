@@ -79,6 +79,10 @@ export default function EventsClient({ initialEvents }: { initialEvents: Event[]
         }
     }, [statusFilter, showUpcoming]);
 
+    const handleDelete = (deletedId: string) => {
+        setEvents(prev => prev.filter(e => e._id !== deletedId));
+    };
+
     useEffect(() => {
         if (isFirstLoad) {
             setIsFirstLoad(false);
@@ -162,7 +166,11 @@ export default function EventsClient({ initialEvents }: { initialEvents: Event[]
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {events.map((event) => (
-                        <EventCard key={event._id} event={event as any} />
+                        <EventCard 
+                            key={event._id} 
+                            event={event as any} 
+                            onDelete={handleDelete}
+                        />
                     ))}
                 </div>
             )}

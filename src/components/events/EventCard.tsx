@@ -54,46 +54,6 @@ export function EventCard({ event, onDelete }: EventCardProps) {
     const canEdit = isOwner || isAdmin;
     const eventUrl = event.slug ? `/events/${event.slug}` : `/events/${event._id}`;
 
-    const handleJoin = async () => {
-        if (!session) {
-            toast.error("Please login to join the event");
-            return;
-        }
-
-        if (event.status === 'cancelled' || event.status === 'completed') {
-            toast.error("This event is no longer accepting participants");
-            return;
-        }
-
-        const alreadyJoined = (event.listeners || []).some(
-            (listener: any) => {
-                const userId = listener.user?._id || listener.user || listener._id;
-                return userId === session.user?.id;
-            }
-        );
-        if (alreadyJoined) {
-            toast.info("You have already joined this event");
-            return;
-        }
-
-        try {
-            const response = await fetch(`/api/events/${event._id}/join`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ role: 'listener' }),
-            });
-
-            if (!response.ok) {
-                const data = await response.json();
-                throw new Error(data.error || 'Failed to join event');
-            }
-
-            toast.success("Successfully joined the event!");
-            router.refresh();
-        } catch (error: any) {
-            toast.error(error.message);
-        }
-    };
     const handleDeleteEvent = async () => {
         const result = await Swal.fire({
             title: 'Are you sure?',
@@ -215,17 +175,12 @@ export function EventCard({ event, onDelete }: EventCardProps) {
                         <h3 className="text-lg font-bold hover:text-primary transition-colors line-clamp-2">
                             {event.title}
                         </h3>
-                        <button
-                            onClick={(e) => {
-                                e.preventDefault();
-                                handleJoin();
-                            }}
-                            aria-label="Join"
-                            className="flex-shrink-0 flex items-center cursor-pointer gap-1.5 px-4 py-1.5 rounded-full bg-[#f97316] text-white hover:bg-[#ea580c] transition-all shadow-sm text-sm font-semibold"
+                        <div
+                            className="flex-shrink-0 flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-[#f97316] text-white hover:bg-[#ea580c] transition-all shadow-sm text-sm font-semibold"
                         >
                             <Users className="h-4 w-4" />
                             Join
-                        </button>
+                        </div>
                     </div>
 
 
