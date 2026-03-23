@@ -378,7 +378,7 @@ export default function EventDetailClient({ slug, initialData }: { slug: string;
                                     const lId = (l.user?._id || l.user)?.toString();
                                     return !event.roles?.speakers?.some(s => (s.user?._id || s.user)?.toString() === lId);
                                 }).length
-                            } joined</p>
+                            } registered</p>
                         </div>
                     </div>
                 </div>
