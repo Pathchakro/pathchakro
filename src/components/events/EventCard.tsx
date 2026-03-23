@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { Calendar, Clock, MapPin, Users, Video, MoreHorizontal, Heart, MessageCircle, Share2, Bookmark, Mic } from 'lucide-react';
-import { formatDate } from '@/lib/utils';
+import { formatDate, formatTime } from '@/lib/utils';
 import { toast } from 'sonner';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
@@ -230,7 +230,7 @@ export function EventCard({ event, onDelete }: EventCardProps) {
                                     Time
                                 </span>
                                 <span className="font-bold text-sm truncate">
-                                    {new Date(event.startTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                                    {formatTime(event.startTime)}
                                 </span>
                             </div>
 

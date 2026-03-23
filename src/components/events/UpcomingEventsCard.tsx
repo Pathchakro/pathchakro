@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Calendar, MapPin, Video, ArrowRight } from 'lucide-react';
-import { formatDate } from '@/lib/utils';
+import { formatDate, formatTime } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarGroup, AvatarImage } from '@/components/ui/avatar';
 import { Tooltip } from '@/components/ui/tooltip';
 import { Button } from '@/components/ui/button';
@@ -129,7 +129,7 @@ export function UpcomingEventsCard() {
                                         )}
                                         <span>•</span>
                                         <span className="truncate">
-                                            {eventDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                                            {formatTime(eventDate)}
                                         </span>
                                     </div>
 

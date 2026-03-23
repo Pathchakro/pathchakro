@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { MessageCircle, Send, User, Search } from 'lucide-react';
-import { formatDate } from '@/lib/utils';
+import { formatDate, formatTime } from '@/lib/utils';
 import LoadingSpinner from '@/components/ui/Loading';
 
 
@@ -180,10 +180,7 @@ export default function MessagesPage() {
                                                     {conv.userName}
                                                 </p>
                                                 <span className="text-xs text-muted-foreground">
-                                                    {new Date(conv.timestamp).toLocaleTimeString('en-US', {
-                                                        hour: '2-digit',
-                                                        minute: '2-digit'
-                                                    })}
+                                                    {formatTime(conv.timestamp)}
                                                 </span>
                                             </div>
                                             <p className={`text-sm line-clamp-1 ${conv.unread ? 'font-semibold text-foreground' : 'text-muted-foreground'
@@ -232,10 +229,7 @@ export default function MessagesPage() {
                                                 <p className="text-sm">{msg.content}</p>
                                                 <p className={`text-xs mt-1 ${isSender ? 'text-muted-foreground' : 'text-primary-foreground/70'
                                                     }`}>
-                                                    {new Date(msg.createdAt).toLocaleTimeString('en-US', {
-                                                        hour: '2-digit',
-                                                        minute: '2-digit',
-                                                    })}
+                                                    {formatTime(msg.createdAt)}
                                                 </p>
                                             </div>
                                         </div>
@@ -281,3 +275,4 @@ export default function MessagesPage() {
         </div>
     );
 }
+

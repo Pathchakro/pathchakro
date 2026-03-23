@@ -11,6 +11,16 @@ export function formatDate(input: string | number | Date): string {
     month: "long",
     day: "numeric",
     year: "numeric",
+    timeZone: "Asia/Dhaka"
+  })
+}
+
+export function formatTime(input: string | number | Date): string {
+  const date = new Date(input)
+  return date.toLocaleTimeString("en-US", {
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: "Asia/Dhaka"
   })
 }
 

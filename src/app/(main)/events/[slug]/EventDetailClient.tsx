@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Calendar, MapPin, Video, Users, Clock, ArrowLeft, User } from 'lucide-react';
-import { formatDate } from '@/lib/utils';
+import { formatDate, formatTime } from '@/lib/utils';
 import { useSession } from 'next-auth/react';
 import { LoginModal } from '@/components/auth/LoginModal';
 import Link from 'next/link';
@@ -270,10 +270,10 @@ export default function EventDetailClient({ slug, initialData }: { slug: string;
                         <div>
                             <p className="text-[11px] uppercase tracking-wider text-muted-foreground/80">Time</p>
                             <p className="text-sm font-semibold leading-tight">
-                                {event.startTime ? new Date(event.startTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : 'TBA'}
+                                {event.startTime ? formatTime(event.startTime) : 'TBA'}
                                 <br className="sm:hidden" />
                                 <span className="hidden sm:inline"> - </span>
-                                {event.endTime ? new Date(event.endTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : 'TBA'}
+                                {event.endTime ? formatTime(event.endTime) : 'TBA'}
                             </p>
                         </div>
                     </div>
@@ -497,3 +497,4 @@ export default function EventDetailClient({ slug, initialData }: { slug: string;
         </div>
     );
 }
+
