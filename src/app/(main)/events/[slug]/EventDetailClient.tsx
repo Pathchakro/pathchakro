@@ -281,7 +281,7 @@ export default function EventDetailClient({ slug, initialData }: { slug: string;
                         className="object-cover"
                         priority
                     />
-                    <div className="absolute bottom-3 right-3 flex items-center gap-2">
+                    <div className="absolute bottom-1 right-1 lg:bottom-3 lg:right-3 flex items-center gap-2">
                         {(session?.user?.id === event.organizer._id || session?.user?.role === 'admin') && (
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
@@ -289,41 +289,45 @@ export default function EventDetailClient({ slug, initialData }: { slug: string;
                                         <MoreHorizontal className="h-6 w-6" />
                                     </button>
                                 </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                                <DropdownMenuItem asChild>
-                                    <Link href={`/events/${slug}/edit`} className="w-full flex items-center cursor-pointer">
-                                        <Edit className="h-4 w-4 mr-2" />
-                                        Edit Event
-                                    </Link>
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                    className="text-red-600 focus:text-red-600 cursor-pointer flex items-center"
-                                    onClick={handleDeleteEvent}
-                                >
-                                    <Trash2 className="h-4 w-4 mr-2" />
-                                    Delete Event
-                                </DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-                    )}
-                </div>
+                                <DropdownMenuContent align="end">
+                                    <DropdownMenuItem asChild>
+                                        <Link href={`/events/${slug}/edit`} className="w-full flex items-center cursor-pointer">
+                                            <Edit className="h-4 w-4 mr-2" />
+                                            Edit Event
+                                        </Link>
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                        className="text-red-600 focus:text-red-600 cursor-pointer flex items-center"
+                                        onClick={handleDeleteEvent}
+                                    >
+                                        <Trash2 className="h-4 w-4 mr-2" />
+                                        Delete Event
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        )}
+                    </div>
                 </div>
 
                 <div className="flex items-start justify-between mb-4 gap-4">
                     <div className="flex-1 min-w-0">
-                        <h1 className="text-xl sm:text-3xl font-bold mb-2 break-words leading-tight">{event.title}</h1>
+                        <div className='flex justify-between'>
+                            <h1 className="text-xl sm:text-3xl font-bold mb-2 break-words leading-tight">{event.title}</h1>
+                            <span className={`px-2 py-1 h-fit rounded-full text-xs sm:text-sm font-medium ${event.status === 'upcoming' ? 'bg-blue-100 text-blue-700' :
+                                event.status === 'ongoing' ? 'bg-green-100 text-green-700' :
+                                    event.status === 'completed' ? 'bg-gray-100 text-gray-700' :
+                                        'bg-red-100 text-red-700'
+                                }`}>
+                                {event.status.toUpperCase()}
+                            </span>
+
+                        </div>
                         <div
                             className="text-sm sm:text-base text-muted-foreground prose prose-sm sm:prose-base dark:prose-invert max-w-none"
                             dangerouslySetInnerHTML={{ __html: generateHtml(event.description) }}
                         />
                     </div>
-                    <span className={`px-2 py-1 h-fit rounded-full text-xs sm:text-sm font-medium ${event.status === 'upcoming' ? 'bg-blue-100 text-blue-700' :
-                        event.status === 'ongoing' ? 'bg-green-100 text-green-700' :
-                            event.status === 'completed' ? 'bg-gray-100 text-gray-700' :
-                                'bg-red-100 text-red-700'
-                        }`}>
-                        {event.status.toUpperCase()}
-                    </span>
+
                 </div>
 
                 <div className="grid grid-cols-2 md:grid-cols-2 gap-y-6 gap-x-4">
