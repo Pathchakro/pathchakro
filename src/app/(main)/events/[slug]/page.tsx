@@ -10,7 +10,8 @@ interface Props {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-    const { slug } = await params;
+    const decodedParams = await params;
+    const slug = decodeURIComponent(decodedParams.slug);
 
     await dbConnect();
 
@@ -58,8 +59,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function EventPage(props: Props) {
-    const params = await props.params;
-    const slug = params.slug;
+    const decodedParams = await props.params;
+    const slug = decodeURIComponent(decodedParams.slug);
 
     await dbConnect();
 

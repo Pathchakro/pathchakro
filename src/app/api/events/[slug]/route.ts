@@ -15,13 +15,14 @@ export async function GET(
     try {
         await dbConnect();
 
-        console.log('GET /api/events/[slug] ID:', params.slug);
+        const slug = decodeURIComponent(params.slug);
+        console.log('GET /api/events/[slug] decoded slug:', slug);
 
-        const isObjectId = /^[0-9a-fA-F]{24}$/.test(params.slug);
+        const isObjectId = /^[0-9a-fA-F]{24}$/.test(slug);
         let event = null;
 
         if (isObjectId) {
-            event = await Event.findOne({ _id: params.slug })
+            event = await Event.findOne({ _id: slug })
                 .populate('organizer', 'name image rankTier')
                 .populate('team', 'name')
                 .populate('roles.speakers.user', 'name image')
@@ -30,7 +31,7 @@ export async function GET(
         }
 
         if (!event) {
-            event = await Event.findOne({ slug: params.slug })
+            event = await Event.findOne({ slug: slug })
                 .populate('organizer', 'name image rankTier')
                 .populate('team', 'name')
                 .populate('roles.speakers.user', 'name image')
@@ -72,15 +73,16 @@ export async function PUT(
 
         await dbConnect();
 
-        const isObjectId = /^[0-9a-fA-F]{24}$/.test(params.slug);
+        const slug = decodeURIComponent(params.slug);
+        const isObjectId = /^[0-9a-fA-F]{24}$/.test(slug);
         let event = null;
 
         if (isObjectId) {
-            event = await Event.findOne({ _id: params.slug });
+            event = await Event.findOne({ _id: slug });
         }
 
         if (!event) {
-            event = await Event.findOne({ slug: params.slug });
+            event = await Event.findOne({ slug: slug });
         }
 
         if (!event) {
@@ -98,7 +100,10 @@ export async function PUT(
         } = body;
 
         const updateData: any = {};
-        if (title !== undefined) updateData.title = title;
+        if (title !== undefined) {
+            updateData.title = title;
+            updateData.slug = await generateUniqueSlug(Event, title, 'slug', true, event._id.toString());
+        }
         if (description !== undefined) updateData.description = description;
         if (eventType !== undefined) updateData.eventType = eventType;
         if (location !== undefined) updateData.location = location;
@@ -142,15 +147,16 @@ export async function DELETE(
 
         await dbConnect();
 
-        const isObjectId = /^[0-9a-fA-F]{24}$/.test(params.slug);
+        const slug = decodeURIComponent(params.slug);
+        const isObjectId = /^[0-9a-fA-F]{24}$/.test(slug);
         let event = null;
 
         if (isObjectId) {
-            event = await Event.findOne({ _id: params.slug });
+            event = await Event.findOne({ _id: slug });
         }
 
         if (!event) {
-            event = await Event.findOne({ slug: params.slug });
+            event = await Event.findOne({ slug: slug });
         }
 
         if (!event) {

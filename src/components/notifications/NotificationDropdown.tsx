@@ -24,11 +24,16 @@ interface Notification {
 }
 
 export function NotificationDropdown() {
-    const { status } = useSession();
+    const { data: session, status } = useSession();
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [unreadCount, setUnreadCount] = useState(0);
     const [isOpen, setIsOpen] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
 
     useEffect(() => {
         if (status === 'authenticated') {
@@ -81,6 +86,16 @@ export function NotificationDropdown() {
             console.error('Error marking all as read:', error);
         }
     };
+
+    if (!mounted || status !== 'authenticated') {
+        return (
+            <div className="relative">
+                <button className="relative p-2 rounded-lg hover:bg-muted transition-colors">
+                    <Bell className="h-5 w-5" />
+                </button>
+            </div>
+        );
+    }
 
     return (
         <div className="relative">

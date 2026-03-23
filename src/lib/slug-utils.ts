@@ -12,17 +12,26 @@ const createSlug = (text: string): string => {
         return `untitled-${Date.now()}`;
     }
 
-    const slug = slugify(text, { lower: true, strict: true, trim: true });
+    const trimmedText = text.trim();
+    const isNonAscii = /[^\x00-\x7F]/.test(trimmedText);
 
-    if (slug) return slug;
+    let slug = '';
+    
+    // Only use slugify package for pure ASCII to avoid stripping Unicode chars
+    if (!isNonAscii) {
+        slug = slugify(trimmedText, { lower: true, strict: true, trim: true });
+    }
 
-    // Fallback for non-ASCII (e.g. Bengali)
-    const manualSlug = text.trim().toLowerCase()
-        .replace(/[\s-]+/g, '-')
-        .replace(/[^\p{L}\p{N}-]/gu, '') // Keep all Unicode letters and numbers
-        .replace(/^-+|-+$/g, '');
+    if (!slug) {
+        // Fallback or primary logic for non-ASCII (e.g. Bengali)
+        slug = trimmedText.toLowerCase()
+            .replace(/[\s-]+/g, '-')
+            .replace(/[^\p{L}\p{N}\p{M}-]/gu, '') // Keep letters, numbers, AND marks (vowels)
+            .replace(/\-\-+/g, '-')
+            .replace(/^-+|-+$/g, '');
+    }
 
-    return manualSlug || `untitled-${Date.now()}`;
+    return slug || `untitled-${Date.now()}`;
 };
 
 export async function generateUniqueSlug(
