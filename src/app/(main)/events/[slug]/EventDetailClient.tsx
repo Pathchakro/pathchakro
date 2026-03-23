@@ -302,7 +302,7 @@ export default function EventDetailClient({ slug, initialData }: { slug: string;
                         <Users className="h-4 w-4 mt-0.5 text-muted-foreground" />
                         <div>
                             <p className="text-[11px] uppercase tracking-wider text-muted-foreground/80">Participants</p>
-                            <p className="text-sm font-semibold">{(event.roles?.speakers?.length || 0) + (event.listeners?.length || 0)} joined</p>
+                            <p className="text-sm font-semibold">{event.listeners?.length || 0} joined</p>
                         </div>
                     </div>
                 </div>

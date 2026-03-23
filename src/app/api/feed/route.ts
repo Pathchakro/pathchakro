@@ -53,6 +53,8 @@ export async function GET(request: NextRequest) {
                 .limit(limit)
                 .populate('organizer', 'name image')
                 .populate('team', 'name')
+                .populate('roles.speakers.user', 'name image')
+                .populate('listeners.user', 'name image')
                 .lean(),
             Course.find(query)
                 .sort({ createdAt: -1 })
