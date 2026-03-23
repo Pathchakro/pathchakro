@@ -109,7 +109,7 @@ export default function BookDetailPage() {
 
     const fetchBook = async () => {
         try {
-            const response = await fetch(`/api/books/slug/${slug}`);
+            const response = await fetch(`/api/books/${slug}`);
             const data = await response.json();
 
             if (data) {

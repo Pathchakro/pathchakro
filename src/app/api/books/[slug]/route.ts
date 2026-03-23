@@ -17,15 +17,16 @@ export async function GET(
         console.log('GET /api/books/[slug] Slug:', params.slug);
 
         let book;
-        const isObjectId = /^[0-9a-fA-F]{24}$/.test(params.slug);
+        const slug = decodeURIComponent(params.slug);
+        const isObjectId = /^[0-9a-fA-F]{24}$/.test(slug);
 
         if (isObjectId) {
-            book = await Book.findById(params.slug).lean();
+            book = await Book.findById(slug).lean();
         }
 
         // If not found by ID or not an ID, try finding by slug
         if (!book) {
-            book = await Book.findOne({ slug: params.slug }).lean();
+            book = await Book.findOne({ slug }).lean();
         }
 
         if (!book) {
@@ -63,16 +64,16 @@ export async function PATCH(
         const body = await request.json();
         await dbConnect();
 
-        // 1. Find the book first to check authorization
         let book;
-        const isObjectId = /^[0-9a-fA-F]{24}$/.test(params.slug);
+        const slug = decodeURIComponent(params.slug);
+        const isObjectId = /^[0-9a-fA-F]{24}$/.test(slug);
 
         if (isObjectId) {
-            book = await Book.findById(params.slug);
+            book = await Book.findById(slug);
         }
 
         if (!book) {
-            book = await Book.findOne({ slug: params.slug });
+            book = await Book.findOne({ slug });
         }
 
         if (!book) {
@@ -145,17 +146,16 @@ export async function DELETE(
 
         await dbConnect();
 
-        // Find the book first to check ownership
         let book;
-        const isObjectId = /^[0-9a-fA-F]{24}$/.test(params.slug);
+        const slug = decodeURIComponent(params.slug);
+        const isObjectId = /^[0-9a-fA-F]{24}$/.test(slug);
 
         if (isObjectId) {
-            book = await Book.findById(params.slug);
+            book = await Book.findById(slug);
         }
 
-        // If not found by ID, try slug
         if (!book) {
-            book = await Book.findOne({ slug: params.slug });
+            book = await Book.findOne({ slug });
         }
 
         if (!book) {
@@ -166,9 +166,8 @@ export async function DELETE(
         }
 
         // Check ownership or admin role
-        // Need to cast to string for comparison as addedBy is typically ObjectId
         const isOwner = book.addedBy && book.addedBy.toString() === session.user.id;
-        const isAdmin = session.user.role === 'admin' || (session.user as any).role === 'super-admin'; // Adjust based on your role structure
+        const isAdmin = session.user.role === 'admin' || (session.user as any).role === 'super-admin'; 
 
         if (!isOwner && !isAdmin) {
             return NextResponse.json(

@@ -28,13 +28,31 @@ export async function GET(request: NextRequest) {
             filter.category = { $in: categories };
         }
 
-        const books = await Book.find(filter)
-            .sort({ averageRating: -1, totalReviews: -1 })
-            .populate('addedBy', 'name image _id')
-            .limit(20)
-            .lean();
+        const page = parseInt(searchParams.get('page') || '1');
+        const limit = parseInt(searchParams.get('limit') || '20');
+        const skip = (page - 1) * limit;
 
-        return NextResponse.json({ books });
+        const [books, totalBooks] = await Promise.all([
+            Book.find(filter)
+                .sort({ createdAt: -1 }) // Sort by new additions first
+                .populate('addedBy', 'name image _id')
+                .skip(skip)
+                .limit(limit)
+                .lean(),
+            Book.countDocuments(filter)
+        ]);
+
+        const totalPages = Math.ceil(totalBooks / limit);
+
+        return NextResponse.json({ 
+            books,
+            pagination: {
+                totalBooks,
+                totalPages,
+                currentPage: page,
+                limit
+            }
+        });
     } catch (error: any) {
         console.error('Error fetching books:', error);
         return NextResponse.json(

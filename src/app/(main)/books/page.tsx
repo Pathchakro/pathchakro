@@ -6,14 +6,12 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
-import { Book, Search, Plus, Star } from 'lucide-react';
+import { Book, Search, Plus, ChevronLeft, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
 import { CATEGORIES } from '@/lib/constants';
 import { LoginModal } from '@/components/auth/LoginModal';
-import { BookCard, BookItem } from '@/components/BookCard';
+import { BookCard, type BookItem } from '@/components/BookCard';
 import LoadingSpinner from '@/components/ui/Loading';
-
-
 
 export default function BooksPage() {
     const { data: session } = useSession();
@@ -21,9 +19,13 @@ export default function BooksPage() {
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const [categoryFilter, setCategoryFilter] = useState('');
-    const [authorFilter, setAuthorFilter] = useState('');
     const [libraryMap, setLibraryMap] = useState<Record<string, { status: string; isOwned: boolean }>>({});
     const [showLoginModal, setShowLoginModal] = useState(false);
+
+    // Pagination state
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const [totalBooks, setTotalBooks] = useState(0);
 
     const handleAddBookClick = (e: React.MouseEvent) => {
         if (!session) {
@@ -32,10 +34,24 @@ export default function BooksPage() {
         }
     };
 
+    // Fetch library map once on mount
     useEffect(() => {
-        fetchBooks();
         fetchUserLibrary();
     }, []);
+
+    // Fetch books when page or search/category changes
+    useEffect(() => {
+        fetchBooks(currentPage);
+    }, [currentPage]);
+
+    // Reset to page 1 when category filter changes
+    useEffect(() => {
+        if (currentPage !== 1) {
+            setCurrentPage(1);
+        } else {
+            fetchBooks(1);
+        }
+    }, [categoryFilter]);
 
     const fetchUserLibrary = async () => {
         try {
@@ -64,7 +80,6 @@ export default function BooksPage() {
             });
             if (res.ok) {
                 toast.success("Added to your library collection");
-                // Update local map instantly
                 setLibraryMap(prev => ({
                     ...prev,
                     [bookId]: { ...prev[bookId], isOwned: true }
@@ -90,7 +105,6 @@ export default function BooksPage() {
                 } else {
                     toast.success("Status removed");
                 }
-                // Update local map instantly
                 setLibraryMap(prev => ({
                     ...prev,
                     [bookId]: { ...prev[bookId], status }
@@ -103,77 +117,90 @@ export default function BooksPage() {
         }
     };
 
-    const fetchBooks = async () => {
+    const fetchBooks = async (page = 1) => {
         setLoading(true);
         try {
             const params = new URLSearchParams();
+            params.append('page', page.toString());
+            params.append('limit', '20');
+
             if (searchQuery) params.append('q', searchQuery);
             if (categoryFilter) {
                 params.append('category', categoryFilter);
             }
-            if (authorFilter) params.append('q', authorFilter); // API uses q for both title/author
 
             const response = await fetch(`/api/books?${params}`);
             const data = await response.json();
 
             if (data.books) {
                 setBooks(data.books);
+                if (data.pagination) {
+                    setTotalPages(data.pagination.totalPages);
+                    setTotalBooks(data.pagination.totalBooks);
+                }
             }
         } catch (error) {
             console.error('Error fetching books:', error);
+            toast.error("Failed to load books");
         } finally {
             setLoading(false);
         }
     };
 
     const handleSearch = () => {
-        fetchBooks();
+        if (currentPage !== 1) {
+            setCurrentPage(1);
+        } else {
+            fetchBooks(1);
+        }
     };
 
     return (
-        <div className="max-w-7xl mx-auto p-4">
+        <div className="max-w-7xl mx-auto p-4 min-h-screen">
             {/* Header */}
-            <div className="mb-6">
-                <div className="flex items-center justify-between mb-4">
+            <div className="mb-8">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
                     <div>
-                        <h1 className="text-3xl font-bold flex items-center gap-2">
-                            <Book className="h-8 w-8 text-blue-500" />
+                        <h1 className="text-4xl font-bold flex items-center gap-3">
+                            <Book className="h-10 w-10 text-primary" />
                             Book Library
                         </h1>
-                        <p className="text-muted-foreground">Discover, review, and share books</p>
+                        <p className="text-muted-foreground mt-1">Discover, review, and track your reading journey</p>
                     </div>
                     <Link href="/books/add" onClick={handleAddBookClick}>
-                        <Button className="gap-2">
-                            <Plus className="h-4 w-4" />
+                        <Button className="gap-2 shadow-lg hover:shadow-xl transition-all">
+                            <Plus className="h-5 w-5" />
                             Add New Book
                         </Button>
                     </Link>
                 </div>
 
                 {/* Search & Filters */}
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-                    <div className="md:col-span-2 relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-4 bg-muted/30 p-4 rounded-xl border">
+                    <div className="md:col-span-6 relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                         <Input
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
                             placeholder="Search by title or author..."
-                            className="pl-10"
+                            className="pl-10 h-11 bg-background"
                         />
                     </div>
 
-                    <Select
-                        value={categoryFilter}
-                        onChange={(e) => setCategoryFilter(e.target.value)}
-                    >
-                        <option value="">All Categories</option>
-                        {CATEGORIES.map((cat) => (
-                            <option key={cat} value={cat}>{cat}</option>
-                        ))}
-                    </Select>
+                    <div className="md:col-span-4">
+                        <Select
+                            value={categoryFilter}
+                            onChange={(e: any) => setCategoryFilter(e.target.value)}
+                        >
+                            <option value="">All Categories</option>
+                            {CATEGORIES.map((cat) => (
+                                <option key={cat} value={cat}>{cat}</option>
+                            ))}
+                        </Select>
+                    </div>
 
-                    <Button onClick={handleSearch}>
+                    <Button onClick={handleSearch} className="md:col-span-2 h-11">
                         <Search className="h-4 w-4 mr-2" />
                         Search
                     </Button>
@@ -182,40 +209,105 @@ export default function BooksPage() {
 
             {/* Books Grid */}
             {loading ? (
-                <LoadingSpinner />
+                <div className="flex justify-center py-20">
+                    <LoadingSpinner />
+                </div>
             ) : books.length === 0 ? (
-                <div className="text-center py-12">
-                    <Book className="h-16 w-16 text-muted-foreground mx-auto mb-4 opacity-50" />
-                    <h3 className="text-xl font-semibold mb-2">No books found</h3>
-                    <p className="text-muted-foreground mb-4">
+                <div className="text-center py-20 bg-muted/20 rounded-2xl border-2 border-dashed">
+                    <Book className="h-20 w-20 text-muted-foreground/30 mx-auto mb-4" />
+                    <h3 className="text-2xl font-semibold mb-2">No books found</h3>
+                    <p className="text-muted-foreground mb-6 max-w-md mx-auto">
                         {searchQuery || categoryFilter
-                            ? 'Try adjusting your search filters'
-                            : 'Be the first to add a book!'}
+                            ? "We couldn't find any books matching your current filters. Try adjusting them!"
+                            : 'Our library is waiting for its first book. Why not add one?'}
                     </p>
                     <Link href="/books/add" onClick={handleAddBookClick}>
-                        <Button>Add a Book</Button>
+                        <Button size="lg">Add Your First Book</Button>
                     </Link>
                 </div>
             ) : (
-                <div className="flex flex-col gap-4">
-                    {books.map((book) => (
-                        <BookCard
-                            key={book._id}
-                            book={book}
-                            status={libraryMap[book._id]?.status}
-                            isOwned={libraryMap[book._id]?.isOwned}
-                            onAddToLibrary={handleAddToLibrary}
-                            onUpdateStatus={handleUpdateReadingStatus}
-                        />
-                    ))}
-                </div >
+                <div className="space-y-8">
+                    <div className="flex flex-col gap-6">
+                        {books.map((book) => (
+                            <BookCard
+                                key={book._id}
+                                book={book}
+                                status={libraryMap[book._id]?.status}
+                                isOwned={libraryMap[book._id]?.isOwned}
+                                onAddToLibrary={handleAddToLibrary}
+                                onUpdateStatus={handleUpdateReadingStatus}
+                            />
+                        ))}
+                    </div>
+
+                    {/* Pagination Controls */}
+                    {totalPages > 1 && (
+                        <div className="flex flex-col items-center gap-4 pt-8 border-t">
+                            <div className="flex items-center gap-2">
+                                <Button
+                                    variant="outline"
+                                    size="icon"
+                                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                                    disabled={currentPage === 1}
+                                    className="h-10 w-10 shadow-sm"
+                                >
+                                    <ChevronLeft className="h-5 w-5" />
+                                </Button>
+
+                                <div className="flex items-center gap-1.5">
+                                    {[...Array(totalPages)].map((_, i) => {
+                                        const pageNum = i + 1;
+                                        if (
+                                            pageNum === 1 ||
+                                            pageNum === totalPages ||
+                                            (pageNum >= currentPage - 2 && pageNum <= currentPage + 2)
+                                        ) {
+                                            return (
+                                                <Button
+                                                    key={pageNum}
+                                                    variant={currentPage === pageNum ? "default" : "outline"}
+                                                    size="sm"
+                                                    onClick={() => setCurrentPage(pageNum)}
+                                                    className={`w-10 h-10 transition-all ${currentPage === pageNum ? 'shadow-md scale-105' : 'hover:bg-muted font-medium'}`}
+                                                >
+                                                    {pageNum}
+                                                </Button>
+                                            );
+                                        } else if (
+                                            pageNum === currentPage - 3 ||
+                                            pageNum === currentPage + 3
+                                        ) {
+                                            return <span key={pageNum} className="px-1 text-muted-foreground font-bold">...</span>;
+                                        }
+                                        return null;
+                                    })}
+                                </div>
+
+                                <Button
+                                    variant="outline"
+                                    size="icon"
+                                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                                    disabled={currentPage === totalPages}
+                                    className="h-10 w-10 shadow-sm"
+                                >
+                                    <ChevronRight className="h-5 w-5" />
+                                </Button>
+                            </div>
+
+                            <p className="text-sm font-medium text-muted-foreground bg-muted/50 px-4 py-1.5 rounded-full border">
+                                Showing <span className="text-foreground">{((currentPage - 1) * 20) + 1}</span> to <span className="text-foreground">{Math.min(currentPage * 20, totalBooks)}</span> of <span className="text-foreground font-bold">{totalBooks}</span> books
+                            </p>
+                        </div>
+                    )}
+                </div>
             )}
-            <LoginModal 
-                open={showLoginModal} 
+
+            <LoginModal
+                open={showLoginModal}
                 onOpenChange={setShowLoginModal}
                 title="Login to Add Books"
-                description="Share your favorite books with the community and keep track of your reading."
+                description="Share your favorite books with the community and keep track of your reading journey."
             />
-        </div >
+        </div>
     );
 }
