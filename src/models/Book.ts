@@ -52,6 +52,11 @@ const BookSchema = new Schema<IBook>(
             default: 0,
             min: 0,
         },
+        buyingLink: {
+            type: String,
+            trim: true,
+            default: '',
+        },
         addedBy: {
             type: mongoose.Schema.Types.ObjectId as any,
             ref: 'User',
@@ -66,6 +71,11 @@ const BookSchema = new Schema<IBook>(
 BookSchema.index({ title: 'text', author: 'text' });
 BookSchema.index({ category: 1 });
 BookSchema.index({ averageRating: -1 });
+
+// Force fresh model in development to pick up schema changes
+if (process.env.NODE_ENV === 'development' && mongoose.models.Book) {
+    delete mongoose.models.Book;
+}
 
 const Book: Model<IBook> = mongoose.models.Book || mongoose.model<IBook>('Book', BookSchema);
 

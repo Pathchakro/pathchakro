@@ -29,6 +29,7 @@ interface ReviewCardProps {
         user: {
             _id: string;
             name: string;
+            username?: string;
             image?: string;
             rankTier: string;
         };
@@ -46,6 +47,7 @@ interface ReviewCardProps {
     isDetail?: boolean;
     isBookmarked?: boolean;
     onBookmarkChange?: (id: string, newStatus: boolean) => void;
+    hideBook?: boolean;
 }
 
 export function ReviewCard({
@@ -54,7 +56,8 @@ export function ReviewCard({
     onDelete,
     isDetail,
     isBookmarked = false,
-    onBookmarkChange
+    onBookmarkChange,
+    hideBook = false
 }: ReviewCardProps) {
     const router = useRouter();
     const isOwner = currentUserId === review.user._id;
@@ -156,22 +159,26 @@ export function ReviewCard({
             {/* Header */}
             <div className="flex items-start justify-between mb-4">
                 <div className="flex items-start gap-3">
-                    {review.user?.image ? (
-                        <div className="h-10 w-10 rounded-full overflow-hidden relative">
-                            <Image
-                                src={review.user.image}
-                                alt={review.user.name}
-                                fill
-                                className="object-cover"
-                            />
-                        </div>
-                    ) : (
-                        <div className="h-10 w-10 rounded-full bg-gradient-to-br from-green-400 to-blue-500 flex items-center justify-center text-white font-medium">
-                            {review.user?.name?.[0]?.toUpperCase() || 'U'}
-                        </div>
-                    )}
+                    <Link href={`/profile/${review.user.username || review.user._id}`}>
+                        {review.user?.image ? (
+                            <div className="h-10 w-10 rounded-full overflow-hidden relative">
+                                <Image
+                                    src={review.user.image}
+                                    alt={review.user.name}
+                                    fill
+                                    className="object-cover"
+                                />
+                            </div>
+                        ) : (
+                            <div className="h-10 w-10 rounded-full bg-gradient-to-br from-green-400 to-blue-500 flex items-center justify-center text-white font-medium">
+                                {review.user?.name?.[0]?.toUpperCase() || 'U'}
+                            </div>
+                        )}
+                    </Link>
                     <div>
-                        <p className="font-semibold">{review.user?.name}</p>
+                        <Link href={`/profile/${review.user.username || review.user._id}`} className="hover:underline">
+                            <p className="font-semibold">{review.user?.name}</p>
+                        </Link>
                         <p className="text-sm text-muted-foreground">
                             {formatDate(review.createdAt)} • Book Review
                         </p>
@@ -267,61 +274,67 @@ export function ReviewCard({
                         </div>
 
                         {/* Book Footer Card */}
-                        <div className="pt-6 border-t mt-8">
-                            <p className="text-sm font-semibold text-muted-foreground mb-3">About this book:</p>
-                            <Link
-                                href={`/books/${review.book.slug || review.book._id}`}
-                                className="flex gap-4 p-4 rounded-xl border bg-muted/30 hover:bg-muted/50 transition-colors group max-w-sm"
-                            >
-                                <div className="w-20 h-28 bg-muted rounded-lg flex-shrink-0 flex items-center justify-center border overflow-hidden shadow-sm">
-                                    {review.book.coverImage ? (
-                                        <div className="relative w-full h-full">
-                                            <Image
-                                                src={review.book.coverImage}
-                                                alt={review.book.title}
-                                                fill
-                                                className="object-cover group-hover:scale-105 transition-transform duration-300"
-                                            />
-                                        </div>
-                                    ) : (
-                                        <span className="text-3xl">📚</span>
-                                    )}
-                                </div>
-                                <div className="flex flex-col justify-center">
-                                    <h4 className="font-bold group-hover:text-primary transition-colors line-clamp-2 leading-snug">
-                                        {review.book.title}
-                                    </h4>
-                                    <p className="text-sm text-muted-foreground mt-1">by {review.book.author}</p>
-                                </div>
-                            </Link>
-                        </div>
+                        {!hideBook && (
+                            <div className="pt-6 border-t mt-8">
+                                <p className="text-sm font-semibold text-muted-foreground mb-3">About this book:</p>
+                                <Link
+                                    href={`/books/${review.book.slug || review.book._id}`}
+                                    className="flex gap-4 p-4 rounded-xl border bg-muted/30 hover:bg-muted/50 transition-colors group max-w-sm"
+                                >
+                                    <div className="w-20 h-28 bg-muted rounded-lg flex-shrink-0 flex items-center justify-center border overflow-hidden shadow-sm">
+                                        {review.book.coverImage ? (
+                                            <div className="relative w-full h-full">
+                                                <Image
+                                                    src={review.book.coverImage}
+                                                    alt={review.book.title}
+                                                    fill
+                                                    className="object-cover group-hover:scale-105 transition-transform duration-300"
+                                                />
+                                            </div>
+                                        ) : (
+                                            <span className="text-3xl">📚</span>
+                                        )}
+                                    </div>
+                                    <div className="flex flex-col justify-center">
+                                        <h4 className="font-bold group-hover:text-primary transition-colors line-clamp-2 leading-snug">
+                                            {review.book.title}
+                                        </h4>
+                                        <p className="text-sm text-muted-foreground mt-1">by {review.book.author}</p>
+                                    </div>
+                                </Link>
+                            </div>
+                        )}
                     </div>
                 ) : (
                     /* Feed Layout: Book on left, Title/Rating on right */
                     <div className="flex gap-4">
-                        <Link
-                            href={`/books/${review.book.slug || review.book._id}`}
-                            className="w-24 h-32 bg-muted rounded-lg flex-shrink-0 flex items-center justify-center border hover:opacity-90 transition-opacity overflow-hidden"
-                        >
-                            {review.book.coverImage ? (
-                                <div className="relative w-full h-full">
-                                    <Image
-                                        src={review.book.coverImage}
-                                        alt={review.book.title}
-                                        fill
-                                        className="object-cover"
-                                    />
-                                </div>
-                            ) : (
-                                <span className="text-4xl">📚</span>
-                            )}
-                        </Link>
+                        {!hideBook && (
+                            <Link
+                                href={`/books/${review.book.slug || review.book._id}`}
+                                className="w-24 h-32 bg-muted rounded-lg flex-shrink-0 flex items-center justify-center border hover:opacity-90 transition-opacity overflow-hidden"
+                            >
+                                {review.book.coverImage ? (
+                                    <div className="relative w-full h-full">
+                                        <Image
+                                            src={review.book.coverImage}
+                                            alt={review.book.title}
+                                            fill
+                                            className="object-cover"
+                                        />
+                                    </div>
+                                ) : (
+                                    <span className="text-4xl">📚</span>
+                                )}
+                            </Link>
+                        )}
 
                         <div className="flex-1 flex flex-col justify-center">
-                            <Link href={`/books/${review.book.slug || review.book._id}`} className="hover:text-primary transition-colors block w-fit">
-                                <h3 className="font-bold text-lg leading-tight">{review.book.title}</h3>
-                            </Link>
-                            <p className="text-sm text-muted-foreground mb-2">by {review.book.author}</p>
+                            {!hideBook && (
+                                <Link href={`/books/${review.book.slug || review.book._id}`} className="hover:text-primary transition-colors block w-fit">
+                                    <h3 className="font-bold text-lg leading-tight">{review.book.title}</h3>
+                                </Link>
+                            )}
+                            {!hideBook && <p className="text-sm text-muted-foreground mb-2">by {review.book.author}</p>}
 
                             <div className="flex items-center gap-1 mb-2">
                                 {[1, 2, 3, 4, 5].map((star) => (
@@ -344,6 +357,15 @@ export function ReviewCard({
                                         {review.title}
                                     </h4>
                                 </Link>
+                            )}
+
+                            {review.content && (
+                                <div className="mt-2 text-sm text-muted-foreground line-clamp-3">
+                                    <div
+                                        className="prose prose-sm dark:prose-invert max-w-full"
+                                        dangerouslySetInnerHTML={{ __html: generateHtml(review.content) }}
+                                    />
+                                </div>
                             )}
                         </div>
                     </div>

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import dbConnect from '@/lib/mongodb';
 import Book from '@/models/Book';
+import { revalidatePath, revalidateTag } from 'next/cache';
 
 export const dynamic = 'force-dynamic';
 
@@ -97,7 +98,8 @@ export async function PATCH(
         // 3. Whitelist allowed fields to prevent mass-assignment
         const allowedFields = [
             'title', 'description', 'author', 'category', 'tags',
-            'publishedDate', 'condition', 'price', 'images', 'stock', 'status'
+            'publishedDate', 'condition', 'price', 'images', 'stock', 'status',
+            'coverImage', 'pdfUrl', 'publisher', 'isbn', 'buyingLink'
         ];
 
         const updateDoc: any = {};
@@ -106,6 +108,11 @@ export async function PATCH(
                 updateDoc[field] = body[field];
             }
         });
+
+        // Ensure buyingLink is explicitly handled
+        if (body.buyingLink !== undefined) {
+            updateDoc.buyingLink = body.buyingLink;
+        }
 
         // 4. Perform the update
         const updatedBook = await Book.findByIdAndUpdate(
@@ -117,6 +124,12 @@ export async function PATCH(
             { new: true, runValidators: true, context: 'query' }
         );
 
+        // 5. Revalidate cache
+        revalidatePath('/books');
+        revalidatePath(`/books/${slug}`);
+        revalidatePath(`/books/${params.slug}`);
+        revalidateTag('books', 'default');
+        
         return NextResponse.json({
             book: updatedBook,
             message: 'Book updated successfully'
@@ -177,6 +190,12 @@ export async function DELETE(
         }
 
         await Book.findByIdAndDelete(book._id);
+
+        // Revalidate cache
+        revalidatePath('/books', 'page');
+        revalidatePath(`/books/${slug}`, 'page');
+        revalidatePath(`/books/${params.slug}`, 'page');
+        revalidateTag('books', 'default');
 
         return NextResponse.json({ message: 'Book deleted successfully' });
 

@@ -9,6 +9,7 @@ export async function GET(request: NextRequest) {
 
         const { searchParams } = new URL(request.url);
         const userId = searchParams.get('userId');
+        const bookId = searchParams.get('bookId');
         const status = searchParams.get('status');
         const category = searchParams.get('category');
         const author = searchParams.get('author');
@@ -30,6 +31,10 @@ export async function GET(request: NextRequest) {
         }
 
         let filter: any = { user: targetUserId };
+
+        if (bookId) {
+            filter.book = bookId;
+        }
 
         if (status) {
             filter.status = status;
@@ -148,6 +153,73 @@ export async function POST(request: NextRequest) {
         console.error('Error adding to library:', error);
         return NextResponse.json(
             { error: 'Failed to update library' },
+            { status: 500 }
+        );
+    }
+}
+
+export async function DELETE(request: NextRequest) {
+    try {
+        const session = await auth();
+
+        if (!session?.user?.id) {
+            return NextResponse.json(
+                { error: 'Unauthorized' },
+                { status: 401 }
+            );
+        }
+
+        const { bookId } = await request.json();
+
+        if (!bookId) {
+            return NextResponse.json(
+                { error: 'Book ID is required' },
+                { status: 400 }
+            );
+        }
+
+        const mongoose = await dbConnect();
+
+        // Start a session for the transaction to ensure atomicity
+        const dbSession = await mongoose.startSession();
+        dbSession.startTransaction();
+
+        try {
+            // Atomic delete that returns the document, preventing TOCTOU issues
+            const deletedItem = await UserLibrary.findOneAndDelete(
+                { user: session.user.id, book: bookId },
+                { session: dbSession }
+            );
+
+            if (deletedItem && deletedItem.isOwned) {
+                // Decrement copies ONLY if the deleted item was owned, within the same transaction
+                const Book = (await import('@/models/Book')).default;
+                await Book.findByIdAndUpdate(
+                    bookId, 
+                    { $inc: { copies: -1 } },
+                    { session: dbSession }
+                );
+            }
+
+            // Commit all changes atomically
+            await dbSession.commitTransaction();
+
+            return NextResponse.json(
+                { library: null, message: 'Removed from library successfully' },
+                { status: 200 }
+            );
+        } catch (error) {
+            // Abort the transaction if any part of the sequence fails
+            await dbSession.abortTransaction();
+            throw error;
+        } finally {
+            // Always close the session to release resources
+            dbSession.endSession();
+        }
+    } catch (error: any) {
+        console.error('Error removing from library:', error);
+        return NextResponse.json(
+            { error: 'Failed to remove from library' },
             { status: 500 }
         );
     }

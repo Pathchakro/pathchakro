@@ -18,6 +18,7 @@ import { LoginModal } from '@/components/auth/LoginModal';
 interface CreateReviewDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
+    initialBook?: Book | null;
 }
 
 interface Book {
@@ -27,15 +28,22 @@ interface Book {
     coverImage?: string;
 }
 
-export function CreateReviewDialog({ open, onOpenChange }: CreateReviewDialogProps) {
+export function CreateReviewDialog({ open, onOpenChange, initialBook }: CreateReviewDialogProps) {
     const { checkAuth, showProfileModal, setShowProfileModal, showLoginModal, setShowLoginModal } = useAuthProtection({
         requireProfileCompletion: true,
         requireAuth: false,
         checkOnMount: false
     });
 
-    const [selectedBook, setSelectedBook] = useState<Book | null>(null);
+    const [selectedBook, setSelectedBook] = useState<Book | null>(initialBook || null);
     const [rating, setRating] = useState(0);
+
+    // Update selectedBook when initialBook changes
+    useEffect(() => {
+        if (initialBook) {
+            setSelectedBook(initialBook);
+        }
+    }, [initialBook]);
     const [canPublish, setCanPublish] = useState(true);
 
     useEffect(() => {
@@ -61,7 +69,8 @@ export function CreateReviewDialog({ open, onOpenChange }: CreateReviewDialogPro
         if (savedDraft) {
             try {
                 const parsed = JSON.parse(savedDraft);
-                if (parsed.selectedBook) setSelectedBook(parsed.selectedBook);
+                // Only use draft book if no initialBook was provided
+                if (parsed.selectedBook && !initialBook) setSelectedBook(parsed.selectedBook);
                 if (parsed.rating) setRating(parsed.rating);
                 if (parsed.title) setTitle(parsed.title);
                 if (parsed.content) setContent(parsed.content);
@@ -70,7 +79,7 @@ export function CreateReviewDialog({ open, onOpenChange }: CreateReviewDialogPro
                 console.error('Failed to parse draft review', e);
             }
         }
-    }, []);
+    }, [initialBook]);
 
     // Save draft to localStorage whenever state changes
     useEffect(() => {

@@ -1,28 +1,24 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Book, ArrowLeft } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Book as BookIcon, ArrowLeft, Loader2, Upload } from 'lucide-react';
 import { z } from 'zod';
 import Link from 'next/link';
 import { toast } from 'sonner';
+import { useSession } from 'next-auth/react';
 import { ImageUploader } from '@/components/uploads/ImageUploader';
-import { Loader2, Upload } from 'lucide-react';
-import { Select } from "@/components/ui/select";
-
-import { WRITERS_LIST } from '@/lib/constants';
 import { AuthorSearch } from '@/components/books/AuthorSearch';
 import { useDynamicConfig } from '@/hooks/useDynamicConfig';
 import AuthGuard from '@/components/auth/AuthGuard';
-
-// const CATEGORIES = BOOK_CATEGORIES; // Removed as it's fetched dynamically
+import LoadingSpinner from '@/components/ui/Loading';
 
 const bookSchema = z.object({
     title: z.string().min(1, 'Title is required'),
@@ -32,16 +28,24 @@ const bookSchema = z.object({
     coverImage: z.string().optional(),
     pdfUrl: z.string().optional(),
     description: z.string().optional(),
-    buyingLink: z.string().url('Please enter a valid URL').optional().or(z.literal('')),
+    buyingLink: z.string().optional().or(z.literal('')),
 });
 
 type BookData = z.infer<typeof bookSchema>;
 
-export default function AddBookPage() {
+export default function EditBookPage() {
     const router = useRouter();
-    const [isLoading, setIsLoading] = useState(false);
+    const params = useParams();
+    const slug = params.slug as string;
+
+    const [isLoading, setIsLoading] = useState(true);
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const [uploadingPdf, setUploadingPdf] = useState(false);
     const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+    const [bookId, setBookId] = useState<string | null>(null);
+    const [bookData, setBookData] = useState<any>(null);
+    const [initialFieldValues, setInitialFieldValues] = useState<any>({});
+    const { data: session } = useSession();
 
     // Dynamic config
     const { categories } = useDynamicConfig();
@@ -51,12 +55,68 @@ export default function AddBookPage() {
         handleSubmit,
         setValue,
         watch,
+        reset,
         formState: { errors },
     } = useForm<BookData>({
         resolver: zodResolver(bookSchema),
     });
 
     const coverImage = watch('coverImage');
+
+    useEffect(() => {
+        if (slug) {
+            fetchBook();
+        }
+    }, [slug]);
+
+    const fetchBook = async () => {
+        try {
+            const response = await fetch(`/api/books/${slug}?t=${Date.now()}`);
+            const data = await response.json();
+
+            if (!response.ok) {
+                toast.error(data.error || 'Book not found');
+                router.push('/books');
+                return;
+            }
+
+            if (data.book) {
+                const book = data.book;
+                setBookId(book._id);
+                reset({
+                    title: book.title || '',
+                    author: book.author || '',
+                    publisher: book.publisher || '',
+                    isbn: book.isbn || '',
+                    coverImage: book.coverImage || '',
+                    pdfUrl: book.pdfUrl || '',
+                    description: book.description || '',
+                    buyingLink: book.buyingLink || '',
+                });
+                setInitialFieldValues({
+                    title: book.title || '',
+                    author: book.author || '',
+                    publisher: book.publisher || '',
+                    isbn: book.isbn || '',
+                    coverImage: book.coverImage || '',
+                    pdfUrl: book.pdfUrl || '',
+                    description: book.description || '',
+                    buyingLink: book.buyingLink || '',
+                    category: book.category || []
+                });
+                setBookData(book);
+                setSelectedCategories(book.category || []);
+            } else {
+                toast.error('Book not found');
+                router.push('/books');
+            }
+        } catch (error) {
+            console.error('Error fetching book:', error);
+            toast.error('Failed to load book data');
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     const toggleCategory = (category: string) => {
         setSelectedCategories(prev =>
@@ -67,11 +127,11 @@ export default function AddBookPage() {
     };
 
     const onSubmit = async (data: BookData) => {
-        setIsLoading(true);
+        setIsSubmitting(true);
 
         try {
-            const response = await fetch('/api/books', {
-                method: 'POST',
+            const response = await fetch(`/api/books/${slug}`, {
+                method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json',
                 },
@@ -84,36 +144,64 @@ export default function AddBookPage() {
             const result = await response.json();
 
             if (!response.ok) {
-                toast.error(result.error || 'Failed to add book');
+                toast.error(result.error || 'Failed to update book');
                 return;
             }
 
-            toast.success(result.message || 'Book added successfully!');
+            toast.success(result.message || 'Book updated successfully!');
             router.push(`/books/${result.book.slug || result.book._id}`);
+            router.refresh();
         } catch (err: any) {
             toast.error(err.message || 'An error occurred. Please try again.');
         } finally {
-            setIsLoading(false);
+            setIsSubmitting(false);
         }
     };
+
+    const isFieldDisabled = (fieldName: string) => {
+        if (isSubmitting) return true;
+        
+        // Admins and owners can edit everything
+        const isOwnerOrAdmin = session?.user && (
+            (bookData?.addedBy && (typeof bookData.addedBy === 'string' ? bookData.addedBy === session.user.id : bookData.addedBy._id === session.user.id)) ||
+            session.user.role === 'admin' ||
+            (session.user as any).role === 'super-admin'
+        );
+        
+        if (isOwnerOrAdmin) return false;
+        
+        // Others can only edit if the field was empty
+        const initialValue = initialFieldValues[fieldName];
+        if (fieldName === 'category') {
+            return initialValue && initialValue.length > 0;
+        }
+        return !!initialValue;
+    };
+
+    if (isLoading) {
+        return (
+            <div className="max-w-7xl mx-auto p-4">
+                <LoadingSpinner />
+            </div>
+        );
+    }
 
     return (
         <AuthGuard>
             <div className="max-w-3xl mx-auto p-4">
-                <Link href="/books" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-4">
+                <Link href={`/books/${slug}`} className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-4">
                     <ArrowLeft className="h-4 w-4" />
-                    Back to Books
+                    Back to Book
                 </Link>
 
                 <Card>
                     <CardHeader>
                         <div className="flex items-center gap-3">
                             <div className="h-12 w-12 rounded-full bg-blue-500 flex items-center justify-center">
-                                <Book className="h-6 w-6 text-white" />
+                                <BookIcon className="h-6 w-6 text-white" />
                             </div>
                             <div>
-                                <CardTitle className="text-2xl">Add New Book</CardTitle>
-
+                                <CardTitle className="text-2xl">Edit Book</CardTitle>
                             </div>
                         </div>
                     </CardHeader>
@@ -123,12 +211,12 @@ export default function AddBookPage() {
 
                             <div className="space-y-2">
                                 <Label htmlFor="title">Book Title *</Label>
-                                <Input
-                                    id="title"
-                                    placeholder="Enter book title"
-                                    {...register('title')}
-                                    disabled={isLoading}
-                                />
+                                    <Input
+                                        id="title"
+                                        placeholder="Enter book title"
+                                        {...register('title')}
+                                        disabled={isFieldDisabled('title')}
+                                    />
                                 {errors.title && (
                                     <p className="text-sm text-red-500">{errors.title.message}</p>
                                 )}
@@ -138,8 +226,9 @@ export default function AddBookPage() {
                                 <div className="space-y-2">
                                     <Label htmlFor="author">Author</Label>
                                     <AuthorSearch
-                                        value={watch('author')}
+                                        value={watch('author') || ''}
                                         onSelect={(name) => setValue('author', name, { shouldValidate: true })}
+                                        disabled={isFieldDisabled('author')}
                                     />
                                     {errors.author && (
                                         <p className="text-sm text-red-500">{errors.author.message}</p>
@@ -152,7 +241,7 @@ export default function AddBookPage() {
                                         id="publisher"
                                         placeholder="Publisher name"
                                         {...register('publisher')}
-                                        disabled={isLoading}
+                                        disabled={isFieldDisabled('publisher')}
                                     />
                                 </div>
                             </div>
@@ -164,17 +253,17 @@ export default function AddBookPage() {
                                         id="isbn"
                                         placeholder="ISBN number"
                                         {...register('isbn')}
-                                        disabled={isLoading}
+                                        disabled={isFieldDisabled('isbn')}
                                     />
                                 </div>
 
                                 <div className="space-y-2">
                                     <Label>PDF Book File (Optional)</Label>
                                     <div className="flex gap-2 items-center">
-                                        <Input
+                                    <Input
                                             type="file"
                                             accept=".pdf"
-                                            disabled={isLoading || uploadingPdf}
+                                            disabled={isFieldDisabled('pdfUrl') || uploadingPdf}
                                             onChange={async (e) => {
                                                 const file = e.target.files?.[0];
                                                 if (!file) return;
@@ -196,13 +285,15 @@ export default function AddBookPage() {
 
                                                     const data = await res.json();
 
-                                                    if (!res.ok) throw new Error(data.error);
+                                                    if (!res.ok) {
+                                                        throw new Error(data.error || data.message || 'Unknown upload error');
+                                                    }
 
                                                     setValue('pdfUrl', data.url);
                                                     toast.success('PDF uploaded successfully');
-                                                } catch (error) {
-                                                    console.error(error);
-                                                    toast.error('Failed to upload PDF');
+                                                } catch (error: any) {
+                                                    console.error('PDF Upload Error:', error);
+                                                    toast.error(error.message || 'Failed to upload PDF');
                                                 } finally {
                                                     setUploadingPdf(false);
                                                 }
@@ -218,14 +309,13 @@ export default function AddBookPage() {
                                 </div>
                             </div>
 
-
-
                             <div className="space-y-2">
                                 <Label>Cover Image</Label>
                                 <ImageUploader
                                     onUpload={(url) => setValue('coverImage', url)}
                                     currentImage={coverImage}
                                     variant="cover"
+                                    disabled={isFieldDisabled('coverImage')}
                                 />
                             </div>
 
@@ -236,7 +326,7 @@ export default function AddBookPage() {
                                     placeholder="Brief description of the book..."
                                     rows={4}
                                     {...register('description')}
-                                    disabled={isLoading}
+                                    disabled={isFieldDisabled('description')}
                                 />
                             </div>
 
@@ -247,7 +337,7 @@ export default function AddBookPage() {
                                     type="url"
                                     placeholder="https://rehaish.com/..."
                                     {...register('buyingLink')}
-                                    disabled={isLoading}
+                                    disabled={isFieldDisabled('buyingLink')}
                                 />
                                 {errors.buyingLink && (
                                     <p className="text-sm text-red-500">{errors.buyingLink.message}</p>
@@ -261,10 +351,17 @@ export default function AddBookPage() {
                                         <button
                                             key={category}
                                             type="button"
-                                            onClick={() => toggleCategory(category)}
+                                            onClick={() => {
+                                                if (!isFieldDisabled('category')) {
+                                                    toggleCategory(category);
+                                                }
+                                            }}
+                                            disabled={isFieldDisabled('category')}
                                             className={`px-3 py-2 text-sm rounded-lg border transition-colors ${selectedCategories.includes(category)
                                                 ? 'bg-primary text-primary-foreground border-primary'
-                                                : 'bg-background hover:bg-muted border-border'
+                                                : isFieldDisabled('category') 
+                                                    ? 'bg-muted text-muted-foreground border-border cursor-not-allowed opacity-70'
+                                                    : 'bg-background hover:bg-muted border-border'
                                                 }`}
                                         >
                                             {category}
@@ -287,16 +384,16 @@ export default function AddBookPage() {
                                 </Button>
                                 <Button
                                     type="submit"
-                                    disabled={isLoading}
+                                    disabled={isSubmitting}
                                     className="flex-1"
                                 >
-                                    {isLoading ? 'Adding Book...' : 'Add Book'}
+                                    {isSubmitting ? 'Updating Book...' : 'Update Book'}
                                 </Button>
                             </div>
                         </form>
                     </CardContent>
                 </Card>
-            </div >
+            </div>
         </AuthGuard>
     );
 }

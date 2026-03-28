@@ -6,11 +6,21 @@ import Image from 'next/image';
 interface BookCoverProps {
     src?: string;
     alt?: string;
-    className?: string; // Allow passing className for custom sizing/containers if needed, though mostly handled by parent
+    className?: string;
+    objectFit?: 'cover' | 'contain' | 'fill' | 'none' | 'scale-down';
 }
 
-export const BookCover = ({ src, alt = "Book cover", className }: BookCoverProps) => {
-    const [imgSrc, setImgSrc] = useState(src?.trim() ? src : '/assets/demobook.webp'); const [hasError, setHasError] = useState(false);
+const objectFitClasses = {
+    cover: 'object-cover',
+    contain: 'object-contain',
+    fill: 'object-fill',
+    none: 'object-none',
+    'scale-down': 'object-scale-down',
+};
+
+export const BookCover = ({ src, alt = "Book cover", className, objectFit }: BookCoverProps) => {
+    const [imgSrc, setImgSrc] = useState(src?.trim() ? src : '/assets/demobook.webp');
+    const [hasError, setHasError] = useState(false);
 
     useEffect(() => {
         setImgSrc(src?.trim() ? src : '/assets/demobook.webp');
@@ -22,7 +32,7 @@ export const BookCover = ({ src, alt = "Book cover", className }: BookCoverProps
             src={hasError ? '/assets/demobook.webp' : imgSrc}
             alt={alt}
             fill
-            className={`object-cover ${className || ''}`}
+            className={`${objectFitClasses[objectFit || 'cover']} ${className || ''}`}
             onError={() => setHasError(true)}
         />
     );

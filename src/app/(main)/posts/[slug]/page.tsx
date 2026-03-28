@@ -99,6 +99,7 @@ export default async function PostPage({ params }: PostPageProps) {
                 <PostCard
                     initialPost={serializedPost as any}
                     currentUserId={session?.user?.id}
+                    isDetailView={true}
                 />
             </div>
         );

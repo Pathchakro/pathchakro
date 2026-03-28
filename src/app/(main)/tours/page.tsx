@@ -14,7 +14,6 @@ import { useSession } from 'next-auth/react';
 import { LoginModal } from '@/components/auth/LoginModal';
 import LoadingSpinner from '@/components/ui/Loading';
 
-
 interface Tour {
     _id: string;
     organizer: {
@@ -63,6 +62,12 @@ export default function ToursPage() {
         }
     }, [session?.user?.id]);
 
+    useEffect(() => {
+        if (!session && activeTab !== 'all') {
+            setActiveTab('all');
+        }
+    }, [session, activeTab]);
+
     const fetchMyBookmarks = async () => {
         try {
             const userRes = await fetch(`/api/users/${session?.user?.id || 'me'}`);
@@ -103,7 +108,6 @@ export default function ToursPage() {
     };
 
     // We'll use a ref to track in-flight requests properly without triggering re-renders
-    // Using a ref specifically for this
     const inFlightRef = useRef<{ [key: string]: boolean }>({});
 
     const toggleBookmark = async (e: React.MouseEvent, tourId: string) => {
@@ -208,15 +212,34 @@ export default function ToursPage() {
                     </div>
                 </div>
 
-                {/* Tabs */}
-                <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full mb-6">
-                    <TabsList className="flex w-full overflow-x-auto overflow-y-hidden md:grid md:grid-cols-4 no-scrollbar h-auto md:h-10 py-1 md:py-0">
-                        <TabsTrigger value="all">All Tours</TabsTrigger>
-                        <TabsTrigger value="mine" disabled={!session?.user}>My Tours</TabsTrigger>
-                        <TabsTrigger value="booked" disabled={!session?.user}>Booked</TabsTrigger>
-                        <TabsTrigger value="favorites" disabled={!session?.user}>Favourites</TabsTrigger>
-                    </TabsList>
-                </Tabs>
+                {/* Tour Tabs - Mobile Select / Desktop Tabs */}
+                <div className="md:hidden mb-6">
+                    <Select
+                        value={activeTab}
+                        onChange={(e) => setActiveTab(e.target.value)}
+                        className="w-full bg-card font-medium"
+                    >
+                        <option value="all">All Tours</option>
+                        {session?.user && (
+                            <>
+                                <option value="mine">My Tours</option>
+                                <option value="booked">Booked</option>
+                                <option value="favorites">Favourites</option>
+                            </>
+                        )}
+                    </Select>
+                </div>
+
+                <div className="hidden md:block">
+                    <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full mb-6">
+                        <TabsList className="grid w-full grid-cols-4 h-10 py-0">
+                            <TabsTrigger value="all">All Tours</TabsTrigger>
+                            <TabsTrigger value="mine" disabled={!session?.user}>My Tours</TabsTrigger>
+                            <TabsTrigger value="booked" disabled={!session?.user}>Booked</TabsTrigger>
+                            <TabsTrigger value="favorites" disabled={!session?.user}>Favourites</TabsTrigger>
+                        </TabsList>
+                    </Tabs>
+                </div>
             </div>
 
             {/* Tours List */}

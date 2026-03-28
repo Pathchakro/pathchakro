@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -18,6 +18,7 @@ export default function BooksPage() {
     const [books, setBooks] = useState<BookItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
+    const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
     const [categoryFilter, setCategoryFilter] = useState('');
     const [libraryMap, setLibraryMap] = useState<Record<string, { status: string; isOwned: boolean }>>({});
     const [showLoginModal, setShowLoginModal] = useState(false);
@@ -39,19 +40,38 @@ export default function BooksPage() {
         fetchUserLibrary();
     }, []);
 
-    // Fetch books when page or search/category changes
+    // Debounce search query
     useEffect(() => {
-        fetchBooks(currentPage);
-    }, [currentPage]);
+        const timer = setTimeout(() => {
+            setDebouncedSearchQuery(searchQuery);
+        }, 500);
+        return () => clearTimeout(timer);
+    }, [searchQuery]);
 
-    // Reset to page 1 when category filter changes
+    const prevCategoryRef = useRef(categoryFilter);
+    const prevSearchRef = useRef(debouncedSearchQuery);
+
+    // Consolidated effect for fetching books and resetting page
     useEffect(() => {
-        if (currentPage !== 1) {
-            setCurrentPage(1);
+        const filtersChanged = prevCategoryRef.current !== categoryFilter || prevSearchRef.current !== debouncedSearchQuery;
+        
+        if (filtersChanged) {
+            prevCategoryRef.current = categoryFilter;
+            prevSearchRef.current = debouncedSearchQuery;
+            
+            // If filters changed, reset to page 1
+            // fetchBooks will be called by the page change if currentPage was not 1
+            // otherwise we call it manually here
+            if (currentPage !== 1) {
+                setCurrentPage(1);
+            } else {
+                fetchBooks(1);
+            }
         } else {
-            fetchBooks(1);
+            // Only page changed (or it was the initial load)
+            fetchBooks(currentPage);
         }
-    }, [categoryFilter]);
+    }, [currentPage, categoryFilter, debouncedSearchQuery]);
 
     const fetchUserLibrary = async () => {
         try {
@@ -100,11 +120,7 @@ export default function BooksPage() {
                 body: JSON.stringify({ bookId, status }),
             });
             if (res.ok) {
-                if (status) {
-                    toast.success(`Marked as ${status.replace(/-/g, ' ')}`);
-                } else {
-                    toast.success("Status removed");
-                }
+                toast.success(`Status updated: ${status.replace('-', ' ')}`);
                 setLibraryMap(prev => ({
                     ...prev,
                     [bookId]: { ...prev[bookId], status }
@@ -113,6 +129,7 @@ export default function BooksPage() {
                 toast.error("Failed to update status");
             }
         } catch (error) {
+            console.error('Error updating status:', error);
             toast.error("Something went wrong");
         }
     };
@@ -124,7 +141,7 @@ export default function BooksPage() {
             params.append('page', page.toString());
             params.append('limit', '20');
 
-            if (searchQuery) params.append('q', searchQuery);
+            if (debouncedSearchQuery) params.append('q', debouncedSearchQuery);
             if (categoryFilter) {
                 params.append('category', categoryFilter);
             }
@@ -147,13 +164,7 @@ export default function BooksPage() {
         }
     };
 
-    const handleSearch = () => {
-        if (currentPage !== 1) {
-            setCurrentPage(1);
-        } else {
-            fetchBooks(1);
-        }
-    };
+    // handleSearch removed as it's now automatic
 
     return (
         <div className="max-w-7xl mx-auto p-4 min-h-screen">
@@ -176,22 +187,22 @@ export default function BooksPage() {
                 </div>
 
                 {/* Search & Filters */}
-                <div className="grid grid-cols-1 md:grid-cols-12 gap-4 bg-muted/30 p-4 rounded-xl border">
-                    <div className="md:col-span-6 relative">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-muted/30 p-4 rounded-xl border">
+                    <div className="relative">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                         <Input
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
                             placeholder="Search by title or author..."
                             className="pl-10 h-11 bg-background"
                         />
                     </div>
 
-                    <div className="md:col-span-4">
+                    <div>
                         <Select
                             value={categoryFilter}
                             onChange={(e: any) => setCategoryFilter(e.target.value)}
+                            className="h-11 bg-card"
                         >
                             <option value="">All Categories</option>
                             {CATEGORIES.map((cat) => (
@@ -199,11 +210,6 @@ export default function BooksPage() {
                             ))}
                         </Select>
                     </div>
-
-                    <Button onClick={handleSearch} className="md:col-span-2 h-11">
-                        <Search className="h-4 w-4 mr-2" />
-                        Search
-                    </Button>
                 </div>
             </div>
 

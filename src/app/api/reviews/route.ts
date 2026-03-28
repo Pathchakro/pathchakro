@@ -57,7 +57,7 @@ export async function GET(request: NextRequest) {
 
         const reviews = await Review.find(filter)
             .populate('book', 'title author coverImage slug')
-            .populate('user', 'name image rankTier')
+            .populate('user', 'name image username rankTier')
             .sort({ createdAt: -1 })
             .limit(20)
             .lean();
@@ -165,7 +165,7 @@ export async function POST(request: NextRequest) {
 
         const populatedReview = await Review.findById(review._id)
             .populate('book', 'title author coverImage slug')
-            .populate('user', 'name image rankTier')
+            .populate('user', 'name image username rankTier')
             .lean();
 
         revalidatePath('/', 'layout');

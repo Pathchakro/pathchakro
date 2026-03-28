@@ -9,6 +9,7 @@ interface ImageUploaderProps {
     onUpload: (url: string) => void;
     currentImage?: string;
     variant?: 'avatar' | 'cover' | 'post';
+    disabled?: boolean;
     className?: string;
 }
 
@@ -16,6 +17,7 @@ export function ImageUploader({
     onUpload,
     currentImage,
     variant = 'avatar',
+    disabled,
     className = ''
 }: ImageUploaderProps) {
     const [preview, setPreview] = useState<string | null>(currentImage || null);
@@ -139,7 +141,7 @@ export function ImageUploader({
                     accept="image/*"
                     onChange={handleFileSelect}
                     className="absolute inset-0 opacity-0 cursor-pointer"
-                    disabled={isUploading}
+                    disabled={isUploading || disabled}
                 />
             </div>
 

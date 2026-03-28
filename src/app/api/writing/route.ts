@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
         }
 
         const projects = await WritingProject.find(filter)
-            .populate('author', 'name image rankTier')
+            .populate('author', 'name image username rankTier')
             .sort({ updatedAt: -1 })
             .lean();
 

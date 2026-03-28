@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import UserLibrary from '@/models/UserLibrary';
 import Book from '@/models/Book';
+import Review from '@/models/Review';
 
 export async function GET(request: NextRequest) {
     try {
@@ -57,18 +58,47 @@ export async function GET(request: NextRequest) {
         // 2. Fetch all books
         const books = await Book.find({}).sort({ createdAt: -1 }).lean();
 
+        // 3. Fetch reviews in bulk to mapping
+        const allReviews = await Review.find({})
+            .populate('user', 'name image username')
+            .lean();
+
+        // 4. Fetch all completed libraries with users to identify silent vs vocal readers
+        const allCompleted = await UserLibrary.find({ status: 'completed' })
+            .populate('user', 'name image username')
+            .lean();
+
         let totalReaders = 0;
         let activeBooks = 0;
         let monthlyCompleted = 0;
 
-        // 3. Merge stats with books
+        // 5. Merge stats with books
         const report = books.map((book: any) => {
-            const bookStats = stats.find(s => s._id.toString() === book._id.toString());
+            const bookId = book._id.toString();
+            const bookStats = stats.find(s => s._id.toString() === bookId);
 
             const reading = bookStats ? bookStats.readingCount : 0;
             const wantToRead = bookStats ? bookStats.wantToReadCount : 0;
             const completed = bookStats ? bookStats.completedCount : 0;
             const monthly = bookStats ? bookStats.monthlyCompletedCount : 0;
+
+            const bookReviews = allReviews.filter((r: any) => r.book.toString() === bookId);
+            const bookCompletions = allCompleted.filter((l: any) => l.book.toString() === bookId);
+
+            // Vocal readers: Completed AND reviewed
+            const reviewerUserIds = new Set(bookReviews.map((r: any) => r.user?._id?.toString()).filter(Boolean));
+            const vocalReaders = bookCompletions
+                .filter((c: any) => c.user && reviewerUserIds.has(c.user._id.toString()))
+                .map((c: any) => c.user);
+            
+            // Silent readers: Completed but NOT in reviewer list
+            const silentReaders = bookCompletions
+                .filter((c: any) => c.user && !reviewerUserIds.has(c.user._id.toString()))
+                .map((c: any) => c.user);
+
+            // All Reviewers (might include people who haven't "completed" but reviewed?)
+            // Usually review implies completion, but we show all.
+            const allReviewers = bookReviews.map((r: any) => r.user).filter(Boolean);
 
             totalReaders += reading;
             if (reading > 0) activeBooks++;
@@ -77,13 +107,17 @@ export async function GET(request: NextRequest) {
             return {
                 _id: book._id,
                 title: book.title,
-                slug: book.slug, // Add Slug
+                slug: book.slug,
                 author: book.author,
                 coverImage: book.coverImage,
-                copies: book.copies || 0, // Availability count
+                copies: book.copies || 0,
                 reading,
                 wantToRead,
                 completed,
+                reviewCount: bookReviews.length,
+                silentReaders,
+                vocalReaders,
+                allReviewers,
             };
         });
 

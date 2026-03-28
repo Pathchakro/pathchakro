@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { formatDate } from '@/lib/utils';
+import { formatDate, extractPlainText } from '@/lib/utils';
 import { Heart, MessageCircle, Share2, Bookmark, MoreHorizontal, Pencil, Trash2, EyeOff } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { toast } from 'sonner';
@@ -23,6 +23,7 @@ export interface Post {
     author: {
         _id: string;
         name: string;
+        username?: string;
         image?: string;
         rankTier?: string;
     };
@@ -46,9 +47,10 @@ interface PostCardProps {
     currentUserId?: string;
     onDelete?: (postId: string) => void;
     onToggleBookmark?: (postId: string, isBookmarked: boolean) => void;
+    isDetailView?: boolean;
 }
 
-export function PostCard({ initialPost, currentUserId, onDelete, initialIsBookmarked = false, onToggleBookmark }: PostCardProps) {
+export function PostCard({ initialPost, currentUserId, onDelete, initialIsBookmarked = false, onToggleBookmark, isDetailView = false }: PostCardProps) {
     const [post, setPost] = useState<Post>(initialPost);
     const [isBookmarked, setIsBookmarked] = useState(initialIsBookmarked);
     const [currentSlide, setCurrentSlide] = useState(0);
@@ -138,7 +140,8 @@ export function PostCard({ initialPost, currentUserId, onDelete, initialIsBookma
         if (isSharing) return;
         setIsSharing(true);
 
-        const shareText = `Check out this post on Pathchakro:\n${post.title || 'New Post'}\n\n${post.content.substring(0, 100)}...`;
+        const plainText = extractPlainText(post.content);
+        const shareText = `Check out this post on Pathchakro:\n${post.title || 'New Post'}\n\n${plainText.substring(0, 100)}...`;
         // Use slug if available, fallback to _id
         const shareUrl = `${window.location.origin}/posts/${(post as any).slug || post._id}`;
 
@@ -237,7 +240,7 @@ export function PostCard({ initialPost, currentUserId, onDelete, initialIsBookma
             {/* Post Header */}
             <div className="flex items-start justify-between mb-4">
                 <div className="flex items-start gap-3">
-                    <Link href={`/profile/${post.author._id}`}>
+                    <Link href={`/profile/${post.author.username || post.author._id}`}>
                         {post.author.image ? (
                             <div className="h-10 w-10 rounded-full overflow-hidden relative">
                                 <Image
@@ -254,7 +257,7 @@ export function PostCard({ initialPost, currentUserId, onDelete, initialIsBookma
                         )}
                     </Link>
                     <div>
-                        <Link href={`/profile/${post.author._id}`} className="font-semibold hover:underline">
+                        <Link href={`/profile/${post.author.username || post.author._id}`} className="font-semibold hover:underline">
                             {post.author.name}
                         </Link>
                         <p className="text-sm text-muted-foreground">
@@ -310,10 +313,31 @@ export function PostCard({ initialPost, currentUserId, onDelete, initialIsBookma
 
             {/* Post Content */}
             <div className="mb-4">
-                <div
-                    className="ProseMirror prose prose-lg dark:prose-invert prose-headings:font-title font-sans leading-normal focus:outline-none max-w-full"
-                    dangerouslySetInnerHTML={{ __html: generateHtml(post.content) }}
-                />
+                {(() => {
+                    const plainText = extractPlainText(post.content);
+                    const isLong = plainText.length > 150;
+
+                    if (isLong && !isDetailView) {
+                        return (
+                            <div className="ProseMirror leading-relaxed whitespace-pre-wrap !p-0">
+                                {plainText.substring(0, 150)}...
+                                <Link
+                                    href={`/posts/${(post as any).slug || post._id}`}
+                                    className="text-primary font-medium hover:underline ml-1 inline-block"
+                                >
+                                    Read more
+                                </Link>
+                            </div>
+                        );
+                    }
+
+                    return (
+                        <div
+                            className="ProseMirror prose prose-lg dark:prose-invert prose-headings:font-title font-sans leading-normal focus:outline-none max-w-full"
+                            dangerouslySetInnerHTML={{ __html: generateHtml(post.content) }}
+                        />
+                    );
+                })()}
 
                 {/* Image Slider */}
                 {post.media && post.media.length > 0 && (

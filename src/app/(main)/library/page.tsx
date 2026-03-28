@@ -174,43 +174,55 @@ export default function MyLibraryPage() {
                 </h1>
 
                 {/* Filters */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
                     <div className="relative">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input
                             value={authorFilter}
                             onChange={(e) => setAuthorFilter(e.target.value)}
                             placeholder="Search by title or author..."
-                            className="pl-10"
+                            className="pl-10 h-10"
                         />
                     </div>
 
                     <Select
                         value={categoryFilter}
                         onChange={(e) => setCategoryFilter(e.target.value)}
+                        className="h-10 bg-card"
                     >
                         <option value="">All Categories</option>
                         {CATEGORIES.map((cat) => (
                             <option key={cat} value={cat}>{cat}</option>
                         ))}
                     </Select>
-
-                    <Button onClick={fetchLibrary} variant="outline">
-                        <Search className="h-4 w-4 mr-2" />
-                        Search
-                    </Button>
                 </div>
 
-                {/* Status Tabs */}
-                <Tabs value={statusTab} onValueChange={setStatusTab}>
-                    <TabsList className="flex w-full overflow-x-auto overflow-y-hidden md:grid md:grid-cols-5 no-scrollbar h-auto md:h-10 py-1 md:py-0">
-                        <TabsTrigger value="all">All ({counts.all})</TabsTrigger>
-                        <TabsTrigger value="owned">My Collection ({counts.owned})</TabsTrigger>
-                        <TabsTrigger value="want-to-read">Want to Read ({counts['want-to-read']})</TabsTrigger>
-                        <TabsTrigger value="reading">Reading ({counts.reading})</TabsTrigger>
-                        <TabsTrigger value="completed">Completed ({counts.completed})</TabsTrigger>
-                    </TabsList>
-                </Tabs>
+                {/* Status Tabs/Select */}
+                <div className="md:hidden mb-4">
+                    <Select
+                        value={statusTab}
+                        onChange={(e) => setStatusTab(e.target.value)}
+                        className="w-full bg-card font-medium"
+                    >
+                        <option value="all">All ({counts.all})</option>
+                        <option value="owned">My Collection ({counts.owned})</option>
+                        <option value="want-to-read">Want to Read ({counts['want-to-read']})</option>
+                        <option value="reading">Reading ({counts.reading})</option>
+                        <option value="completed">Completed ({counts.completed})</option>
+                    </Select>
+                </div>
+
+                <div className="hidden md:block">
+                    <Tabs value={statusTab} onValueChange={setStatusTab}>
+                        <TabsList className="md:grid md:grid-cols-5 no-scrollbar h-auto md:h-10 py-1 md:py-0">
+                            <TabsTrigger value="all">All ({counts.all})</TabsTrigger>
+                            <TabsTrigger value="owned">My Collection ({counts.owned})</TabsTrigger>
+                            <TabsTrigger value="want-to-read">Want to Read ({counts['want-to-read']})</TabsTrigger>
+                            <TabsTrigger value="reading">Reading ({counts.reading})</TabsTrigger>
+                            <TabsTrigger value="completed">Completed ({counts.completed})</TabsTrigger>
+                        </TabsList>
+                    </Tabs>
+                </div>
             </div>
 
             {/* Books Grid */}

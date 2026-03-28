@@ -19,7 +19,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import LoadingSpinner from '@/components/ui/Loading';
-
+import { Pagination } from '@/components/ui/Pagination';
 
 interface ActiveBook {
     _id: string;
@@ -46,10 +46,17 @@ export default function UserReadingStatusPage() {
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const [filter, setFilter] = useState('all'); // all, active, idle
+    const [currentPage, setCurrentPage] = useState(1);
+    const pageSize = 10;
 
     useEffect(() => {
         fetchUsers();
     }, []);
+
+    // Reset page when filters change
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchQuery, filter]);
 
     const fetchUsers = async () => {
         try {
@@ -86,6 +93,11 @@ export default function UserReadingStatusPage() {
     };
 
     const filteredUsers = getFilteredUsers();
+    const totalPages = Math.ceil(filteredUsers.length / pageSize);
+    const paginatedUsers = filteredUsers.slice(
+        (currentPage - 1) * pageSize,
+        currentPage * pageSize
+    );
 
     return (
         <div className="max-w-7xl mx-auto p-4">
@@ -147,79 +159,92 @@ export default function UserReadingStatusPage() {
                 </CardHeader>
                 <CardContent>
                     {loading ? (
-                        <LoadingSpinner />
+                        <div className="flex justify-center py-20">
+                            <LoadingSpinner />
+                        </div>
                     ) : (
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead className="w-[250px]">User</TableHead>
-                                    <TableHead>Currently Reading</TableHead>
-                                    <TableHead className="text-right w-[100px]">Count</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {filteredUsers.length === 0 ? (
-                                    <TableRow>
-                                        <TableCell colSpan={3} className="text-center py-12 text-muted-foreground">
-                                            No users found based on your filters.
-                                        </TableCell>
-                                    </TableRow>
-                                ) : (
-                                    filteredUsers.map((stat) => (
-                                        <TableRow key={stat.user._id}>
-                                            <TableCell className="align-top py-4">
-                                                <Link href={`/profile/${stat.user._id}`}>
-                                                    <div className="flex items-center gap-3 group cursor-pointer hover:bg-muted/50 p-2 -ml-2 rounded-lg transition-colors">
-                                                        <Avatar>
-                                                            <AvatarImage src={stat.user.image} />
-                                                            <AvatarFallback>{stat.user.name[0]?.toUpperCase()}</AvatarFallback>
-                                                        </Avatar>
-                                                        <div>
-                                                            <div className="font-medium group-hover:text-primary transition-colors">{stat.user.name}</div>
-                                                            <div className="text-xs text-muted-foreground line-clamp-1">{stat.user.email}</div>
-                                                        </div>
-                                                    </div>
-                                                </Link>
-                                            </TableCell>
-                                            <TableCell className="align-top py-4">
-                                                {stat.isIdle ? (
-                                                    <div className="flex items-center gap-2 text-muted-foreground italic text-sm py-2">
-                                                        <UserX className="h-4 w-4" />
-                                                        Not reading anything currently
-                                                    </div>
-                                                ) : (
-                                                    <div className="flex flex-wrap gap-4">
-                                                        {stat.activeBooks.map((book) => (
-                                                            <Link href={`/books/${book.slug || book._id}`} key={book._id} className="w-full max-w-sm">
-                                                                <div className="flex gap-3 bg-muted/30 p-2 rounded-md border w-full hover:bg-muted transition-colors cursor-pointer group">
-                                                                    <div className="h-16 w-10 bg-secondary rounded overflow-hidden flex-shrink-0 group-hover:shadow-sm transition-all relative">
-                                                                        {book.coverImage ? (
-                                                                            <Image src={book.coverImage} alt={book.title} fill className="object-cover" />
-                                                                        ) : (
-                                                                            <div className="h-full w-full flex items-center justify-center bg-indigo-50 text-indigo-300">
-                                                                                <BookOpen className="h-4 w-4" />
-                                                                            </div>
-                                                                        )}
-                                                                    </div>
-                                                                    <div className="overflow-hidden flex-1">
-                                                                        <p className="font-medium text-sm line-clamp-1 group-hover:text-primary transition-colors" title={book.title}>{book.title}</p>
-                                                                        <p className="text-xs text-muted-foreground line-clamp-1">{book.author}</p>
-                                                                        <Badge variant="outline" className="mt-1 h-5 text-[10px] bg-blue-50 text-blue-600 border-blue-100">Reading</Badge>
-                                                                    </div>
-                                                                </div>
-                                                            </Link>
-                                                        ))}
-                                                    </div>
-                                                )}
-                                            </TableCell>
-                                            <TableCell className="text-right align-top py-4 font-medium">
-                                                {stat.readingCount > 0 ? stat.readingCount : '-'}
-                                            </TableCell>
+                        <div className="space-y-6">
+                            <div className="overflow-x-auto">
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead className="w-[250px]">User</TableHead>
+                                            <TableHead>Currently Reading</TableHead>
+                                            <TableHead className="text-right w-[100px]">Count</TableHead>
                                         </TableRow>
-                                    ))
-                                )}
-                            </TableBody>
-                        </Table>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {paginatedUsers.length === 0 ? (
+                                            <TableRow>
+                                                <TableCell colSpan={3} className="text-center py-12 text-muted-foreground">
+                                                    No users found based on your filters.
+                                                </TableCell>
+                                            </TableRow>
+                                        ) : (
+                                            paginatedUsers.map((stat) => (
+                                                <TableRow key={stat.user._id}>
+                                                    <TableCell className="align-top py-4">
+                                                        <Link href={`/profile/${stat.user._id}`}>
+                                                            <div className="flex items-center gap-3 group cursor-pointer hover:bg-muted/50 p-2 -ml-2 rounded-lg transition-colors">
+                                                                <Avatar>
+                                                                    <AvatarImage src={stat.user.image} />
+                                                                    <AvatarFallback>{stat.user.name[0]?.toUpperCase()}</AvatarFallback>
+                                                                </Avatar>
+                                                                <div>
+                                                                    <div className="font-medium group-hover:text-primary transition-colors">{stat.user.name}</div>
+                                                                    <div className="text-xs text-muted-foreground line-clamp-1">{stat.user.email}</div>
+                                                                </div>
+                                                            </div>
+                                                        </Link>
+                                                    </TableCell>
+                                                    <TableCell className="align-top py-4">
+                                                        {stat.isIdle ? (
+                                                            <div className="flex items-center gap-2 text-muted-foreground italic text-sm py-2">
+                                                                <UserX className="h-4 w-4" />
+                                                                Not reading anything currently
+                                                            </div>
+                                                        ) : (
+                                                            <div className="flex flex-wrap gap-4">
+                                                                {stat.activeBooks.map((book) => (
+                                                                    <Link href={`/books/${book.slug || book._id}`} key={book._id} className="w-full max-w-sm">
+                                                                        <div className="flex gap-3 bg-muted/30 p-2 rounded-md border w-full hover:bg-muted transition-colors cursor-pointer group">
+                                                                            <div className="h-16 w-10 bg-secondary rounded overflow-hidden flex-shrink-0 group-hover:shadow-sm transition-all relative">
+                                                                                {book.coverImage ? (
+                                                                                    <Image src={book.coverImage} alt={book.title} fill className="object-cover" />
+                                                                                ) : (
+                                                                                    <div className="h-full w-full flex items-center justify-center bg-indigo-50 text-indigo-300">
+                                                                                        <BookOpen className="h-4 w-4" />
+                                                                                    </div>
+                                                                                )}
+                                                                            </div>
+                                                                            <div className="overflow-hidden flex-1">
+                                                                                <p className="font-medium text-sm line-clamp-1 group-hover:text-primary transition-colors" title={book.title}>{book.title}</p>
+                                                                                <p className="text-xs text-muted-foreground line-clamp-1">{book.author}</p>
+                                                                                <Badge variant="outline" className="mt-1 h-5 text-[10px] bg-blue-50 text-blue-600 border-blue-100">Reading</Badge>
+                                                                            </div>
+                                                                        </div>
+                                                                    </Link>
+                                                                ))}
+                                                            </div>
+                                                        )}
+                                                    </TableCell>
+                                                    <TableCell className="text-right align-top py-4 font-medium">
+                                                        {stat.readingCount > 0 ? stat.readingCount : '-'}
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))
+                                        )}
+                                    </TableBody>
+                                </Table>
+                            </div>
+                            {totalPages > 1 && (
+                                <Pagination 
+                                    currentPage={currentPage} 
+                                    totalPages={totalPages} 
+                                    onPageChange={setCurrentPage} 
+                                />
+                            )}
+                        </div>
                     )}
                 </CardContent>
             </Card>

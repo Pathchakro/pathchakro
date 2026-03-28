@@ -5,10 +5,11 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useSession } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
-import { Star, Download, Upload, Library, Edit, PenLine, Heart, Trash2, BookOpen, CheckCircle, Box, MoreVertical } from 'lucide-react';
+import { Star, Download, Upload, Library, Edit, PenLine, Heart, Trash2, BookOpen, CheckCircle, Box, MoreVertical, ShoppingCart } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { toast } from 'sonner';
 import { BookCover } from './books/BookCover';
+import { BookStatusButtons } from './books/BookStatusButtons';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -28,6 +29,7 @@ export interface BookItem {
     totalReviews: number;
     description?: string;
     pdfUrl?: string;
+    buyingLink?: string;
     copies?: number;
     addedBy?: {
         _id: string;
@@ -440,36 +442,20 @@ export function BookCard({
                         </Button>
                     </Link>
 
-                    <div className="flex items-center ml-auto gap-1 border-l pl-2">
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            title={currentStatus === 'want-to-read' ? "Remove from Wishlist" : "Wish to Read"}
-                            onClick={() => handleStatusUpdate(currentStatus === 'want-to-read' ? '' : 'want-to-read')}
-                            className={currentStatus === 'want-to-read' ? "text-red-500 hover:bg-red-50" : "text-gray-400 hover:text-red-500 hover:bg-red-50"}
-                        >
-                            <Heart className={`h-5 w-5 ${currentStatus === 'want-to-read' ? "fill-current" : ""}`} />
-                        </Button>
+                    {book.buyingLink && (
+                        <Link href={book.buyingLink} target="_blank" rel="noopener noreferrer">
+                            <Button variant="ghost" size="icon" title="Buy This Book">
+                                <ShoppingCart className="h-5 w-5 text-orange-500 hover:text-orange-600" />
+                            </Button>
+                        </Link>
+                    )}
 
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            title={currentStatus === 'reading' ? "Remove from Reading" : "Mark as Reading"}
-                            onClick={() => handleStatusUpdate(currentStatus === 'reading' ? '' : 'reading')}
-                            className={currentStatus === 'reading' ? "text-blue-500 hover:bg-blue-50" : "text-gray-400 hover:text-blue-500 hover:bg-blue-50"}
-                        >
-                            <BookOpen className={`h-5 w-5 ${currentStatus === 'reading' ? "fill-current" : ""}`} />
-                        </Button>
-
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            title={currentStatus === 'completed' ? "Remove from Completed" : "Mark as Completed"}
-                            onClick={() => handleStatusUpdate(currentStatus === 'completed' ? '' : 'completed')}
-                            className={currentStatus === 'completed' ? "text-green-500 hover:bg-green-50" : "text-gray-400 hover:text-green-500 hover:bg-green-50"}
-                        >
-                            <CheckCircle className={`h-5 w-5 ${currentStatus === 'completed' ? "fill-current" : ""}`} />
-                        </Button>
+                    <div className="flex items-center ml-auto border-l pl-2">
+                        <BookStatusButtons 
+                            bookId={book._id} 
+                            initialStatus={currentStatus} 
+                            onStatusChange={handleStatusUpdate}
+                        />
                     </div>
                 </div>
             </div>

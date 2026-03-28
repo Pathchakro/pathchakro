@@ -65,7 +65,7 @@ export async function GET(request: NextRequest) {
         }
 
         const posts = await Post.find(query)
-            .populate('author', 'name image rankTier')
+            .populate('author', 'name image username rankTier')
             .sort({ createdAt: -1 })
             .skip(skip)
             .limit(limit)
@@ -161,7 +161,7 @@ export async function POST(request: NextRequest) {
         });
 
         const populatedPost = await Post.findById(post._id)
-            .populate('author', 'name image rankTier')
+            .populate('author', 'name image username rankTier')
             .lean();
 
         // Revalidate the entire site cache for posts

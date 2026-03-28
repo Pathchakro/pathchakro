@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import Book from '@/models/Book';
 import { auth } from '@/auth';
+import { revalidatePath, revalidateTag } from 'next/cache';
 import { calculateProfileCompletion } from '@/lib/utils';
 import User from '@/models/User';
 import { generateUniqueSlug } from '@/lib/slug-utils';
@@ -90,7 +91,7 @@ export async function POST(request: NextRequest) {
         }
 
         const body = await request.json();
-        const { title, author, publisher, isbn, category, coverImage } = body;
+        const { title, author, publisher, isbn, category, coverImage, buyingLink } = body;
 
         if (!title) {
             return NextResponse.json(
@@ -121,11 +122,15 @@ export async function POST(request: NextRequest) {
                 publisher: publisher || '',
                 isbn: isbn || undefined,
                 category: category || [],
-                coverImage: coverImage || '',
-                averageRating: 0,
                 totalReviews: 0,
                 addedBy: userId,
+                buyingLink: buyingLink || '',
             });
+
+            // Revalidate cache
+            revalidatePath('/books');
+            revalidatePath(`/books/${slug}`);
+            revalidateTag('books', 'default');
         }
 
         return NextResponse.json({ book }, { status: 201 });

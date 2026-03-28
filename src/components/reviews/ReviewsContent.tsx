@@ -5,6 +5,13 @@ import { ReviewCard } from '@/components/reviews/ReviewCard';
 import { Input } from '@/components/ui/input';
 import { Loader2, Search, BookOpen, Star, Heart } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { 
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select-radix';
 
 
 interface ReviewType {
@@ -145,22 +152,42 @@ export default function ReviewsContent({
                     />
                 </div>
 
-                <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                    <TabsList className="grid w-full grid-cols-3">
-                        <TabsTrigger value="all" className="flex items-center gap-2">
-                            <BookOpen className="h-4 w-4" />
-                            All Reviews
-                        </TabsTrigger>
-                        <TabsTrigger value="mine" className="flex items-center gap-2" disabled={!currentUserId}>
-                            <Star className="h-4 w-4" />
-                            My Reviews
-                        </TabsTrigger>
-                        <TabsTrigger value="favorites" className="flex items-center gap-2" disabled={!currentUserId}>
-                            <Heart className="h-4 w-4" />
-                            Favorites
-                        </TabsTrigger>
-                    </TabsList>
-                </Tabs>
+                {/* Review Tabs - Mobile Select / Desktop Tabs */}
+                <div className="md:hidden">
+                    <Select value={activeTab} onValueChange={setActiveTab}>
+                        <SelectTrigger className="w-full bg-card font-medium focus:ring-1 focus:ring-primary">
+                            <SelectValue placeholder="Select tab" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">All Reviews</SelectItem>
+                            {currentUserId && (
+                                <>
+                                    <SelectItem value="mine">My Reviews</SelectItem>
+                                    <SelectItem value="favorites">Favorites</SelectItem>
+                                </>
+                            )}
+                        </SelectContent>
+                    </Select>
+                </div>
+
+                <div className="hidden md:block">
+                    <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                        <TabsList className="grid w-full grid-cols-3">
+                            <TabsTrigger value="all" className="flex items-center gap-2">
+                                <BookOpen className="h-4 w-4" />
+                                All Reviews
+                            </TabsTrigger>
+                            <TabsTrigger value="mine" className="flex items-center gap-2" disabled={!currentUserId}>
+                                <Star className="h-4 w-4" />
+                                My Reviews
+                            </TabsTrigger>
+                            <TabsTrigger value="favorites" className="flex items-center gap-2" disabled={!currentUserId}>
+                                <Heart className="h-4 w-4" />
+                                Favorites
+                            </TabsTrigger>
+                        </TabsList>
+                    </Tabs>
+                </div>
             </div>
 
             {/* Reviews Grid/List */}

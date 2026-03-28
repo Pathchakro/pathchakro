@@ -27,9 +27,10 @@ interface Author {
 interface AuthorSearchProps {
     value?: string; // Author name
     onSelect: (name: string) => void;
+    disabled?: boolean;
 }
 
-export function AuthorSearch({ value, onSelect }: AuthorSearchProps) {
+export function AuthorSearch({ value, onSelect, disabled }: AuthorSearchProps) {
     const [open, setOpen] = useState(false);
     const [query, setQuery] = useState('');
     const [authors, setAuthors] = useState<Author[]>([]);
@@ -105,6 +106,7 @@ export function AuthorSearch({ value, onSelect }: AuthorSearchProps) {
                         role="combobox"
                         aria-expanded={open}
                         className="w-full justify-between"
+                        disabled={disabled}
                     >
                         {value ? value : "Select author..."}
                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />

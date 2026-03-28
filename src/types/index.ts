@@ -1,6 +1,7 @@
 export interface IUser {
     _id: string;
     name: string;
+    username: string;
     email: string;
     isEmailVerified?: boolean;
     password?: string;
@@ -118,6 +119,7 @@ export interface IBook {
     averageRating: number;
     totalReviews: number;
     copies: number;
+    buyingLink?: string;
     addedBy?: string | IUser;
     createdAt: Date;
     updatedAt: Date;

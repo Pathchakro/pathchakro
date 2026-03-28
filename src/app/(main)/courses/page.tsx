@@ -6,7 +6,6 @@ import { useSession } from 'next-auth/react';
 import { Plus, Users, Calendar, MapPin, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2 } from 'lucide-react';
 import { CourseCard } from '@/components/courses/CourseCard';
@@ -29,7 +28,7 @@ interface Course {
 }
 
 export default function CoursesPage() {
-    const { data: session } = useSession();
+    const { data: session, status } = useSession();
     const [courses, setCourses] = useState<Course[]>([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
@@ -53,6 +52,12 @@ export default function CoursesPage() {
             fetchMyBookmarks();
         }
     }, [session?.user?.id]);
+
+    useEffect(() => {
+        if (status === 'unauthenticated' && activeTab !== 'all') {
+            setActiveTab('all');
+        }
+    }, [status, activeTab]);
 
     const fetchMyBookmarks = async () => {
         try {
@@ -151,14 +156,34 @@ export default function CoursesPage() {
                 description="Join the community to share your knowledge and teach others by creating a course."
             />
 
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                <TabsList className="flex w-full overflow-x-auto overflow-y-hidden md:grid md:grid-cols-4 no-scrollbar h-auto md:h-10 py-1 md:py-0">
-                    <TabsTrigger value="all">All Courses</TabsTrigger>
-                    <TabsTrigger value="enrolled" disabled={!session?.user}>Enrolled</TabsTrigger>
-                    <TabsTrigger value="mine" disabled={!session?.user}>My Courses</TabsTrigger>
-                    <TabsTrigger value="favorites" disabled={!session?.user}>Favourites</TabsTrigger>
-                </TabsList>
-            </Tabs>
+            {/* Course Tabs - Mobile Select / Desktop Tabs */}
+            <div className="md:hidden">
+                <select
+                    value={activeTab}
+                    onChange={(e) => setActiveTab(e.target.value)}
+                    className="flex h-10 w-full rounded-md border border-input bg-card px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 font-medium"
+                >
+                    <option value="all">All Courses</option>
+                    {session?.user && (
+                        <>
+                            <option value="enrolled">Enrolled</option>
+                            <option value="mine">My Courses</option>
+                            <option value="favorites">Favourites</option>
+                        </>
+                    )}
+                </select>
+            </div>
+
+            <div className="hidden md:block">
+                <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                    <TabsList className="grid w-full grid-cols-4 h-10 py-0">
+                        <TabsTrigger value="all">All Courses</TabsTrigger>
+                        <TabsTrigger value="enrolled" disabled={!session?.user}>Enrolled</TabsTrigger>
+                        <TabsTrigger value="mine" disabled={!session?.user}>My Courses</TabsTrigger>
+                        <TabsTrigger value="favorites" disabled={!session?.user}>Favourites</TabsTrigger>
+                    </TabsList>
+                </Tabs>
+            </div>
 
             {loading ? (
                 <LoadingSpinner />

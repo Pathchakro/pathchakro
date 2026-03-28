@@ -8,6 +8,13 @@ const UserSchema = new Schema<IUser>(
             required: [true, 'Name is required'],
             trim: true,
         },
+        username: {
+            type: String,
+            unique: true,
+            lowercase: true,
+            trim: true,
+            sparse: true, // Allow nulls during migration
+        },
         email: {
             type: String,
             required: [true, 'Email is required'],

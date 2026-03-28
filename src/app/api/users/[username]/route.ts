@@ -3,6 +3,8 @@ import dbConnect from '@/lib/mongodb';
 import User from '@/models/User';
 import Post from '@/models/Post';
 import Review from '@/models/Review';
+import UserLibrary from '@/models/UserLibrary';
+import Book from '@/models/Book';
 
 import { auth } from '@/auth';
 
@@ -13,6 +15,7 @@ export async function GET(
     const params = await props.params;
     try {
         await dbConnect();
+        const _ = Book; // Ensure model registration
 
         let query = {};
 
@@ -26,12 +29,18 @@ export async function GET(
             }
             query = { email: session.user.email };
         } else {
-            query = {
-                $or: [
-                    { email: params.username.includes('@') ? params.username : undefined },
-                    { name: !params.username.includes('@') ? new RegExp(`^${params.username}$`, 'i') : undefined }
-                ].filter(Boolean)
-            };
+            const isObjectId = /^[0-9a-fA-F]{24}$/.test(params.username);
+            const conditions: any[] = [{ username: params.username.toLowerCase() }];
+
+            if (params.username.includes('@')) {
+                conditions.push({ email: params.username });
+            }
+
+            if (isObjectId) {
+                conditions.push({ _id: params.username });
+            }
+
+            query = { $or: conditions };
         }
 
         const user = await User.findOne(query).select('-password');
@@ -49,6 +58,22 @@ export async function GET(
         // Get user's reviews count
         const reviewsCount = await Review.countDocuments({ user: user._id });
 
+        // Get library stats
+        const libraryStats = await UserLibrary.aggregate([
+            { $match: { user: user._id } },
+            {
+                $group: {
+                    _id: null,
+                    completed: { $sum: { $cond: [{ $eq: ["$status", "completed"] }, 1, 0] } },
+                    reading: { $sum: { $cond: [{ $eq: ["$status", "reading"] }, 1, 0] } },
+                    wishlist: { $sum: { $cond: [{ $eq: ["$status", "want-to-read"] }, 1, 0] } },
+                    totalCount: { $sum: 1 }
+                }
+            }
+        ]);
+
+        const lib = libraryStats[0] || { completed: 0, reading: 0, wishlist: 0, totalCount: 0 };
+
         return NextResponse.json({
             user,
             stats: {
@@ -56,6 +81,12 @@ export async function GET(
                 reviews: reviewsCount,
                 followers: user.followers?.length || 0,
                 following: user.following?.length || 0,
+                library: {
+                    completed: lib.completed,
+                    reading: lib.reading,
+                    wishlist: lib.wishlist,
+                    total: lib.totalCount
+                }
             },
         });
     } catch (error: any) {

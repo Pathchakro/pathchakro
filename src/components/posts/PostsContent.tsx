@@ -132,22 +132,41 @@ export default function PostsContent({
                     </Select>
                 </div>
 
-                <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                    <TabsList className="grid w-full grid-cols-3">
-                        <TabsTrigger value="all" className="flex items-center gap-2">
-                            <BookOpen className="h-4 w-4" />
-                            All Posts
-                        </TabsTrigger>
-                        <TabsTrigger value="mine" className="flex items-center gap-2" disabled={!currentUserId}>
-                            <Star className="h-4 w-4" />
-                            My Posts
-                        </TabsTrigger>
-                        <TabsTrigger value="favorites" className="flex items-center gap-2" disabled={!currentUserId}>
-                            <Heart className="h-4 w-4" />
-                            Favourites
-                        </TabsTrigger>
-                    </TabsList>
-                </Tabs>
+                {/* Post Tabs - Mobile Select / Desktop Tabs */}
+                <div className="md:hidden">
+                    <Select
+                        value={activeTab}
+                        onChange={(e) => setActiveTab(e.target.value)}
+                        className="w-full bg-card font-medium"
+                    >
+                        <option value="all">All Posts</option>
+                        {currentUserId && (
+                            <>
+                                <option value="mine">My Posts</option>
+                                <option value="favorites">Favourites</option>
+                            </>
+                        )}
+                    </Select>
+                </div>
+
+                <div className="hidden md:block">
+                    <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                        <TabsList className="grid w-full grid-cols-3">
+                            <TabsTrigger value="all" className="flex items-center gap-2">
+                                <BookOpen className="h-4 w-4" />
+                                All Posts
+                            </TabsTrigger>
+                            <TabsTrigger value="mine" className="flex items-center gap-2" disabled={!currentUserId}>
+                                <Star className="h-4 w-4" />
+                                My Posts
+                            </TabsTrigger>
+                            <TabsTrigger value="favorites" className="flex items-center gap-2" disabled={!currentUserId}>
+                                <Heart className="h-4 w-4" />
+                                Favourites
+                            </TabsTrigger>
+                        </TabsList>
+                    </Tabs>
+                </div>
             </div>
 
             {/* Posts Grid/List */}
