@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 import dbConnect from '@/lib/mongodb';
 import Tour from '@/models/Tour';
 import Audit from '@/models/Audit';
+import MigrationResults from '@/models/MigrationResults';
 import { generateUniqueSlug } from '@/lib/slug-utils';
 import { auth } from '@/auth';
 
@@ -24,27 +25,54 @@ export async function POST(request: NextRequest) {
         
         try {
             await dbSession.withTransaction(async () => {
-                const tours = await Tour.find({}).session(dbSession);
+                const cursor = Tour.find({}).session(dbSession).cursor();
                 
-                for (const tour of tours) {
-                    const oldSlug = tour.slug;
-                    const newSlug = await generateUniqueSlug(Tour, tour.title, 'slug', false);
-                    
-                    tour.slug = newSlug;
-                    await tour.save({ session: dbSession });
-                    results.push({ id: tour._id, title: tour.title, old: oldSlug, new: newSlug });
+                try {
+                    for await (const tour of cursor) {
+                        const oldSlug = tour.slug;
+                        const newSlug = await generateUniqueSlug(Tour, tour.title, 'slug', false, '', dbSession);
+                        
+                        tour.slug = newSlug;
+                        await tour.save({ session: dbSession });
+                        results.push({ id: tour._id, title: tour.title, old: oldSlug, new: newSlug });
+                    }
+                } finally {
+                    await cursor.close();
                 }
-            });
 
-            // 3. Successful Audit Logging
-            await Audit.create({
-                action: 'TOUR_SLUG_FORCE_MIGRATE',
-                operator: operatorId,
-                status: 'success',
-                details: {
-                    count: results.length,
-                    results
+                // 3. Compact Audit Summary
+                const totalCount = results.length;
+                const isLarge = totalCount > 1000;
+                const summary = {
+                    totalCount,
+                    sample: isLarge 
+                        ? [...results.slice(0, 5), ...results.slice(-5)] 
+                        : results,
+                    isLarge
+                };
+
+                let migrationResultsId = null;
+                if (isLarge) {
+                    const [migrationDoc] = await MigrationResults.create([{
+                        action: 'TOUR_SLUG_FORCE_MIGRATE',
+                        operatorId,
+                        results
+                    }], { session: dbSession });
+                    migrationResultsId = migrationDoc._id;
                 }
+
+                // 4. Successful Audit Logging (Inside transaction for atomicity)
+                await Audit.create([{
+                    action: 'TOUR_SLUG_FORCE_MIGRATE',
+                    operator: operatorId,
+                    status: 'success',
+                    details: {
+                        ...summary,
+                        migrationResultsId,
+                        // Always include full results if under threshold for convenience
+                        results: isLarge ? undefined : results
+                    }
+                }], { session: dbSession });
             });
 
             return NextResponse.json({
@@ -52,16 +80,20 @@ export async function POST(request: NextRequest) {
                 count: results.length
             });
         } catch (transactionError: any) {
-            // 4. Failed Audit Logging
-            await Audit.create({
-                action: 'TOUR_SLUG_FORCE_MIGRATE',
-                operator: operatorId,
-                status: 'failure',
-                details: {
-                    error: transactionError.message,
-                    stack: transactionError.stack
-                }
-            });
+            // 4. Failed Audit Logging (Robust fallback)
+            try {
+                await Audit.create({
+                    action: 'TOUR_SLUG_FORCE_MIGRATE',
+                    operator: operatorId,
+                    status: 'failure',
+                    details: {
+                        error: transactionError.message,
+                        stack: transactionError.stack
+                    }
+                });
+            } catch (auditError) {
+                console.error('[AUDIT_ERROR]: Failed to create failure audit record', auditError);
+            }
             throw transactionError;
         } finally {
             await dbSession.endSession();

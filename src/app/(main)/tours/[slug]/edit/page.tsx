@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter, useParams } from 'next/navigation';
@@ -50,6 +50,7 @@ export default function EditTourPage() {
     const [imageFiles, setImageFiles] = useState<File[]>([]);
     const [imagePreviews, setImagePreviews] = useState<string[]>([]);
     const [tourId, setTourId] = useState<string | null>(null);
+    const previewUrlsRef = useRef<string[]>([]);
 
     const {
         register,
@@ -84,9 +85,9 @@ export default function EditTourPage() {
     // Cleanup object URLs to prevent memory leaks
     useEffect(() => {
         return () => {
-            imagePreviews.forEach(url => URL.revokeObjectURL(url));
+            previewUrlsRef.current.forEach(url => URL.revokeObjectURL(url));
         };
-    }, [imagePreviews]);
+    }, []);
 
     useEffect(() => {
         if (tourSlug) {
@@ -135,8 +136,15 @@ export default function EditTourPage() {
         const newFiles = [...imageFiles, ...files];
         setImageFiles(newFiles);
 
-        const newPreviews = files.map(file => URL.createObjectURL(file));
+        const newPreviews = files.map(file => {
+            const url = URL.createObjectURL(file);
+            previewUrlsRef.current.push(url);
+            return url;
+        });
         setImagePreviews([...imagePreviews, ...newPreviews]);
+        
+        // Reset input value to allow selecting same files again
+        e.target.value = '';
     };
 
     const removeNewImage = (index: number) => {
@@ -181,11 +189,18 @@ export default function EditTourPage() {
             }
 
             const allImages = [...images, ...uploadedImageUrls];
+            
+            // Sync itinerary days to ensure they are sequential
+            const updatedItinerary = data.itinerary?.map((item, index) => ({
+                ...item,
+                day: index + 1
+            })) || [];
 
             const tourData = {
                 ...data,
                 images: allImages,
                 bannerUrl: allImages[0] || '',
+                itinerary: updatedItinerary,
             };
 
             const response = await fetch(`/api/tours/${tourId}`, {

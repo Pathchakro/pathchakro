@@ -39,7 +39,8 @@ export async function generateUniqueSlug(
     text: string,
     field: string = 'slug',
     isUpdate: boolean = false,
-    currentId: string = ''
+    currentId: string = '',
+    session?: any
 ): Promise<string> {
     const baseSlug = createSlug(text);
 
@@ -50,7 +51,7 @@ export async function generateUniqueSlug(
         query._id = { $ne: currentId };
     }
 
-    const existing = await model.findOne(query);
+    const existing = await model.findOne(query).session(session);
     if (!existing) {
         return baseSlug;
     }
@@ -65,7 +66,7 @@ export async function generateUniqueSlug(
         similarQuery._id = { $ne: currentId };
     }
 
-    const similarDocs = await model.find(similarQuery).select(field);
+    const similarDocs = await model.find(similarQuery).session(session).select(field);
 
     if (similarDocs.length === 0) {
         return baseSlug; // Should have been caught by findOne, but safe fallback

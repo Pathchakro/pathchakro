@@ -18,7 +18,7 @@ import { ImageSlider } from './ImageSlider';
 interface TourCardProps {
     tour: {
         _id: string;
-        slug: string;
+        slug?: string;
         title: string;
         destination: string;
         description: string;

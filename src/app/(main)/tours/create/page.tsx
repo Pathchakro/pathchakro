@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
@@ -52,6 +52,7 @@ export default function CreateTourPage() {
     const [error, setError] = useState('');
     const [imageFiles, setImageFiles] = useState<File[]>([]);
     const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+    const imagePreviewUrlsRef = useRef<string[]>([]);
 
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = Array.from(e.target.files || []);
@@ -63,7 +64,11 @@ export default function CreateTourPage() {
         const newFiles = [...imageFiles, ...files];
         setImageFiles(newFiles);
 
-        const newPreviews = files.map(file => URL.createObjectURL(file));
+        const newPreviews = files.map(file => {
+            const url = URL.createObjectURL(file);
+            imagePreviewUrlsRef.current.push(url);
+            return url;
+        });
         setImagePreviews([...imagePreviews, ...newPreviews]);
         
         // Reset file input to allow re-selecting same files
@@ -72,20 +77,23 @@ export default function CreateTourPage() {
         }
     };
 
-    // Cleanup object URLs to prevent memory leaks
+    // Cleanup object URLs to prevent memory leaks on unmount
     useEffect(() => {
         return () => {
-            imagePreviews.forEach(url => URL.revokeObjectURL(url));
+            imagePreviewUrlsRef.current.forEach(url => URL.revokeObjectURL(url));
         };
-    }, [imagePreviews]);
+    }, []);
 
     const removeImage = (index: number) => {
+        const urlToRevoke = imagePreviews[index];
+        URL.revokeObjectURL(urlToRevoke);
+        imagePreviewUrlsRef.current = imagePreviewUrlsRef.current.filter(url => url !== urlToRevoke);
+
         const newFiles = [...imageFiles];
         newFiles.splice(index, 1);
         setImageFiles(newFiles);
 
         const newPreviews = [...imagePreviews];
-        URL.revokeObjectURL(newPreviews[index]);
         newPreviews.splice(index, 1);
         setImagePreviews(newPreviews);
     };

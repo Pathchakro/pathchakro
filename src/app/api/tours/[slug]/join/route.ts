@@ -40,7 +40,7 @@ export async function POST(
                     }
                 }
             },
-            { new: true }
+            { new: true, runValidators: true }
         );
 
         if (!updatedTour) {

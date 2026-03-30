@@ -1,4 +1,5 @@
 import { Metadata } from 'next';
+import { cache } from 'react';
 import dbConnect from '@/lib/mongodb';
 import Tour from '@/models/Tour';
 import TourDetailsClient from './TourDetailsClient';
@@ -8,11 +9,17 @@ interface Props {
     params: Promise<{ slug: string }>;
 }
 
-async function getTour(slug: string) {
+const getTour = cache(async (slug: string) => {
     await dbConnect();
 
+    let decodedSlug = slug;
+    try {
+        decodedSlug = decodeURIComponent(slug);
+    } catch (error) {
+        console.error('[URI_DECODE_ERROR]:', error);
+    }
 
-    let tour = await Tour.findOne({ slug: decodeURIComponent(slug) })
+    let tour = await Tour.findOne({ slug: decodedSlug })
         .populate('organizer', 'name image university rankTier')
         .populate('participants.user', 'name image university rankTier')
         .populate('team', 'name text')
@@ -36,7 +43,7 @@ async function getTour(slug: string) {
     }
 
     return tour;
-}
+});
 
 export async function generateMetadata(props: Props): Promise<Metadata> {
     const params = await props.params;

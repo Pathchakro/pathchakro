@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { MapPin, Calendar, DollarSign, Users, Clock, ArrowLeft, CheckCircle, XCircle, AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
@@ -72,6 +72,15 @@ export default function TourDetailsClient({ initialTour, slug }: TourDetailsClie
     const images = tour.images && tour.images.length > 0 
         ? tour.images 
         : (tour.bannerUrl ? [tour.bannerUrl] : []);
+
+    // Clamp currentImageIndex if images length shrinks (e.g. after fresh data fetch)
+    useEffect(() => {
+        if (images.length > 0 && currentImageIndex >= images.length) {
+            setCurrentImageIndex(Math.max(0, images.length - 1));
+        } else if (images.length === 0 && currentImageIndex !== 0) {
+            setCurrentImageIndex(0);
+        }
+    }, [images.length, currentImageIndex]);
 
     const fetchTourData = async () => {
         try {

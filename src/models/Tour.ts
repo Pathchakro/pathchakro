@@ -140,14 +140,11 @@ const TourSchema = new Schema<ITour>(
     }
 );
 
-// Pre-save validation: departureDateTime must be on or before startDate
-TourSchema.pre('save', async function () {
-    if (this.departureDateTime && this.startDate) {
-        if (this.departureDateTime > this.startDate) {
-            throw new Error('Departure date and time must be before or on the start date');
-        }
-    }
-});
+// Validation: departureDateTime must be on or before startDate
+TourSchema.path('departureDateTime').validate(function(this: any, value: Date) {
+    if (!value || !this.startDate) return true;
+    return value <= this.startDate;
+}, 'Departure date and time must be before or on the start date');
 
 // Indexes for efficient querying
 TourSchema.index({ startDate: 1, status: 1 });

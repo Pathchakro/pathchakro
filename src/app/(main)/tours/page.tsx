@@ -17,7 +17,7 @@ import { ImageSlider } from '@/components/tours/ImageSlider';
 
 interface Tour {
     _id: string;
-    slug: string;
+    slug?: string;
     organizer: {
         _id: string;
         name: string;

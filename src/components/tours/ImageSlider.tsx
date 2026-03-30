@@ -29,7 +29,7 @@ export function ImageSlider({
         }, autoSlideInterval);
 
         return () => clearInterval(interval);
-    }, [currentIndex, images.length, autoSlideInterval]);
+    }, [images, autoSlideInterval]);
 
     // Safety guard for index bounds
     useEffect(() => {
