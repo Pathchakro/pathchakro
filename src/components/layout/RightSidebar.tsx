@@ -3,12 +3,16 @@
 import Link from 'next/link';
 import { TrendingUp, Calendar } from 'lucide-react';
 import { UpcomingEventsCard } from '@/components/events/UpcomingEventsCard';
+import { UpcomingTourCard } from '@/components/tours/UpcomingTourCard';
 
 export function RightSidebar() {
     return (
         <aside className="hidden xl:block w-80 sticky top-16 h-[calc(100vh-4rem)] overflow-y-auto p-4 custom-scrollbar">
             {/* Upcoming Events */}
             <UpcomingEventsCard />
+
+            {/* Upcoming Tours */}
+            <UpcomingTourCard />
 
             {/* Trending Reviews */}
             <div className="bg-card rounded-lg p-4 mb-4 shadow-sm border">

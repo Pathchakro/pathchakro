@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter, useParams } from 'next/navigation';
@@ -14,7 +14,9 @@ import { z } from 'zod';
 import Link from 'next/link';
 import Image from 'next/image';
 import LoadingSpinner from '@/components/ui/Loading';
+import dynamic from 'next/dynamic';
 
+const NovelEditor = dynamic(() => import('@/components/editor/NovelEditor'), { ssr: false });
 
 const tourSchema = z.object({
     title: z.string().min(5, 'Title must be at least 5 characters'),
@@ -23,7 +25,9 @@ const tourSchema = z.object({
     startDate: z.string().min(1, 'Start date is required'),
     endDate: z.string().min(1, 'End date is required'),
     departureLocation: z.string().min(3, 'Departure location is required'),
+    departureDateTime: z.string().min(1, 'Departure date and time is required'),
     bannerUrl: z.string().optional(),
+    images: z.array(z.string()).optional(),
     budget: z.number().min(0, 'Budget must be positive'),
     itinerary: z.array(z.object({
         day: z.number(),
@@ -38,13 +42,14 @@ type TourData = z.infer<typeof tourSchema>;
 export default function EditTourPage() {
     const router = useRouter();
     const params = useParams();
-    const tourId = params.id as string;
+    const tourSlug = params.slug as string;
 
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [error, setError] = useState('');
-    const [bannerFile, setBannerFile] = useState<File | null>(null);
-    const [bannerPreview, setBannerPreview] = useState<string>('');
+    const [imageFiles, setImageFiles] = useState<File[]>([]);
+    const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+    const [tourId, setTourId] = useState<string | null>(null);
 
     const {
         register,
@@ -58,34 +63,55 @@ export default function EditTourPage() {
         resolver: zodResolver(tourSchema),
         defaultValues: {
             itinerary: [{ day: 1, title: '', description: '', location: '' }],
+            images: [],
         },
     });
 
-    const currentBannerUrl = watch('bannerUrl');
+    const description = watch('description');
+    const images = watch('images') || [];
+
+    // Safe JSON parsing for NovelEditor
+    const parsedDescription = useMemo(() => {
+        if (!description) return undefined;
+        try {
+            return typeof description === 'string' ? JSON.parse(description) : description;
+        } catch (err) {
+            console.error('Failed to parse tour description JSON:', err);
+            return undefined;
+        }
+    }, [description]);
+
+    // Cleanup object URLs to prevent memory leaks
+    useEffect(() => {
+        return () => {
+            imagePreviews.forEach(url => URL.revokeObjectURL(url));
+        };
+    }, [imagePreviews]);
 
     useEffect(() => {
-        if (tourId) {
+        if (tourSlug) {
             fetchTourData();
         }
-    }, [tourId]);
+    }, [tourSlug]);
 
     const fetchTourData = async () => {
         try {
-            const response = await fetch(`/api/tours/${tourId}`);
+            const response = await fetch(`/api/tours/slug/${tourSlug}`);
             if (!response.ok) throw new Error('Failed to fetch tour');
             const data = await response.json();
+            
+            const tour = data.tour || data;
+            setTourId(tour._id);
 
             // Format dates for input type="date"
             const formattedData = {
-                ...data.tour,
-                startDate: data.tour.startDate.split('T')[0],
-                endDate: data.tour.endDate.split('T')[0],
+                ...tour,
+                startDate: tour.startDate?.split('T')[0] || '',
+                endDate: tour.endDate?.split('T')[0] || '',
+                departureDateTime: tour.departureDateTime ? new Date(tour.departureDateTime).toISOString().slice(0, 16) : '',
             };
 
             reset(formattedData);
-            if (data.tour.bannerUrl) {
-                setBannerPreview(data.tour.bannerUrl);
-            }
         } catch (err) {
             console.error(err);
             setError('Failed to load tour data');
@@ -99,35 +125,67 @@ export default function EditTourPage() {
         name: 'itinerary',
     });
 
+    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = Array.from(e.target.files || []);
+        if (files.length + imageFiles.length + images.length > 10) {
+            setError('Maximum 10 images allowed');
+            return;
+        }
+
+        const newFiles = [...imageFiles, ...files];
+        setImageFiles(newFiles);
+
+        const newPreviews = files.map(file => URL.createObjectURL(file));
+        setImagePreviews([...imagePreviews, ...newPreviews]);
+    };
+
+    const removeNewImage = (index: number) => {
+        const newFiles = [...imageFiles];
+        newFiles.splice(index, 1);
+        setImageFiles(newFiles);
+
+        const newPreviews = [...imagePreviews];
+        URL.revokeObjectURL(newPreviews[index]);
+        newPreviews.splice(index, 1);
+        setImagePreviews(newPreviews);
+    };
+
+    const removeExistingImage = (index: number) => {
+        const updatedImages = [...images];
+        updatedImages.splice(index, 1);
+        setValue('images', updatedImages);
+    };
+
     const onSubmit = async (data: TourData) => {
+        if (!tourId) return;
         setIsSaving(true);
         setError('');
 
         try {
-            let bannerUrl = data.bannerUrl;
+            const uploadedImageUrls: string[] = [];
 
-            if (bannerFile) {
+            for (const file of imageFiles) {
                 const formData = new FormData();
-                formData.append('file', bannerFile);
+                formData.append('file', file);
                 const uploadResponse = await fetch('/api/upload/image', {
                     method: 'POST',
                     body: formData,
                 });
 
                 if (!uploadResponse.ok) {
-                    throw new Error('Failed to upload banner image');
+                    throw new Error('Failed to upload images');
                 }
 
                 const uploadResult = await uploadResponse.json();
-                bannerUrl = uploadResult.displayUrl || uploadResult.url;
-            } else if (!bannerUrl && !currentBannerUrl) {
-                // If banner was removed (logic can be more complex if we allow removal)
-                // For now assuming if preview is empty, it's removed? Not necessarily.
+                uploadedImageUrls.push(uploadResult.displayUrl || uploadResult.url);
             }
+
+            const allImages = [...images, ...uploadedImageUrls];
 
             const tourData = {
                 ...data,
-                bannerUrl,
+                images: allImages,
+                bannerUrl: allImages[0] || '',
             };
 
             const response = await fetch(`/api/tours/${tourId}`, {
@@ -145,9 +203,12 @@ export default function EditTourPage() {
                 return;
             }
 
-            router.push(`/tours/${result.tour._id}`);
+            // Redirect back to the tour page using the original slug or new one if returned
+            const newSlug = result.tour?.slug || result.slug || tourSlug;
+            router.push(`/tours/${newSlug}`);
             router.refresh();
         } catch (err) {
+            console.error(err);
             setError('An error occurred. Please try again.');
         } finally {
             setIsSaving(false);
@@ -155,14 +216,14 @@ export default function EditTourPage() {
     };
 
     if (isLoading) {
-        return <LoadingSpinner />;
+        return <div className="max-w-4xl mx-auto p-8"><LoadingSpinner /></div>;
     }
 
     return (
         <div className="max-w-4xl mx-auto p-4">
-            <Link href={`/profile/me`} className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-4">
+            <Link href={`/tours/${tourSlug}`} className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-4">
                 <ArrowLeft className="h-4 w-4" />
-                Back to Profile
+                Back to Tour
             </Link>
 
             <Card>
@@ -174,7 +235,7 @@ export default function EditTourPage() {
                         <div>
                             <CardTitle className="text-2xl">Edit Tour</CardTitle>
                             <CardDescription>
-                                Update your tour details
+                                Update your tour details and images
                             </CardDescription>
                         </div>
                     </div>
@@ -188,108 +249,157 @@ export default function EditTourPage() {
                             </div>
                         )}
 
+                        {/* Multi-Image Upload */}
                         <div className="space-y-2">
-                            <Label>Cover Image (OG Banner)</Label>
-                            <div className="border-2 border-dashed rounded-lg p-6 text-center hover:bg-muted/50 transition-colors cursor-pointer"
-                                onClick={() => document.getElementById('banner-upload')?.click()}>
-                                <input
-                                    type="file"
-                                    id="banner-upload"
-                                    className="hidden"
-                                    accept="image/*"
-                                    onChange={(e) => {
-                                        const file = e.target.files?.[0];
-                                        if (file) {
-                                            setBannerFile(file);
-                                            setBannerPreview(URL.createObjectURL(file));
-                                        }
-                                    }}
-                                />
-                                {bannerPreview ? (
-                                    <div className="relative aspect-video w-full max-w-xl mx-auto rounded-lg overflow-hidden">
+                            <Label>Tour Images (Max 10) - First image is the cover</Label>
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                {/* Existing Images */}
+                                {images.map((url, index) => (
+                                    <div key={`existing-${index}`} className="relative aspect-video rounded-lg overflow-hidden border group">
                                         <Image
-                                            src={bannerPreview}
-                                            alt="Banner preview"
+                                            src={url}
+                                            alt={`Existing ${index + 1}`}
                                             fill
                                             className="object-cover"
                                         />
-                                        <Button
-                                            type="button"
-                                            variant="destructive"
-                                            size="icon"
-                                            className="absolute top-2 right-2 h-8 w-8 rounded-full"
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                setBannerFile(null);
-                                                setBannerPreview('');
-                                                setValue('bannerUrl', ''); // Clear form value
-                                            }}
-                                        >
-                                            <X className="h-4 w-4" />
-                                        </Button>
+                                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                                            <Button
+                                                type="button"
+                                                variant="destructive"
+                                                size="icon"
+                                                className="h-8 w-8"
+                                                onClick={() => removeExistingImage(index)}
+                                            >
+                                                <X className="h-4 w-4" />
+                                            </Button>
+                                        </div>
+                                        {index === 0 && (
+                                            <div className="absolute top-2 left-2 bg-primary text-primary-foreground text-[10px] px-2 py-0.5 rounded-full font-bold shadow-lg">
+                                                COVER
+                                            </div>
+                                        )}
                                     </div>
-                                ) : (
-                                    <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                                        <Upload className="h-8 w-8" />
-                                        <p>Click to upload new banner image</p>
-                                        <p className="text-xs">Recommended size: 1200x630px</p>
+                                ))}
+
+                                {/* New Image Previews */}
+                                {imagePreviews.map((preview, index) => (
+                                    <div key={`new-${index}`} className="relative aspect-video rounded-lg overflow-hidden border group border-primary/30">
+                                        <Image
+                                            src={preview}
+                                            alt={`Preview ${index + 1}`}
+                                            fill
+                                            className="object-cover"
+                                        />
+                                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                                            <Button
+                                                type="button"
+                                                variant="destructive"
+                                                size="icon"
+                                                className="h-8 w-8"
+                                                onClick={() => removeNewImage(index)}
+                                            >
+                                                <X className="h-4 w-4" />
+                                            </Button>
+                                        </div>
+                                        <div className="absolute bottom-2 right-2 bg-blue-500 text-white text-[10px] px-2 py-0.5 rounded-full font-bold">
+                                            NEW
+                                        </div>
+                                    </div>
+                                ))}
+
+                                {/* Add Button */}
+                                {images.length + imageFiles.length < 10 && (
+                                    <div 
+                                        className="border-2 border-dashed rounded-lg flex flex-col items-center justify-center gap-2 hover:bg-muted/50 transition-colors cursor-pointer aspect-video"
+                                        onClick={() => document.getElementById('image-upload')?.click()}
+                                    >
+                                        <Upload className="h-6 w-6 text-muted-foreground" />
+                                        <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Add Images</span>
+                                        <input
+                                            type="file"
+                                            id="image-upload"
+                                            className="hidden"
+                                            accept="image/*"
+                                            multiple
+                                            onChange={handleImageChange}
+                                        />
                                     </div>
                                 )}
                             </div>
                         </div>
 
                         {/* Basic Info */}
-                        <div className="space-y-2">
-                            <Label htmlFor="title">Tour Title *</Label>
-                            <Input
-                                id="title"
-                                {...register('title')}
-                                disabled={isSaving}
-                            />
-                            {errors.title && (
-                                <p className="text-sm text-red-500">{errors.title.message}</p>
-                            )}
+                        <div className="space-y-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="title">Tour Title *</Label>
+                                <Input
+                                    id="title"
+                                    {...register('title')}
+                                    disabled={isSaving}
+                                    placeholder="Enter tour title"
+                                />
+                                {errors.title && (
+                                    <p className="text-sm text-red-500">{errors.title.message}</p>
+                                )}
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="destination">Destination *</Label>
+                                    <Input
+                                        id="destination"
+                                        {...register('destination')}
+                                        disabled={isSaving}
+                                        placeholder="Where is the tour going?"
+                                    />
+                                    {errors.destination && (
+                                        <p className="text-sm text-red-500">{errors.destination.message}</p>
+                                    )}
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="departureLocation">Departure Location *</Label>
+                                    <Input
+                                        id="departureLocation"
+                                        {...register('departureLocation')}
+                                        disabled={isSaving}
+                                        placeholder="Starting point"
+                                    />
+                                    {errors.departureLocation && (
+                                        <p className="text-sm text-red-500">{errors.departureLocation.message}</p>
+                                    )}
+                                </div>
+                            </div>
+ 
+                            <div className="space-y-2">
+                                <Label htmlFor="departureDateTime">Departure Date & Time *</Label>
+                                <Input
+                                    id="departureDateTime"
+                                    type="datetime-local"
+                                    {...register('departureDateTime')}
+                                    disabled={isSaving}
+                                />
+                                {errors.departureDateTime && (
+                                    <p className="text-sm text-red-500">{errors.departureDateTime.message}</p>
+                                )}
+                            </div>
                         </div>
 
-                        <div className="space-y-2">
-                            <Label htmlFor="destination">Destination *</Label>
-                            <Input
-                                id="destination"
-                                {...register('destination')}
-                                disabled={isSaving}
-                            />
-                            {errors.destination && (
-                                <p className="text-sm text-red-500">{errors.destination.message}</p>
-                            )}
-                        </div>
-
-                        <div className="space-y-2">
-                            <Label htmlFor="departureLocation">Departure Location *</Label>
-                            <Input
-                                id="departureLocation"
-                                {...register('departureLocation')}
-                                disabled={isSaving}
-                            />
-                            {errors.departureLocation && (
-                                <p className="text-sm text-red-500">{errors.departureLocation.message}</p>
-                            )}
-                        </div>
-
+                        {/* Rich Text Description */}
                         <div className="space-y-2">
                             <Label htmlFor="description">Description *</Label>
-                            <Textarea
-                                id="description"
-                                rows={4}
-                                {...register('description')}
-                                disabled={isSaving}
-                            />
+                            <div className="min-h-[300px] border rounded-lg overflow-hidden ring-offset-background focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 transition-all">
+                                <NovelEditor
+                                    initialValue={parsedDescription}
+                                    onChange={(value) => setValue('description', value)}
+                                />
+                            </div>
                             {errors.description && (
                                 <p className="text-sm text-red-500">{errors.description.message}</p>
                             )}
                         </div>
 
                         {/* Dates & Budget */}
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 p-4 bg-muted/30 rounded-xl border">
                             <div className="space-y-2">
                                 <Label htmlFor="startDate">Start Date *</Label>
                                 <Input
@@ -316,7 +426,7 @@ export default function EditTourPage() {
                                 )}
                             </div>
 
-                            <div className="space-y-2">
+                            <div className="space-y-2 col-span-2 md:col-span-1">
                                 <Label htmlFor="budget">Budget (৳) *</Label>
                                 <Input
                                     id="budget"
@@ -334,11 +444,12 @@ export default function EditTourPage() {
                         {/* Itinerary */}
                         <div className="space-y-4">
                             <div className="flex items-center justify-between">
-                                <Label>Itinerary (Optional)</Label>
+                                <Label className="text-lg font-bold">Itinerary</Label>
                                 <Button
                                     type="button"
                                     variant="outline"
                                     size="sm"
+                                    className="rounded-full shadow-sm"
                                     onClick={() => append({
                                         day: fields.length + 1,
                                         title: '',
@@ -351,56 +462,72 @@ export default function EditTourPage() {
                                 </Button>
                             </div>
 
-                            {fields.map((field, index) => (
-                                <Card key={field.id} className="p-4">
-                                    <div className="flex items-center justify-between mb-3">
-                                        <h4 className="font-medium">Day {index + 1}</h4>
-                                        {fields.length > 1 && (
-                                            <Button
-                                                type="button"
-                                                variant="ghost"
-                                                size="sm"
-                                                onClick={() => remove(index)}
-                                            >
-                                                <Trash2 className="h-4 w-4" />
-                                            </Button>
-                                        )}
-                                    </div>
+                            <div className="space-y-4">
+                                {fields.map((field, index) => (
+                                    <Card key={field.id} className="p-6 border-l-4 border-l-primary relative">
+                                        <div className="flex items-center justify-between mb-4">
+                                            <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary font-bold">
+                                                {index + 1}
+                                            </div>
+                                            {fields.length > 1 && (
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    className="text-muted-foreground hover:text-destructive transition-colors"
+                                                    onClick={() => remove(index)}
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                </Button>
+                                            )}
+                                        </div>
 
-                                    <div className="space-y-3">
-                                        <Input
-                                            placeholder="Day title"
-                                            {...register(`itinerary.${index}.title` as const)}
-                                        />
-                                        <Textarea
-                                            placeholder="What will happen this day?"
-                                            rows={2}
-                                            {...register(`itinerary.${index}.description` as const)}
-                                        />
-                                        <Input
-                                            placeholder="Location (optional)"
-                                            {...register(`itinerary.${index}.location` as const)}
-                                        />
-                                    </div>
-                                </Card>
-                            ))}
+                                        <div className="space-y-4">
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <div className="space-y-1.5">
+                                                    <Label className="text-xs uppercase tracking-wider text-muted-foreground font-bold">Day Title</Label>
+                                                    <Input
+                                                        placeholder="e.g. Exploring the Ancient Ruins"
+                                                        {...register(`itinerary.${index}.title` as const)}
+                                                    />
+                                                </div>
+                                                <div className="space-y-1.5">
+                                                    <Label className="text-xs uppercase tracking-wider text-muted-foreground font-bold">Location</Label>
+                                                    <Input
+                                                        placeholder="e.g. Comilla, Bangladesh"
+                                                        {...register(`itinerary.${index}.location` as const)}
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div className="space-y-1.5">
+                                                <Label className="text-xs uppercase tracking-wider text-muted-foreground font-bold">Day Description</Label>
+                                                <Textarea
+                                                    placeholder="Describe the activities for this day..."
+                                                    rows={3}
+                                                    {...register(`itinerary.${index}.description` as const)}
+                                                />
+                                            </div>
+                                        </div>
+                                    </Card>
+                                ))}
+                            </div>
                         </div>
 
-                        <div className="flex gap-3 pt-4">
+                        <div className="flex gap-4 pt-6 border-t">
                             <Button
                                 type="button"
-                                variant="outline"
+                                variant="ghost"
                                 onClick={() => router.back()}
-                                className="flex-1"
+                                className="flex-1 h-12"
                             >
                                 Cancel
                             </Button>
                             <Button
                                 type="submit"
                                 disabled={isSaving}
-                                className="flex-1"
+                                className="flex-[2] h-12 shadow-lg shadow-primary/20"
                             >
-                                {isSaving ? 'Saving...' : 'Save Changes'}
+                                {isSaving ? 'Updating Tour...' : 'Update Tour'}
                             </Button>
                         </div>
                     </form>
@@ -409,3 +536,4 @@ export default function EditTourPage() {
         </div>
     );
 }
+

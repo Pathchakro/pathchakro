@@ -95,6 +95,7 @@ export async function PUT(
             'itinerary',
             'privacy',
             'status',
+            'departureDateTime',
         ];
 
         const sanitizedUpdate: any = {};

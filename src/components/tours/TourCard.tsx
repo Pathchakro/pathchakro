@@ -1,7 +1,8 @@
+import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { DollarSign, MapPin, Users, MoreHorizontal, Heart, MessageCircle, Share2, Bookmark, Plane } from 'lucide-react';
-import { formatDate } from '@/lib/utils';
+import { formatDate, extractPlainText } from '@/lib/utils';
 import { useSession } from 'next-auth/react';
 import { toast } from 'sonner';
 import {
@@ -10,11 +11,14 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { motion, AnimatePresence } from 'framer-motion';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ImageSlider } from './ImageSlider';
 
 interface TourCardProps {
     tour: {
         _id: string;
-        slug?: string;
+        slug: string;
         title: string;
         destination: string;
         description: string;
@@ -26,6 +30,8 @@ interface TourCardProps {
             image?: string;
         };
         participants: any[];
+        images?: string[];
+        bannerUrl?: string;
     };
 }
 
@@ -41,6 +47,8 @@ export function TourCard({ tour }: TourCardProps) {
             default: return 'bg-gray-500';
         }
     };
+
+    // Simplified using ImageSlider component
 
     const handleActionClick = (e: React.MouseEvent, action: string) => {
         if (!session) {
@@ -106,13 +114,15 @@ export function TourCard({ tour }: TourCardProps) {
                         </span>
                     </div>
 
-                    {/* Placeholder Image for Tour */}
-                    <div className="h-40 bg-gradient-to-br from-blue-400 to-purple-600 flex items-center justify-center rounded-md mb-3">
-                        <Plane className="h-16 w-16 text-white/50" />
-                    </div>
+                    {/* Tour Image Slider */}
+                    <ImageSlider 
+                        images={tour.images && tour.images.length > 0 ? tour.images : (tour.bannerUrl ? [tour.bannerUrl] : [])} 
+                        title={tour.title}
+                        aspectRatio="aspect-video shadow-inner rounded-md"
+                    />
 
-                    <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
-                        {tour.description}
+                    <p className="text-sm text-muted-foreground line-clamp-2 mb-3 min-h-[40px]">
+                        {extractPlainText(tour.description)}
                     </p>
 
                     <div className="flex items-center gap-4 text-sm text-muted-foreground">
@@ -135,7 +145,7 @@ export function TourCard({ tour }: TourCardProps) {
             {/* Footer Actions */}
             <div className="flex items-center justify-between pt-3 border-t mt-3">
                 <div className="flex gap-2">
-                    <button 
+                    <button
                         aria-label="Interested"
                         onClick={(e) => handleActionClick(e, 'interested')}
                         className="flex items-center gap-2 px-2 py-1 md:px-3 md:py-2 rounded-lg hover:bg-muted transition-colors"
@@ -143,8 +153,8 @@ export function TourCard({ tour }: TourCardProps) {
                         <Heart className="h-4 w-4 md:h-5 md:w-5" />
                         <span className="text-sm font-medium hidden md:inline">Interested</span>
                     </button>
-                    <Link 
-                        href={linkHref} 
+                    <Link
+                        href={linkHref}
                         aria-label="Discuss"
                         onClick={(e) => handleActionClick(e, 'discuss')}
                         className="flex items-center gap-2 px-2 py-1 md:px-3 md:py-2 rounded-lg hover:bg-muted transition-colors"
@@ -152,7 +162,7 @@ export function TourCard({ tour }: TourCardProps) {
                         <MessageCircle className="h-4 w-4 md:h-5 md:w-5" />
                         <span className="text-sm font-medium hidden md:inline">Discuss</span>
                     </Link>
-                    <button 
+                    <button
                         aria-label="Share"
                         onClick={(e) => handleActionClick(e, 'share')}
                         className="flex items-center gap-2 px-2 py-1 md:px-3 md:py-2 rounded-lg hover:bg-muted transition-colors"
@@ -161,7 +171,7 @@ export function TourCard({ tour }: TourCardProps) {
                         <span className="text-sm font-medium hidden md:inline">Share</span>
                     </button>
                 </div>
-                <button 
+                <button
                     aria-label="Bookmark"
                     onClick={(e) => handleActionClick(e, 'bookmark')}
                     className="p-1.5 md:p-2 rounded-lg hover:bg-muted transition-colors"

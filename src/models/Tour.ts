@@ -10,6 +10,7 @@ export interface ITour {
     startDate: Date;
     endDate: Date;
     departureLocation: string;
+    departureDateTime?: Date;
     bannerUrl?: string;
     budget: number;
     participants: Array<{
@@ -57,6 +58,9 @@ const TourSchema = new Schema<ITour>(
         departureLocation: {
             type: String,
             required: [true, 'Departure location is required'],
+        },
+        departureDateTime: {
+            type: Date,
         },
         bannerUrl: {
             type: String,
@@ -135,6 +139,15 @@ const TourSchema = new Schema<ITour>(
         timestamps: true,
     }
 );
+
+// Pre-save validation: departureDateTime must be on or before startDate
+TourSchema.pre('save', async function () {
+    if (this.departureDateTime && this.startDate) {
+        if (this.departureDateTime > this.startDate) {
+            throw new Error('Departure date and time must be before or on the start date');
+        }
+    }
+});
 
 // Indexes for efficient querying
 TourSchema.index({ startDate: 1, status: 1 });

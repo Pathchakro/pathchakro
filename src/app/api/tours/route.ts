@@ -108,8 +108,10 @@ export async function POST(request: NextRequest) {
             endDate,
             budget,
             itinerary,
+            images,
             privacy,
             teamId,
+            departureDateTime,
         } = body;
 
         if (!title || !destination || !departureLocation || !description || !startDate || !endDate || budget === undefined) {
@@ -121,6 +123,12 @@ export async function POST(request: NextRequest) {
 
         await dbConnect();
 
+        const parseSafeDate = (dateVal: any) => {
+            if (!dateVal) return undefined;
+            const d = new Date(dateVal);
+            return isNaN(d.getTime()) ? undefined : d;
+        };
+
         const slug = await generateUniqueSlug(Tour, title);
 
         const tour = await Tour.create({
@@ -129,10 +137,9 @@ export async function POST(request: NextRequest) {
             slug,
             destination,
             departureLocation,
-            bannerUrl,
             description,
-            startDate: new Date(startDate),
-            endDate: new Date(endDate),
+            startDate: parseSafeDate(startDate),
+            endDate: parseSafeDate(endDate),
             budget,
             participants: [
                 {
@@ -142,9 +149,11 @@ export async function POST(request: NextRequest) {
                 },
             ],
             itinerary: itinerary || [],
-            images: [],
+            images: images || [],
+            bannerUrl: bannerUrl || (images && images.length > 0 ? images[0] : undefined),
             privacy: privacy || 'public',
             team: teamId || undefined,
+            departureDateTime: parseSafeDate(departureDateTime),
             status: 'planning',
         });
 

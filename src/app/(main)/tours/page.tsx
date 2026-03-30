@@ -6,16 +6,18 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { MapPin, Calendar, DollarSign, Users, Plus, Search, Loader2, Heart } from 'lucide-react';
-import { formatDate } from '@/lib/utils';
+import { formatDate, extractPlainText } from '@/lib/utils';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useSession } from 'next-auth/react';
 import { LoginModal } from '@/components/auth/LoginModal';
 import LoadingSpinner from '@/components/ui/Loading';
+import { ImageSlider } from '@/components/tours/ImageSlider';
 
 interface Tour {
     _id: string;
+    slug: string;
     organizer: {
         _id: string;
         name: string;
@@ -32,6 +34,7 @@ interface Tour {
     participants: any[];
     status: string;
     createdAt: string;
+    images?: string[];
 }
 
 export default function ToursPage() {
@@ -259,11 +262,11 @@ export default function ToursPage() {
                     </Link>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                     {tours.map((tour) => (
                         <Link
                             key={tour._id}
-                            href={`/tours/${tour._id}`}
+                            href={`/tours/${tour.slug || tour._id}`}
                             className="group bg-card border rounded-lg overflow-hidden hover:shadow-md transition-all relative block"
                         >
                             {/* Bookmark Button */}
@@ -278,14 +281,12 @@ export default function ToursPage() {
                                     />
                                 </button>
                             )}
-                            {/* Tour Image Placeholder */}
-                            <div className="h-40 bg-gradient-to-br from-blue-400 to-purple-600 flex items-center justify-center relative overflow-hidden">
-                                {tour.bannerUrl ? (
-                                    <Image src={tour.bannerUrl} alt={tour.title} fill className="object-cover transition-transform group-hover:scale-105" />
-                                ) : (
-                                    <MapPin className="h-16 w-16 text-white/50" />
-                                )}
-                            </div>
+                            {/* Tour Image Slider */}
+                            <ImageSlider 
+                                images={tour.images && tour.images.length > 0 ? tour.images : (tour.bannerUrl ? [tour.bannerUrl] : [])} 
+                                title={tour.title}
+                                aspectRatio="aspect-video"
+                            />
 
                             <div className="p-4">
                                 {/* Status Badge */}
@@ -304,8 +305,8 @@ export default function ToursPage() {
                                     {tour.destination}
                                 </p>
 
-                                <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
-                                    {tour.description}
+                                <p className="text-sm text-muted-foreground line-clamp-2 mb-3 min-h-[40px]">
+                                    {extractPlainText(tour.description)}
                                 </p>
 
                                 <div className="flex items-center justify-between text-sm pt-3 border-t">
@@ -327,12 +328,12 @@ export default function ToursPage() {
                     ))}
                 </div>
             )}
-        <LoginModal 
-            open={showLoginModal} 
-            onOpenChange={setShowLoginModal}
-            title="Login to Create Tours"
-            description="Join the community to plan and share exciting educational tours with others."
-        />
+            <LoginModal
+                open={showLoginModal}
+                onOpenChange={setShowLoginModal}
+                title="Login to Create Tours"
+                description="Join the community to plan and share exciting educational tours with others."
+            />
         </div>
     );
 }

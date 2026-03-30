@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
@@ -15,7 +15,9 @@ import Link from 'next/link';
 
 import Image from 'next/image';
 import { useAccessControl } from '@/hooks/useAccessControl';
-import { useEffect } from 'react';
+import dynamic from 'next/dynamic';
+
+const NovelEditor = dynamic(() => import('@/components/editor/NovelEditor'), { ssr: false });
 
 const tourSchema = z.object({
     title: z.string().min(5, 'Title must be at least 5 characters'),
@@ -24,7 +26,9 @@ const tourSchema = z.object({
     startDate: z.string().min(1, 'Start date is required'),
     endDate: z.string().min(1, 'End date is required'),
     departureLocation: z.string().min(3, 'Departure location is required'),
+    departureDateTime: z.string().min(1, 'Departure date and time is required'),
     bannerUrl: z.string().optional(),
+    images: z.array(z.string()).optional(),
     budget: z.number().min(0, 'Budget must be positive'),
     itinerary: z.array(z.object({
         day: z.number(),
@@ -46,20 +50,87 @@ export default function CreateTourPage() {
 
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
-    const [bannerFile, setBannerFile] = useState<File | null>(null);
-    const [bannerPreview, setBannerPreview] = useState<string>('');
+    const [imageFiles, setImageFiles] = useState<File[]>([]);
+    const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+
+    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = Array.from(e.target.files || []);
+        if (files.length + imageFiles.length > 10) {
+            setError('Maximum 10 images allowed');
+            return;
+        }
+
+        const newFiles = [...imageFiles, ...files];
+        setImageFiles(newFiles);
+
+        const newPreviews = files.map(file => URL.createObjectURL(file));
+        setImagePreviews([...imagePreviews, ...newPreviews]);
+        
+        // Reset file input to allow re-selecting same files
+        if (e.target) {
+            e.target.value = '';
+        }
+    };
+
+    // Cleanup object URLs to prevent memory leaks
+    useEffect(() => {
+        return () => {
+            imagePreviews.forEach(url => URL.revokeObjectURL(url));
+        };
+    }, [imagePreviews]);
+
+    const removeImage = (index: number) => {
+        const newFiles = [...imageFiles];
+        newFiles.splice(index, 1);
+        setImageFiles(newFiles);
+
+        const newPreviews = [...imagePreviews];
+        URL.revokeObjectURL(newPreviews[index]);
+        newPreviews.splice(index, 1);
+        setImagePreviews(newPreviews);
+    };
+
+    const moveImage = (index: number, direction: 'up' | 'down') => {
+        if (direction === 'up' && index === 0) return;
+        if (direction === 'down' && index === imageFiles.length - 1) return;
+
+        const newIndex = direction === 'up' ? index - 1 : index + 1;
+        
+        const newFiles = [...imageFiles];
+        [newFiles[index], newFiles[newIndex]] = [newFiles[newIndex], newFiles[index]];
+        setImageFiles(newFiles);
+
+        const newPreviews = [...imagePreviews];
+        [newPreviews[index], newPreviews[newIndex]] = [newPreviews[newIndex], newPreviews[index]];
+        setImagePreviews(newPreviews);
+    };
 
     const {
         register,
         handleSubmit,
         control,
         formState: { errors },
+        setValue,
+        watch,
     } = useForm<TourData>({
         resolver: zodResolver(tourSchema),
         defaultValues: {
             itinerary: [{ day: 1, title: '', description: '', location: '' }],
         },
     });
+
+    const description = watch('description');
+
+    // Safe JSON parsing for NovelEditor
+    const parsedDescription = useMemo(() => {
+        if (!description) return undefined;
+        try {
+            return typeof description === 'string' ? JSON.parse(description) : description;
+        } catch (err) {
+            console.error('Failed to parse tour description JSON:', err);
+            return undefined;
+        }
+    }, [description]);
 
     const { fields, append, remove } = useFieldArray({
         control,
@@ -71,27 +142,28 @@ export default function CreateTourPage() {
         setError('');
 
         try {
-            let bannerUrl = undefined;
+            const uploadedImageUrls: string[] = [];
 
-            if (bannerFile) {
+            for (const file of imageFiles) {
                 const formData = new FormData();
-                formData.append('file', bannerFile);
+                formData.append('file', file);
                 const uploadResponse = await fetch('/api/upload/image', {
                     method: 'POST',
                     body: formData,
                 });
 
                 if (!uploadResponse.ok) {
-                    throw new Error('Failed to upload banner image');
+                    throw new Error('Failed to upload images');
                 }
 
                 const uploadResult = await uploadResponse.json();
-                bannerUrl = uploadResult.displayUrl || uploadResult.url;
+                uploadedImageUrls.push(uploadResult.displayUrl || uploadResult.url);
             }
 
             const tourData = {
                 ...data,
-                bannerUrl,
+                images: uploadedImageUrls,
+                bannerUrl: uploadedImageUrls[0], // First image is the banner
             };
 
             const response = await fetch('/api/tours', {
@@ -148,52 +220,75 @@ export default function CreateTourPage() {
                         )}
 
                         <div className="space-y-2">
-                            <Label>Cover Image (OG Banner)</Label>
-                            <div className="border-2 border-dashed rounded-lg p-6 text-center hover:bg-muted/50 transition-colors cursor-pointer"
-                                onClick={() => document.getElementById('banner-upload')?.click()}>
-                                <input
-                                    type="file"
-                                    id="banner-upload"
-                                    className="hidden"
-                                    accept="image/*"
-                                    onChange={(e) => {
-                                        const file = e.target.files?.[0];
-                                        if (file) {
-                                            setBannerFile(file);
-                                            setBannerPreview(URL.createObjectURL(file));
-                                        }
-                                    }}
-                                />
-                                {bannerPreview ? (
-                                    <div className="relative aspect-video w-full max-w-xl mx-auto rounded-lg overflow-hidden">
+                            <Label>Tour Images (Max 10) - First image is the cover</Label>
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                {imagePreviews.map((preview, index) => (
+                                    <div key={index} className="relative aspect-video rounded-lg overflow-hidden border group">
                                         <Image
-                                            src={bannerPreview}
-                                            alt="Banner preview"
+                                            src={preview}
+                                            alt={`Preview ${index + 1}`}
                                             fill
                                             className="object-cover"
                                         />
-                                        <Button
-                                            type="button"
-                                            variant="destructive"
-                                            size="icon"
-                                            className="absolute top-2 right-2 h-8 w-8 rounded-full"
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                setBannerFile(null);
-                                                setBannerPreview('');
-                                            }}
-                                        >
-                                            <X className="h-4 w-4" />
-                                        </Button>
+                                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                                            <Button
+                                                type="button"
+                                                variant="secondary"
+                                                size="icon"
+                                                className="h-8 w-8"
+                                                onClick={() => moveImage(index, 'up')}
+                                                disabled={index === 0}
+                                            >
+                                                <ArrowLeft className="h-4 w-4 rotate-90" />
+                                            </Button>
+                                            <Button
+                                                type="button"
+                                                variant="secondary"
+                                                size="icon"
+                                                className="h-8 w-8"
+                                                onClick={() => moveImage(index, 'down')}
+                                                disabled={index === imagePreviews.length - 1}
+                                            >
+                                                <ArrowLeft className="h-4 w-4 -rotate-90" />
+                                            </Button>
+                                            <Button
+                                                type="button"
+                                                variant="destructive"
+                                                size="icon"
+                                                className="h-8 w-8"
+                                                onClick={() => removeImage(index)}
+                                            >
+                                                <X className="h-4 w-4" />
+                                            </Button>
+                                        </div>
+                                        {index === 0 && (
+                                            <div className="absolute top-2 left-2 bg-primary text-primary-foreground text-[10px] px-2 py-0.5 rounded-full font-bold">
+                                                COVER
+                                            </div>
+                                        )}
                                     </div>
-                                ) : (
-                                    <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                                        <Upload className="h-8 w-8" />
-                                        <p>Click to upload banner image</p>
-                                        <p className="text-xs">Recommended size: 1200x630px</p>
+                                ))}
+                                {imagePreviews.length < 10 && (
+                                    <div 
+                                        className="border-2 border-dashed rounded-lg p-4 flex flex-col items-center justify-center gap-2 hover:bg-muted/50 transition-colors cursor-pointer aspect-video"
+                                        onClick={() => document.getElementById('image-upload')?.click()}
+                                    >
+                                        <Upload className="h-6 w-6 text-muted-foreground" />
+                                        <span className="text-xs text-muted-foreground">Add Images</span>
+                                        <input
+                                            type="file"
+                                            id="image-upload"
+                                            className="hidden"
+                                            accept="image/*"
+                                            multiple
+                                            onChange={handleImageChange}
+                                        />
                                     </div>
                                 )}
                             </div>
+                            <p className="text-xs text-muted-foreground mt-2">
+                                Recommended size: 1200x630px. First image will be used for OG/Twitter cards.
+                            </p>
                         </div>
 
                         {/* Basic Info */}
@@ -237,14 +332,26 @@ export default function CreateTourPage() {
                         </div>
 
                         <div className="space-y-2">
-                            <Label htmlFor="description">Description *</Label>
-                            <Textarea
-                                id="description"
-                                placeholder="Describe the tour, what participants will see and do..."
-                                rows={4}
-                                {...register('description')}
+                            <Label htmlFor="departureDateTime">Departure Date & Time *</Label>
+                            <Input
+                                id="departureDateTime"
+                                type="datetime-local"
+                                {...register('departureDateTime')}
                                 disabled={isLoading}
                             />
+                            {errors.departureDateTime && (
+                                <p className="text-sm text-red-500">{errors.departureDateTime.message}</p>
+                            )}
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="description">Description *</Label>
+                            <div className="min-h-[300px] border rounded-md">
+                                <NovelEditor
+                                    initialValue={parsedDescription}
+                                    onChange={(value) => setValue('description', value)}
+                                />
+                            </div>
                             {errors.description && (
                                 <p className="text-sm text-red-500">{errors.description.message}</p>
                             )}
