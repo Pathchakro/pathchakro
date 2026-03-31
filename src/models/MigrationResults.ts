@@ -21,8 +21,9 @@ const MigrationResultsSchema = new Schema<IMigrationResults>(
             index: true,
         },
         results: {
-            type: [Schema.Types.Mixed],
+            type: [Schema.Types.Mixed] as any,
             required: true,
+            default: [] as any[],
         },
     },
     {
