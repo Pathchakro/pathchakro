@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import { Star, ThumbsUp, MoreHorizontal, MessageCircle, Share2, Trash2, Pencil, Heart } from 'lucide-react';
-import { formatDate } from '@/lib/utils';
+import { formatDate, extractPlainText } from '@/lib/utils';
 import { generateHtml } from '@/lib/server-html';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -15,6 +15,7 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { ShareDialog } from '@/components/feed/ShareDialog';
 
 interface ReviewCardProps {
     review: {
@@ -62,6 +63,11 @@ export function ReviewCard({
     const router = useRouter();
     const isOwner = currentUserId === review.user._id;
     const [bookmarkLoading, setBookmarkLoading] = useState(false);
+    
+    const plainTextDescription = extractPlainText(review.content);
+    const shareDescription = plainTextDescription.length > 200 
+        ? plainTextDescription.slice(0, 200) + '...' 
+        : plainTextDescription;
 
     const handleDelete = async () => {
         const result = await Swal.fire({
@@ -146,13 +152,7 @@ export function ReviewCard({
         toast.info("Comment feature coming soon!");
     };
 
-    const handleShareClick = () => {
-        if (!currentUserId) {
-            toast.error("Please login to continue");
-            return;
-        }
-        toast.info("Share feature coming soon!");
-    };
+
 
     return (
         <div className={`bg-card rounded-lg shadow-sm border mb-4 ${isDetail ? 'p-6' : 'p-4'}`}>
@@ -405,14 +405,31 @@ export function ReviewCard({
                         <MessageCircle className="h-4 w-4 md:h-5 md:w-5" />
                         <span className="text-sm font-medium hidden md:inline">Comment</span>
                     </button>
-                    <button 
-                        aria-label="Share"
-                        onClick={handleShareClick}
-                        className="flex items-center gap-2 px-2 py-1 md:px-3 md:py-2 rounded-lg hover:bg-muted transition-colors"
-                    >
-                        <Share2 className="h-4 w-4 md:h-5 md:w-5" />
-                        <span className="text-sm font-medium hidden md:inline">Share</span>
-                    </button>
+                    <ShareDialog
+                        post={{
+                            _id: review._id,
+                            title: review.title || review.book.title,
+                            slug: review.slug || review._id,
+                            description: shareDescription
+                        }}
+                        basePath="/reviews"
+                        trigger={
+                            <button
+                                aria-label="Share"
+                                onClick={(e) => {
+                                    if (!currentUserId) {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        toast.error("Please login to continue");
+                                    }
+                                }}
+                                className="flex items-center gap-2 px-2 py-1 md:px-3 md:py-2 rounded-lg hover:bg-muted transition-colors"
+                            >
+                                <Share2 className="h-4 w-4 md:h-5 md:w-5" />
+                                <span className="text-sm font-medium hidden md:inline">Share</span>
+                            </button>
+                        }
+                    />
                 </div>
             </div>
         </div>

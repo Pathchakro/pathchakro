@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+export const dynamic = 'force-dynamic';
 import { auth } from '@/auth';
 import dbConnect from '@/lib/mongodb';
 import UserLibrary from '@/models/UserLibrary';
@@ -128,21 +129,26 @@ export async function POST(request: NextRequest) {
             { new: true, upsert: true, setDefaultsOnInsert: true }
         ).populate('book', 'title author category coverImage slug');
 
-        // Logic for updating Book copies
-        // 1. New item added as owned
+        // Logic for updating Book stats (copies and completedCount)
+        const Book = (await import('@/models/Book')).default;
+
+        // 1. Copies logic
         if (!existingItem && isOwned === true) {
-            const Book = (await import('@/models/Book')).default;
             await Book.findByIdAndUpdate(bookId, { $inc: { copies: 1 } });
-        }
-        // 2. Existing item changed to owned
-        else if (existingItem && !wasOwned && isOwned === true) {
-            const Book = (await import('@/models/Book')).default;
+        } else if (existingItem && !wasOwned && isOwned === true) {
             await Book.findByIdAndUpdate(bookId, { $inc: { copies: 1 } });
-        }
-        // 3. Existing item changed to NOT owned
-        else if (existingItem && wasOwned && isOwned === false) {
-            const Book = (await import('@/models/Book')).default;
+        } else if (existingItem && wasOwned && isOwned === false) {
             await Book.findByIdAndUpdate(bookId, { $inc: { copies: -1 } });
+        }
+
+        // 2. Completed count logic
+        const previousStatus = existingItem?.status || '';
+        if (status !== undefined && status !== previousStatus) {
+            if (status === 'completed') {
+                await Book.findByIdAndUpdate(bookId, { $inc: { completedCount: 1 } });
+            } else if (previousStatus === 'completed') {
+                await Book.findByIdAndUpdate(bookId, { $inc: { completedCount: -1 } });
+            }
         }
 
         return NextResponse.json(
@@ -169,7 +175,8 @@ export async function DELETE(request: NextRequest) {
             );
         }
 
-        const { bookId } = await request.json();
+        const { searchParams } = new URL(request.url);
+        const bookId = searchParams.get('bookId');
 
         if (!bookId) {
             return NextResponse.json(
@@ -195,8 +202,18 @@ export async function DELETE(request: NextRequest) {
                 // Decrement copies ONLY if the deleted item was owned, within the same transaction
                 const Book = (await import('@/models/Book')).default;
                 await Book.findByIdAndUpdate(
-                    bookId, 
+                    bookId,
                     { $inc: { copies: -1 } },
+                    { session: dbSession }
+                );
+            }
+
+            if (deletedItem && deletedItem.status === 'completed') {
+                // Decrement completedCount if the deleted item was completed
+                const Book = (await import('@/models/Book')).default;
+                await Book.findByIdAndUpdate(
+                    bookId,
+                    { $inc: { completedCount: -1 } },
                     { session: dbSession }
                 );
             }

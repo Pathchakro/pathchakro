@@ -55,7 +55,6 @@ export function PostCard({ initialPost, currentUserId, onDelete, initialIsBookma
     const [isBookmarked, setIsBookmarked] = useState(initialIsBookmarked);
     const [currentSlide, setCurrentSlide] = useState(0);
     const [showComments, setShowComments] = useState(false);
-    const [isSharing, setIsSharing] = useState(false);
     const router = useRouter();
 
     // Sync isBookmarked if prop changes (though mainly useful for initial load)
@@ -136,38 +135,7 @@ export function PostCard({ initialPost, currentUserId, onDelete, initialIsBookma
         }
     };
 
-    const handleShare = async () => {
-        if (isSharing) return;
-        setIsSharing(true);
 
-        const plainText = extractPlainText(post.content);
-        const shareText = `Check out this post on Pathchakro:\n${post.title || 'New Post'}\n\n${plainText.substring(0, 100)}...`;
-        // Use slug if available, fallback to _id
-        const shareUrl = `${window.location.origin}/posts/${(post as any).slug || post._id}`;
-
-        if (navigator.share) {
-            try {
-                await navigator.share({
-                    title: post.title || 'Pathchakro Post',
-                    text: shareText,
-                    url: shareUrl,
-                });
-            } catch (error: any) {
-                // Ignore AbortError (user cancelled)
-                if (error.name !== 'AbortError') {
-                    console.error('Error sharing:', error);
-                    navigator.clipboard.writeText(shareUrl);
-                    toast.success('Link copied to clipboard!');
-                }
-            } finally {
-                setIsSharing(false);
-            }
-        } else {
-            navigator.clipboard.writeText(shareUrl);
-            toast.success('Link copied to clipboard!');
-            setIsSharing(false);
-        }
-    };
 
     const handleDelete = async () => {
         const result = await Swal.fire({

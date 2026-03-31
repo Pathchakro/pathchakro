@@ -132,7 +132,7 @@ export default function BookDetailPage() {
 
     const fetchBook = async () => {
         try {
-            const response = await fetch(`/api/books/${slug}`);
+            const response = await fetch(`/api/books/${slug}?t=${Date.now()}`);
             const data = await response.json();
             if (data && data.book) setBook(data.book);
         } catch (error) {
@@ -178,11 +178,18 @@ export default function BookDetailPage() {
 
     const handleToggleLibrary = async (action: 'add' | 'remove') => {
         if (!session) { setShowLoginModal(true); return; }
+        if (!book) return;
+
         try {
-            const response = await fetch('/api/library', {
-                method: action === 'add' ? 'POST' : 'DELETE',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ bookId: book?._id }),
+            const isAdd = action === 'add';
+            const url = isAdd 
+                ? '/api/library' 
+                : `/api/library?bookId=${encodeURIComponent(book._id)}`;
+            
+            const response = await fetch(url, {
+                method: isAdd ? 'POST' : 'DELETE',
+                headers: isAdd ? { 'Content-Type': 'application/json' } : undefined,
+                body: isAdd ? JSON.stringify({ bookId: book._id }) : undefined,
             });
             const data = await response.json();
             if (response.ok) {
@@ -199,11 +206,36 @@ export default function BookDetailPage() {
             if (pdf?._id) {
                 await fetch(`/api/books/pdfs/${pdf._id}/download`, { method: 'PUT' });
             }
-            
-            window.open(pdf.fileUrl, '_blank');
+
+            if (pdf.fileUrl) {
+                const response = await fetch(pdf.fileUrl);
+                
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch PDF: ${response.status} ${response.statusText}`);
+                }
+
+                const blob = await response.blob();
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                
+                // Sanitize filename: replace invalid characters and limit length
+                const rawTitle = book?.title || 'book';
+                const sanitizedTitle = rawTitle
+                    .replace(/[/\\?%*:|"<>]/g, '-') // Replace filesystem-invalid characters with hyphen
+                    .trim()
+                    .slice(0, 100); // Limit length to 100 characters
+                
+                a.download = `${sanitizedTitle}.pdf`;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                URL.revokeObjectURL(url);
+            }
             if (book?._id && pdf?._id) fetchPDFs(book._id);
-        } catch (error) { 
-            console.error('Error downloading PDF:', error); 
+        } catch (error: any) {
+            console.error('Error downloading PDF:', error);
+            toast.error(error.message || 'Failed to download PDF. Please try again.');
         }
     };
 
@@ -253,9 +285,9 @@ export default function BookDetailPage() {
                         </div>
                         <div className="p-4 space-y-4">
                             <div className="flex items-center justify-center py-2 border-y bg-muted/5 -mx-4 px-4">
-                                <BookStatusButtons 
-                                    bookId={book._id} 
-                                    initialStatus={libraryItem?.status} 
+                                <BookStatusButtons
+                                    bookId={book._id}
+                                    initialStatus={libraryItem?.status}
                                     onStatusChange={(newStatus: string) => setLibraryItem((prev: any) => prev ? { ...prev, status: newStatus } : null)}
                                     showLoginModal={() => setShowLoginModal(true)}
                                 />
@@ -274,12 +306,12 @@ export default function BookDetailPage() {
                                                 formData.append('file', file);
                                                 const res = await fetch('/api/upload/pdf', { method: 'POST', body: formData });
                                                 if (!res.ok) throw new Error('Upload server error');
-                                                
+
                                                 const data = await res.json();
-                                                const patchRes = await fetch(`/api/books/${book._id}`, { 
-                                                    method: 'PATCH', 
-                                                    headers: { 'Content-Type': 'application/json' }, 
-                                                    body: JSON.stringify({ pdfUrl: data.url }) 
+                                                const patchRes = await fetch(`/api/books/${book._id}`, {
+                                                    method: 'PATCH',
+                                                    headers: { 'Content-Type': 'application/json' },
+                                                    body: JSON.stringify({ pdfUrl: data.url })
                                                 });
 
                                                 if (patchRes.ok) {
@@ -288,11 +320,11 @@ export default function BookDetailPage() {
                                                 } else {
                                                     toast.error('Failed to link PDF to book');
                                                 }
-                                            } catch (err) { 
+                                            } catch (err) {
                                                 console.error('Upload Error:', err);
-                                                toast.error('Upload failed'); 
-                                            } finally { 
-                                                setIsUploading(false); 
+                                                toast.error('Upload failed');
+                                            } finally {
+                                                setIsUploading(false);
                                             }
                                         }} />
                                         <Button onClick={() => document.getElementById('pdf-upload-detail')?.click()} className="w-full h-11 border-dashed" variant="outline" disabled={isUploading}><Upload className="h-4 w-4 mr-2" /> {isUploading ? 'Uploading...' : 'Upload PDF'}</Button>
@@ -320,7 +352,7 @@ export default function BookDetailPage() {
 
                         <h1 className="text-4xl font-bold mb-2 pr-12">{book.title}</h1>
                         <p className="text-xl text-muted-foreground mb-1">by {book.author}</p>
-                        
+
                         {/* Rating below author with percentage fill stars */}
                         <div className="flex items-center gap-2 mb-6">
                             <div className="flex items-center">
@@ -343,10 +375,10 @@ export default function BookDetailPage() {
                             </div>
 
                             <div className="flex items-center gap-2">
-                                <Button 
-                                    variant="outline" 
-                                    size="sm" 
-                                    onClick={() => handleToggleLibrary(libraryItem ? 'remove' : 'add')} 
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleToggleLibrary(libraryItem ? 'remove' : 'add')}
                                     className={`rounded-full px-6 gap-2 h-10 shadow-sm border-2 transition-all duration-200 ${libraryItem ? "text-purple-600 bg-purple-50 border-purple-200 hover:bg-purple-100" : "text-muted-foreground hover:bg-accent border-muted/50 hover:text-accent-foreground"}`}
                                 >
                                     <Library className={`h-4 w-4 ${libraryItem ? "fill-current" : ""}`} />
@@ -399,10 +431,10 @@ export default function BookDetailPage() {
                             }
                         </div>
                         {reviews.length > pageSize && (
-                            <Pagination 
-                                currentPage={currentPage} 
-                                totalPages={Math.ceil(reviews.length / pageSize)} 
-                                onPageChange={setCurrentPage} 
+                            <Pagination
+                                currentPage={currentPage}
+                                totalPages={Math.ceil(reviews.length / pageSize)}
+                                onPageChange={setCurrentPage}
                             />
                         )}
                     </div>

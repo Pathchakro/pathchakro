@@ -28,6 +28,9 @@ export async function POST(request: NextRequest) {
             );
         }
 
+        // Sanitize and prepare public_id
+        const publicId = `pdf_${crypto.randomUUID()}`;
+
         const arrayBuffer = await file.arrayBuffer();
         const buffer = Buffer.from(arrayBuffer);
 
@@ -35,10 +38,9 @@ export async function POST(request: NextRequest) {
         const uploadResult = await new Promise<any>((resolve, reject) => {
             const uploadStream = cloudinary.uploader.upload_stream(
                 {
-                    resource_type: 'raw', // 'raw' is usually best for PDFs to force download/view options correctly, or 'auto'
+                    resource_type: 'raw',
                     folder: 'pathchakro/books',
-                    use_filename: true,
-                    unique_filename: true,
+                    public_id: publicId,
                 },
                 (error, result) => {
                     if (error) reject(error);

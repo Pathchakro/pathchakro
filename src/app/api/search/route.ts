@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+export const dynamic = 'force-dynamic';
 import dbConnect from '@/lib/mongodb';
 import User from '@/models/User';
 import Post from '@/models/Post';
@@ -41,7 +42,7 @@ export async function GET(request: NextRequest) {
                 // Fetch up-to-date following list from DB
                 const currentUser = await User.findById(session.user.id).select('following').lean();
                 const followingIds = (currentUser as any)?.following || [];
-                
+
                 // If authenticated, show public posts OR friends' posts
                 // Defining friends as people you follow
                 postQuery.$or = [

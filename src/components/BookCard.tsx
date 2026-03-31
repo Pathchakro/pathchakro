@@ -190,6 +190,43 @@ export function BookCard({
         }
     };
 
+    const handleDownload = async (e: React.MouseEvent) => {
+        e.preventDefault();
+        if (!pdfUrl) return;
+        try {
+            const response = await fetch(pdfUrl);
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            const blob = await response.blob();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            // Sanitize book title for safe filesystem name
+            const MAX_FILENAME_BYTES = 255;
+            let safeTitle = book.title.replace(/[<>:"/\\|?*\x00-\x1F]/g, '_').trim();
+            // Strip trailing dots and spaces (invalid on Windows)
+            safeTitle = safeTitle.replace(/[.\s]+$/, '');
+
+            // Enforce max byte length safely (handling multi-byte chars)
+            let finalSafeTitle = safeTitle;
+            const encoder = new TextEncoder();
+            while (encoder.encode(finalSafeTitle).length > (MAX_FILENAME_BYTES - 4) && finalSafeTitle.length > 0) {
+                finalSafeTitle = finalSafeTitle.slice(0, -1);
+            }
+
+            finalSafeTitle = finalSafeTitle || 'book';
+            a.download = `${finalSafeTitle}.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(url);
+        } catch (error) {
+            console.error('Download error:', error);
+            toast.error('Failed to download PDF. Please try again.');
+        }
+    };
+
     const handleDelete = async () => {
         const result = await Swal.fire({
             title: 'Are you sure?',
@@ -267,13 +304,22 @@ export function BookCard({
                                 </Link>
                             )}
                             {/* Rating Display */}
-                            <div className="flex items-center gap-1 mt-1">
-                                <Star className={`h-4 w-4 ${book.totalReviews > 0 ? 'fill-yellow-400 text-yellow-400' : 'text-gray-400'}`} />
+                            <div className="flex items-center gap-2 mt-1">
+                                <div className="flex items-center">
+                                    {[1, 2, 3, 4, 5].map((s) => (
+                                        <div key={s} className="relative">
+                                            <Star className="h-4 w-4 text-gray-200 fill-current" />
+                                            <div className="absolute inset-0 overflow-hidden" style={{ width: `${Math.min(100, Math.max(0, (book.averageRating || 0) * 100 - (s - 1) * 100))}%` }}>
+                                                <Star className="h-4 w-4 text-yellow-400 fill-current" />
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
                                 <span className={`font-bold text-sm ${book.totalReviews > 0 ? 'text-yellow-700' : 'text-gray-500'}`}>
                                     {book.averageRating?.toFixed(1) || "0.0"}
                                 </span>
                                 <span className={`text-xs ${book.totalReviews > 0 ? 'text-yellow-600' : 'text-gray-400'}`}>
-                                    ({book.totalReviews})
+                                    ({book.totalReviews} {book.totalReviews === 1 ? 'review' : 'reviews'})
                                 </span>
                             </div>
                         </div>
@@ -356,11 +402,9 @@ export function BookCard({
                 {/* Action Buttons */}
                 <div className="flex flex-wrap gap-2 mt-auto pt-4 border-t">
                     {pdfUrl ? (
-                        <Link href={pdfUrl} target="_blank" rel="noopener noreferrer">
-                            <Button variant="ghost" size="icon" title="Download PDF">
-                                <Download className="h-5 w-5 text-gray-500 hover:text-primary" />
-                            </Button>
-                        </Link>
+                        <Button variant="ghost" size="icon" title="Download PDF" onClick={handleDownload}>
+                            <Download className="h-5 w-5 text-gray-500 hover:text-primary" />
+                        </Button>
                     ) : (
                         <Button
                             variant="ghost"

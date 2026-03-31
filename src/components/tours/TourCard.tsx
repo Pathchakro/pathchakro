@@ -14,6 +14,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { ImageSlider } from './ImageSlider';
+import { ShareDialog } from '@/components/feed/ShareDialog';
 
 interface TourCardProps {
     tour: {
@@ -162,14 +163,24 @@ export function TourCard({ tour }: TourCardProps) {
                         <MessageCircle className="h-4 w-4 md:h-5 md:w-5" />
                         <span className="text-sm font-medium hidden md:inline">Discuss</span>
                     </Link>
-                    <button
-                        aria-label="Share"
-                        onClick={(e) => handleActionClick(e, 'share')}
-                        className="flex items-center gap-2 px-2 py-1 md:px-3 md:py-2 rounded-lg hover:bg-muted transition-colors"
-                    >
-                        <Share2 className="h-4 w-4 md:h-5 md:w-5" />
-                        <span className="text-sm font-medium hidden md:inline">Share</span>
-                    </button>
+                    <ShareDialog
+                        post={{
+                            _id: tour._id,
+                            title: tour.title,
+                            slug: tour.slug,
+                            description: tour.description
+                        }}
+                        basePath="/tours"
+                        trigger={
+                            <button
+                                aria-label="Share"
+                                className="flex items-center gap-2 px-2 py-1 md:px-3 md:py-2 rounded-lg hover:bg-muted transition-colors"
+                            >
+                                <Share2 className="h-4 w-4 md:h-5 md:w-5" />
+                                <span className="text-sm font-medium hidden md:inline">Share</span>
+                            </button>
+                        }
+                    />
                 </div>
                 <button
                     aria-label="Bookmark"

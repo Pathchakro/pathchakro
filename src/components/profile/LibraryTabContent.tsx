@@ -53,7 +53,7 @@ export function LibraryTabContent({ userId, isOwnProfile }: LibraryTabContentPro
     const fetchLibrary = async () => {
         setLoading(true);
         try {
-            const response = await fetch(`/api/library?userId=${userId}`);
+            const response = await fetch(`/api/library?userId=${userId}&t=${Date.now()}`);
             const data = await response.json();
 
             if (data.library) {
@@ -88,6 +88,7 @@ export function LibraryTabContent({ userId, isOwnProfile }: LibraryTabContentPro
             });
 
             if (response.ok) {
+                toast.success("Book removed from library");
                 fetchLibrary();
             }
         } catch (error) {

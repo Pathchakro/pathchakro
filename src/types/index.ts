@@ -119,6 +119,7 @@ export interface IBook {
     averageRating: number;
     totalReviews: number;
     copies: number;
+    completedCount?: number;
     buyingLink?: string;
     addedBy?: string | IUser;
     createdAt: Date;

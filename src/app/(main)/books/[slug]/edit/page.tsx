@@ -258,9 +258,10 @@ export default function EditBookPage() {
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label>PDF Book File (Optional)</Label>
+                                    <Label htmlFor="pdf-upload">PDF Book File (Optional)</Label>
                                     <div className="flex gap-2 items-center">
-                                    <Input
+                                        <Input
+                                            id="pdf-upload"
                                             type="file"
                                             accept=".pdf"
                                             disabled={isFieldDisabled('pdfUrl') || uploadingPdf}
@@ -299,13 +300,8 @@ export default function EditBookPage() {
                                                 }
                                             }}
                                         />
-                                        {uploadingPdf && <Loader2 className="h-4 w-4 animate-spin" />}
+                                        {uploadingPdf && <Loader2 className="h-4 w-4 animate-spin text-primary" />}
                                     </div>
-                                    {watch('pdfUrl') && (
-                                        <p className="text-xs text-green-600 flex items-center gap-1">
-                                            <Upload className="h-3 w-3" /> PDF ready to submit
-                                        </p>
-                                    )}
                                 </div>
                             </div>
 

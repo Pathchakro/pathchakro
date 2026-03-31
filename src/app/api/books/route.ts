@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+export const dynamic = 'force-dynamic';
 import dbConnect from '@/lib/mongodb';
 import Book from '@/models/Book';
 import { auth } from '@/auth';
@@ -29,6 +30,10 @@ export async function GET(request: NextRequest) {
             filter.category = { $in: categories };
         }
 
+        if (searchParams.get('hasCopies') === 'true') {
+            filter.copies = { $gt: 0 };
+        }
+
         const page = parseInt(searchParams.get('page') || '1');
         const limit = parseInt(searchParams.get('limit') || '20');
         const skip = (page - 1) * limit;
@@ -45,7 +50,7 @@ export async function GET(request: NextRequest) {
 
         const totalPages = Math.ceil(totalBooks / limit);
 
-        return NextResponse.json({ 
+        return NextResponse.json({
             books,
             pagination: {
                 totalBooks,

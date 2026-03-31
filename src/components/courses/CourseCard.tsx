@@ -12,6 +12,7 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { ShareDialog } from '@/components/feed/ShareDialog';
 
 interface CourseCardProps {
     course: {
@@ -44,28 +45,7 @@ export function CourseCard({ course, currentUserId, isBookmarked = false, onTogg
 
     const linkHref = `/courses/${course.slug || course._id}`;
 
-    const handleShare = async () => {
-        const shareData = {
-            title: course.title,
-            text: `Check out this course: ${course.title}`,
-            url: `${window.location.origin}${linkHref}`,
-        };
 
-        try {
-            if (navigator.share) {
-                await navigator.share(shareData);
-                toast.success('Shared successfully');
-            } else {
-                await navigator.clipboard.writeText(shareData.url);
-                toast.success('Link copied to clipboard');
-            }
-        } catch (error) {
-            if ((error as Error).name !== 'AbortError') {
-                console.error('Error sharing:', error);
-                toast.error('Failed to share');
-            }
-        }
-    };
 
     const handleDelete = async () => {
         const result = await Swal.fire({
@@ -212,14 +192,23 @@ export function CourseCard({ course, currentUserId, isBookmarked = false, onTogg
                         <MessageCircle className="h-4 w-4 md:h-5 md:w-5" />
                         <span className="text-sm font-medium hidden md:inline">Details</span>
                     </Link>
-                    <button
-                        onClick={handleShare}
-                        className="flex items-center gap-2 px-2 py-1 md:px-3 md:py-2 rounded-lg hover:bg-muted transition-colors"
-                        aria-label="Share course"
-                    >
-                        <Share2 className="h-4 w-4 md:h-5 md:w-5" />
-                        <span className="text-sm font-medium hidden md:inline">Share</span>
-                    </button>
+                    <ShareDialog
+                        post={{
+                            _id: course._id,
+                            title: course.title,
+                            slug: course.slug
+                        }}
+                        basePath="/courses"
+                        trigger={
+                            <button
+                                className="flex items-center gap-2 px-2 py-1 md:px-3 md:py-2 rounded-lg hover:bg-muted transition-colors"
+                                aria-label="Share course"
+                            >
+                                <Share2 className="h-4 w-4 md:h-5 md:w-5" />
+                                <span className="text-sm font-medium hidden md:inline">Share</span>
+                            </button>
+                        }
+                    />
                 </div>
                 <Button asChild size="sm">
                     <Link href={linkHref}>Enroll</Link>

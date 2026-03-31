@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { PostCard } from '@/components/feed/PostCard';
 import { ReviewCard } from '@/components/reviews/ReviewCard';
@@ -77,7 +78,7 @@ export default function HomeContent({
             setIsSearching(true);
             try {
                 const response = await fetch(
-                    `/api/search?q=${encodeURIComponent(trimmedQuery)}&type=all`,
+                    `/api/search?q=${encodeURIComponent(trimmedQuery)}&type=all&t=${Date.now()}`,
                     { signal: controller.signal }
                 );
 
@@ -151,6 +152,53 @@ export default function HomeContent({
 
     const handleDeleteItem = (id: string) => {
         setItems(prev => prev.filter(item => item._id !== id));
+    };
+
+    const handleAddToLibrary = async (bookId: string) => {
+        try {
+            const res = await fetch('/api/library', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ bookId, isOwned: true }),
+            });
+            if (res.ok) {
+                toast.success("Added to your library collection");
+            } else {
+                toast.error("Failed to add to library");
+            }
+        } catch (error) {
+            toast.error("Something went wrong");
+        }
+    };
+
+    const handleRemoveFromLibrary = async (bookId: string) => {
+        try {
+            const res = await fetch(`/api/library?bookId=${bookId}`, {
+                method: 'DELETE',
+            });
+            if (res.ok) {
+                toast.success("Removed from your library collection");
+            } else {
+                toast.error("Failed to remove from library");
+            }
+        } catch (error) {
+            toast.error("Something went wrong");
+        }
+    };
+
+    const handleUpdateStatus = async (bookId: string, status: string) => {
+        try {
+            const res = await fetch('/api/library', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ bookId, status }),
+            });
+            if (!res.ok) {
+                toast.error("Failed to update status");
+            }
+        } catch (error) {
+            toast.error("Something went wrong");
+        }
     };
 
     return (
@@ -250,7 +298,13 @@ export default function HomeContent({
                                     {(activeSearchTab === 'all' || activeSearchTab === 'books') && searchResults.books?.length > 0 && (
                                         <div className="space-y-6">
                                             {searchResults.books.map((book: any) => (
-                                                <BookCard key={book._id} book={book} onUpdateStatus={() => { }} onAddToLibrary={() => { }} />
+                                                <BookCard
+                                                    key={book._id}
+                                                    book={book}
+                                                    onUpdateStatus={handleUpdateStatus}
+                                                    onAddToLibrary={handleAddToLibrary}
+                                                    onRemoveFromLibrary={handleRemoveFromLibrary}
+                                                />
                                             ))}
                                         </div>
                                     )}

@@ -54,11 +54,11 @@ export default function BooksPage() {
     // Consolidated effect for fetching books and resetting page
     useEffect(() => {
         const filtersChanged = prevCategoryRef.current !== categoryFilter || prevSearchRef.current !== debouncedSearchQuery;
-        
+
         if (filtersChanged) {
             prevCategoryRef.current = categoryFilter;
             prevSearchRef.current = debouncedSearchQuery;
-            
+
             // If filters changed, reset to page 1
             // fetchBooks will be called by the page change if currentPage was not 1
             // otherwise we call it manually here
@@ -112,6 +112,27 @@ export default function BooksPage() {
         }
     };
 
+    const handleRemoveFromLibrary = async (bookId: string) => {
+        try {
+            const res = await fetch('/api/library', {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ bookId }),
+            });
+            if (res.ok) {
+                toast.success("Removed from your library collection");
+                setLibraryMap(prev => ({
+                    ...prev,
+                    [bookId]: { ...prev[bookId], isOwned: false }
+                }));
+            } else {
+                toast.error("Failed to remove from library");
+            }
+        } catch (error) {
+            toast.error("Something went wrong");
+        }
+    };
+
     const handleUpdateReadingStatus = async (bookId: string, status: string) => {
         try {
             const res = await fetch('/api/library', {
@@ -120,7 +141,6 @@ export default function BooksPage() {
                 body: JSON.stringify({ bookId, status }),
             });
             if (res.ok) {
-                toast.success(`Status updated: ${status.replace('-', ' ')}`);
                 setLibraryMap(prev => ({
                     ...prev,
                     [bookId]: { ...prev[bookId], status }
@@ -145,6 +165,7 @@ export default function BooksPage() {
             if (categoryFilter) {
                 params.append('category', categoryFilter);
             }
+            params.append('t', Date.now().toString());
 
             const response = await fetch(`/api/books?${params}`);
             const data = await response.json();
@@ -241,6 +262,7 @@ export default function BooksPage() {
                                 status={libraryMap[book._id]?.status}
                                 isOwned={libraryMap[book._id]?.isOwned}
                                 onAddToLibrary={handleAddToLibrary}
+                                onRemoveFromLibrary={handleRemoveFromLibrary}
                                 onUpdateStatus={handleUpdateReadingStatus}
                             />
                         ))}

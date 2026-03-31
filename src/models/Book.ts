@@ -52,6 +52,11 @@ const BookSchema = new Schema<IBook>(
             default: 0,
             min: 0,
         },
+        completedCount: {
+            type: Number,
+            default: 0,
+            min: 0,
+        },
         buyingLink: {
             type: String,
             trim: true,
