@@ -7,12 +7,11 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../../../components/ui/tabs';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { User, GraduationCap, Briefcase, Globe, Heart, ArrowLeft, MapPin, ShieldCheck, X } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useDynamicConfig } from '@/hooks/useDynamicConfig';
-import { InstituteSearch } from '@/components/profile/InstituteSearch';
 import LoadingSpinner from '@/components/ui/Loading';
 import { toast } from 'sonner';
 
@@ -807,9 +806,11 @@ export default function EditProfilePage() {
 
                             <div>
                                 <Label htmlFor="institution">Institution</Label>
-                                <InstituteSearch
+                                <Input
+                                    id="institution"
                                     value={institution}
-                                    onSelect={(val) => setInstitution(val)}
+                                    onChange={(e) => setInstitution(e.target.value)}
+                                    placeholder="Enter your institution"
                                 />
                             </div>
                             <div className="grid grid-cols-3 gap-4">
