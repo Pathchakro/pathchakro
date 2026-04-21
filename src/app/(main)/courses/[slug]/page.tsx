@@ -1,21 +1,26 @@
 import { Metadata } from 'next';
+// Course details page for Pathchakro
 import Link from 'next/link';
 import Image from 'next/image';
 import { notFound } from 'next/navigation';
 import { Calendar, Users, Clock, Share2, Info, CheckCircle2 } from 'lucide-react';
+import he from 'he';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { EnrollButton } from '@/components/courses/EnrollButton';
+import { CourseDescription } from '@/components/courses/CourseDescription';
+
+import { generateHtml } from '@/lib/server-html';
 
 // Helper to fetch course
 async function getCourse(slug: string) {
     if (!process.env.NEXTAUTH_URL) return null;
 
     try {
-        const res = await fetch(`${process.env.NEXTAUTH_URL}/api/courses/slug/${slug}`, {
+        const res = await fetch(`${process.env.NEXTAUTH_URL}/api/courses/${slug}`, {
             cache: 'force-cache',
             next: { tags: ['courses', `course-${slug}`] }
         });
@@ -27,18 +32,45 @@ async function getCourse(slug: string) {
     }
 }
 
+// Helper to format date with fallback
+function formatDate(dateString: string | Date | null | undefined) {
+    if (!dateString) return 'TBD';
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return 'TBD';
+    return date.toLocaleDateString('en-US');
+}
+
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
     const { slug } = await params;
     const course = await getCourse(slug);
     if (!course) return {};
 
+    // Generate description from content
+    let description = '';
+    if (course.description) {
+        const htmlContent = generateHtml(course.description);
+        // Strip HTML, decode entities, and truncate gracefully
+        const plainText = he.decode(htmlContent.replace(/<[^>]*>?/gm, ''));
+        if (plainText.length <= 160) {
+            description = plainText.trim();
+        } else {
+            const truncated = plainText.substring(0, 160);
+            const lastSpace = truncated.lastIndexOf(' ');
+            description = (lastSpace > 0 ? truncated.substring(0, lastSpace) : truncated).trim() + '...';
+        }
+    }
+
+    if (!description) {
+        description = `Enroll in ${course.title} - ${course.mode} course at Pathchakro.`;
+    }
+
     return {
         title: course.title,
-        description: `Enroll in ${course.title} - ${course.mode} course at Pathchakro.`,
+        description: description,
         openGraph: {
             images: [course.banner],
             title: course.title,
-            description: `Join us for ${course.title}. Registration ends ${new Date(course.lastDateRegistration).toLocaleDateString()}.`
+            description: description,
         },
         twitter: {
             card: 'summary_large_image',
@@ -50,46 +82,62 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 export default async function CourseDetailsPage({ params }: { params: Promise<{ slug: string }> }) {
     const { slug } = await params;
     const course = await getCourse(slug);
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL;
-    if (!baseUrl) {
-        throw new Error('NEXT_PUBLIC_APP_URL must be defined for share links');
-    }
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || '';
 
     if (!course) notFound();
 
     return (
         <div className="container py-10 space-y-8">
             {/* Banner */}
-            <div className="relative h-[300px] md:h-[400px] w-full rounded-2xl overflow-hidden shadow-xl">
+            <div className="relative h-[300px] md:h-[400px] w-full rounded-2xl overflow-hidden shadow-lg">
                 <Image
                     src={course.banner}
                     alt={course.title}
                     fill
                     className="object-cover"
+                    priority
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
-                <div className="absolute bottom-0 left-0 p-6 md:p-10 text-white space-y-4">
-                    <Badge className="bg-primary hover:bg-primary/90 text-white font-bold px-4 py-1.5 capitalize text-base">
-                        {course.mode}
-                    </Badge>
-                    <h1 className="text-3xl md:text-5xl font-bold leading-tight max-w-4xl">
-                        {course.title}
-                    </h1>
-                    <div className="flex flex-wrap items-center gap-6 text-gray-200">
-                        <div className="flex items-center gap-2">
-                            <Avatar className="h-8 w-8 border border-white/50">
-                                <AvatarImage src={course.instructor?.image} />
-                                <AvatarFallback>IN</AvatarFallback>
-                            </Avatar>
-                            <span className="font-medium">{course.instructor?.name || 'Instructor'}</span>
+            </div>
+
+            {/* Course Header Info */}
+            <div className="space-y-6">
+                <Badge className="bg-primary hover:bg-primary/90 text-white font-bold px-4 py-1.5 capitalize text-sm md:text-base w-fit">
+                    {course.mode}
+                </Badge>
+                
+                <h1 className="text-3xl md:text-5xl font-bold leading-tight max-w-5xl text-foreground">
+                    {course.title}
+                </h1>
+
+                <div className="flex flex-wrap items-center gap-x-8 gap-y-4 text-sm md:text-base text-muted-foreground">
+                    <div className="flex items-center gap-2.5">
+                        <Avatar className="h-10 w-10 border-2 border-primary/10">
+                            <AvatarImage src={course.instructor?.image} />
+                            <AvatarFallback>IN</AvatarFallback>
+                        </Avatar>
+                        <div className="flex flex-col">
+                            <span className="text-[10px] uppercase tracking-wider font-bold text-primary">Instructor</span>
+                            <span className="font-semibold text-foreground leading-tight">{course.instructor?.name || 'Instructor'}</span>
                         </div>
-                        <div className="flex items-center gap-2">
-                            <Users className="h-4 w-4" />
-                            <span>{course.students?.length || 0} Students Enrolled</span>
+                    </div>
+                    
+                    <div className="flex items-center gap-2.5">
+                        <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                            <Users className="h-5 w-5 text-primary" />
                         </div>
-                        <div className="flex items-center gap-2">
-                            <Clock className="h-4 w-4" />
-                            <span>Starts {new Date(course.classStartDate).toLocaleDateString()}</span>
+                        <div>
+                            <p className="text-[10px] uppercase tracking-wider font-bold">Enrollment</p>
+                            <p className="font-semibold text-foreground">{course.students?.length || 0} Students</p>
+                        </div>
+                    </div>
+
+                    <div className="flex items-center gap-2.5">
+                        <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                            <Clock className="h-5 w-5 text-primary" />
+                        </div>
+                        <div>
+                            <p className="text-[10px] uppercase tracking-wider font-bold">Start Date</p>
+                            <p className="font-semibold text-foreground">{formatDate(course.classStartDate)}</p>
                         </div>
                     </div>
                 </div>
@@ -100,13 +148,7 @@ export default async function CourseDetailsPage({ params }: { params: Promise<{ 
                 <div className="lg:col-span-2 space-y-8">
                     <div className="prose dark:prose-invert max-w-none">
                         <h2 className="text-2xl font-bold mb-4">About this Course</h2>
-                        <div className="bg-muted/30 p-6 rounded-lg border">
-                            <p className="whitespace-pre-wrap">{
-                                typeof course.description === 'string' && course.description.startsWith('{')
-                                    ? "View course content details in the app."
-                                    : course.description
-                            }</p>
-                        </div>
+                        <CourseDescription description={course.description} />
                     </div>
 
                     <Separator />
@@ -146,11 +188,11 @@ export default async function CourseDetailsPage({ params }: { params: Promise<{ 
                             <div className="space-y-4 text-sm">
                                 <div className="flex justify-between items-center py-2 border-b">
                                     <span className="text-muted-foreground flex items-center gap-2"><Calendar className="h-4 w-4" /> Registration Ends</span>
-                                    <span className="font-medium">{new Date(course.lastDateRegistration).toLocaleDateString()}</span>
+                                    <span className="font-medium">{formatDate(course.lastDateRegistration)}</span>
                                 </div>
                                 <div className="flex justify-between items-center py-2 border-b">
                                     <span className="text-muted-foreground flex items-center gap-2"><Clock className="h-4 w-4" /> Classes Start</span>
-                                    <span className="font-medium">{new Date(course.classStartDate).toLocaleDateString()}</span>
+                                    <span className="font-medium">{formatDate(course.classStartDate)}</span>
                                 </div>
                                 <div className="flex justify-between items-center py-2 border-b">
                                     <span className="text-muted-foreground flex items-center gap-2"><CheckCircle2 className="h-4 w-4" /> Total Classes</span>
@@ -160,25 +202,27 @@ export default async function CourseDetailsPage({ params }: { params: Promise<{ 
 
                             <EnrollButton slug={slug} />
 
-                            <div className="pt-4">
-                                <h4 className="text-sm font-semibold mb-3 flex items-center gap-2">
-                                    <Share2 className="h-4 w-4" /> Share this course
-                                </h4>
-                                <div className="flex gap-2">
-                                    <SocialLink
-                                        platform="facebook"
-                                        href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(`${baseUrl}/courses/${slug}`)}`}
-                                    />
-                                    <SocialLink
-                                        platform="twitter"
-                                        href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(`Check out ${course.title}!`)}&url=${encodeURIComponent(`${baseUrl}/courses/${slug}`)}`}
-                                    />
-                                    <SocialLink
-                                        platform="linkedin"
-                                        href={`https://www.linkedin.com/shareArticle?mini=true&url=${encodeURIComponent(`${baseUrl}/courses/${slug}`)}&title=${encodeURIComponent(course.title)}`}
-                                    />
+                            {baseUrl && (
+                                <div className="pt-4">
+                                    <h4 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                                        <Share2 className="h-4 w-4" /> Share this course
+                                    </h4>
+                                    <div className="flex gap-2">
+                                        <SocialLink
+                                            platform="facebook"
+                                            href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(`${baseUrl}/courses/${slug}`)}`}
+                                        />
+                                        <SocialLink
+                                            platform="twitter"
+                                            href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(`Check out ${course.title}!`)}&url=${encodeURIComponent(`${baseUrl}/courses/${slug}`)}`}
+                                        />
+                                        <SocialLink
+                                            platform="linkedin"
+                                            href={`https://www.linkedin.com/shareArticle?mini=true&url=${encodeURIComponent(`${baseUrl}/courses/${slug}`)}&title=${encodeURIComponent(course.title)}`}
+                                        />
+                                    </div>
                                 </div>
-                            </div>
+                            )}
                         </CardContent>
                     </Card>
                 </div>

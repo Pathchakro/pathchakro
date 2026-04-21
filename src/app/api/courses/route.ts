@@ -13,12 +13,20 @@ export async function GET(req: NextRequest) {
         await dbConnect();
         const { searchParams } = new URL(req.url);
         const filterParam = searchParams.get('filter'); // 'mine', 'favorites', 'enrolled'
+        const upcomingParam = searchParams.get('upcoming');
 
         let filter: any = {};
+        let sort: any = { createdAt: -1 };
 
         const session = await auth();
 
-        if (['mine', 'favorites', 'enrolled'].includes(filterParam || '')) {
+        if (upcomingParam === 'true') {
+            filter = { 
+                classStartDate: { $gte: new Date() },
+                privacy: 'public' // Only show public courses in the upcoming section
+            };
+            sort = { classStartDate: 1 }; // Show the nearest course first
+        } else if (['mine', 'favorites', 'enrolled'].includes(filterParam || '')) {
             if (!session?.user?.id) {
                 return NextResponse.json([]);
             }
@@ -43,7 +51,7 @@ export async function GET(req: NextRequest) {
         const courses = await Course.find(filter)
             .populate('instructor', 'name image')
             .populate('students', 'name image') // Limit this if too many students
-            .sort({ createdAt: -1 });
+            .sort(sort);
 
         return NextResponse.json(courses);
     } catch (error) {

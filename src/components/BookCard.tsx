@@ -61,6 +61,7 @@ export function BookCard({
     showRemoveOption = false
 }: BookCardProps) {
     const { data: session } = useSession();
+    if (!book) return null;
     const [isUploading, setIsUploading] = useState(false);
     const [pdfUrl, setPdfUrl] = useState(book.pdfUrl);
     const [currentStatus, setCurrentStatus] = useState(status);

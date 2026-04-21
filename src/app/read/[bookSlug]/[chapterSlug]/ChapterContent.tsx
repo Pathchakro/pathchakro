@@ -10,7 +10,7 @@ export function ChapterContent({ content }: ChapterContentProps) {
 
     return (
         <div
-            className="prose prose-lg dark:prose-invert prose-headings:font-title font-sans leading-normal focus:outline-none max-w-full text-[18px] md:text-[20px]"
+            className="ProseMirror prose prose-lg dark:prose-invert prose-headings:font-title font-sans leading-normal focus:outline-none max-w-full"
             dangerouslySetInnerHTML={{ __html: htmlContent }}
         />
     );

@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { TrendingUp, Calendar } from 'lucide-react';
 import { UpcomingEventsCard } from '@/components/events/UpcomingEventsCard';
 import { UpcomingTourCard } from '@/components/tours/UpcomingTourCard';
+import { UpcomingCoursesCard } from '@/components/courses/UpcomingCoursesCard';
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 
@@ -38,6 +39,9 @@ export function RightSidebar() {
 
             {/* Upcoming Tours */}
             <UpcomingTourCard />
+
+            {/* Upcoming Courses */}
+            <UpcomingCoursesCard />
 
             {/* Trending Reviews */}
             <div className="bg-card rounded-lg p-4 mb-4 shadow-sm border">

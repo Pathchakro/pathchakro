@@ -1,154 +1,76 @@
 'use client';
 
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { MapPin, Calendar, Briefcase, Heart, BookOpen } from 'lucide-react';
-import { formatDate } from '@/lib/utils';
+import { Badge } from '@/components/ui/badge';
+import { MapPin, Link as LinkIcon, Calendar, Pencil } from 'lucide-react';
 import Link from 'next/link';
-import Image from 'next/image';
 
 interface ProfileHeaderProps {
-    user: {
-        _id: string;
-        name: string;
-        email: string;
-        image?: string;
-        coverImage?: string;
-        bio?: string;
-        profileType: string;
-        university?: string;
-        thana?: string;
-        bloodGroup?: string;
-        bookPreferences?: string[];
-        rankTier?: string;
-        createdAt: string | Date;
-    };
-    stats: {
-        posts: number;
-        reviews: number;
-        followers: number;
-        following: number;
-    };
-    isOwnProfile?: boolean;
+    user: any;
+    isOwnProfile: boolean;
 }
 
-export function ProfileHeader({ user, stats, isOwnProfile }: ProfileHeaderProps) {
-    const getRankColor = (tier: string) => {
-        const colors = {
-            'Master': 'from-purple-500 to-pink-500',
-            'Scholar': 'from-blue-500 to-cyan-500',
-            'Critic': 'from-green-500 to-emerald-500',
-            'Reader': 'from-yellow-500 to-orange-500',
-            'Beginner': 'from-gray-400 to-gray-500',
-        };
-        return colors[tier as keyof typeof colors] || colors.Beginner;
-    };
-
+export function ProfileHeader({ user, isOwnProfile }: ProfileHeaderProps) {
     return (
-        <div className="bg-card rounded-lg shadow-sm border overflow-hidden">
-            {/* Cover Image */}
-            <div className={`h-48 relative bg-gradient-to-r ${getRankColor(user.rankTier || 'Beginner')}`}>
-                {user.coverImage && (
-                    <Image src={user.coverImage} alt="Cover" fill className="object-cover" />
-                )}
-            </div>
+        <div className="bg-card rounded-lg border shadow-sm p-6 mb-6">
+            <div className="flex flex-col md:flex-row gap-6 items-start md:items-center">
+                <Avatar className="h-24 w-24 border-2 border-primary/10 shadow-md">
+                    <AvatarImage src={user.image} alt={user.name} />
+                    <AvatarFallback className="text-2xl font-bold bg-muted text-muted-foreground uppercase">
+                        {user.name?.[0]}
+                    </AvatarFallback>
+                </Avatar>
 
-            {/* Profile Info */}
-            <div className="p-6">
-                <div className="flex flex-col md:flex-row gap-4 items-start md:items-end -mt-20 md:-mt-16">
-                    {/* Avatar */}
-                    <div className="relative">
-                        <div className={`h-32 w-32 rounded-full border-4 border-card bg-gradient-to-br ${getRankColor(user.rankTier || 'Beginner')} flex items-center justify-center text-white font-bold text-4xl shadow-lg relative`}>
-                            {user.image ? (
-                                <Image src={user.image} alt={user.name} fill className="rounded-full object-cover" />
-                            ) : (
-                                user.name && user.name.length > 0 ? user.name[0].toUpperCase() : '?'
-                            )}
-                        </div>
-                        {/* Rank Badge */}
-                        <div className="absolute -bottom-2 -right-2 bg-primary text-primary-foreground text-xs font-bold px-3 py-1 rounded-full shadow-md">
-                            {user.rankTier || 'Beginner'}
-                        </div>
-                    </div>
-
-                    {/* User Info */}
-                    <div className="flex-1">
-                        <h1 className="text-2xl md:text-3xl font-bold">{user.name}</h1>
-                        <p className="text-muted-foreground mb-2">{user.profileType}</p>
-
-                        <div className="flex flex-wrap gap-3 text-sm text-muted-foreground mb-3">
-                            {user.university && (
-                                <div className="flex items-center gap-1">
-                                    <Briefcase className="h-4 w-4" />
-                                    <span>{user.university}</span>
-                                </div>
-                            )}
-                            {user.thana && (
-                                <div className="flex items-center gap-1">
-                                    <MapPin className="h-4 w-4" />
-                                    <span>{user.thana}</span>
-                                </div>
-                            )}
-                            {user.bloodGroup && (
-                                <div className="flex items-center gap-1">
-                                    <Heart className="h-4 w-4 text-red-500" />
-                                    <span>{user.bloodGroup}</span>
-                                </div>
-                            )}
-                            <div className="flex items-center gap-1">
-                                <Calendar className="h-4 w-4" />
-                                <span>Joined {formatDate(user.createdAt)}</span>
-                            </div>
-                        </div>
-
-                        {user.bio && (
-                            <p className="text-sm mb-3 max-w-2xl">{user.bio}</p>
+                <div className="flex-1 space-y-2">
+                    <div className="flex flex-wrap items-center gap-3">
+                        <h1 className="text-2xl font-bold text-foreground">{user.name}</h1>
+                        {user.rankTier && (
+                            <Badge variant="secondary" className="bg-primary/10 text-primary font-semibold hover:bg-primary/20">
+                                {user.rankTier}
+                            </Badge>
                         )}
-
-                        {user.bookPreferences && user.bookPreferences.length > 0 && (
-                            <div className="flex items-start gap-2 mb-3">
-                                <BookOpen className="h-4 w-4 text-muted-foreground mt-0.5" />
-                                <div className="flex flex-wrap gap-1">
-                                    {user.bookPreferences.map((pref) => (
-                                        <span key={pref} className="text-xs bg-muted px-2 py-1 rounded-full">
-                                            {pref}
-                                        </span>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Stats */}
-                        <div className="flex gap-6 text-sm">
-                            <div>
-                                <span className="font-semibold">{stats.posts}</span>
-                                <span className="text-muted-foreground ml-1">Posts</span>
-                            </div>
-                            <div>
-                                <span className="font-semibold">{stats.reviews}</span>
-                                <span className="text-muted-foreground ml-1">Reviews</span>
-                            </div>
-                            <div>
-                                <span className="font-semibold">{stats.followers}</span>
-                                <span className="text-muted-foreground ml-1">Followers</span>
-                            </div>
-                            <div>
-                                <span className="font-semibold">{stats.following}</span>
-                                <span className="text-muted-foreground ml-1">Following</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Action Buttons */}
-                    <div className="flex gap-2">
-                        {isOwnProfile ? (
+                        {isOwnProfile && (
                             <Link href="/profile/edit">
-                                <Button variant="outline">Edit Profile</Button>
+                                <Button variant="outline" size="sm" className="gap-2 h-8 rounded-full border-primary/20 hover:border-primary">
+                                    <Pencil className="h-3.5 w-3.5" />
+                                    <span>Edit Profile</span>
+                                </Button>
                             </Link>
-                        ) : (
-                            <>
-                                <Button>Follow</Button>
-                                <Button variant="outline">Message</Button>
-                            </>
+                        )}
+                    </div>
+                    
+                    <p className="text-muted-foreground font-medium">@{user.username || 'user'}</p>
+                    
+                    {user.bio && (
+                        <p className="text-foreground/90 max-w-2xl leading-relaxed">{user.bio}</p>
+                    )}
+
+                    <div className="flex flex-wrap gap-x-6 gap-y-2 pt-2 text-sm text-muted-foreground">
+                        {user.location && (
+                            <div className="flex items-center gap-1.5">
+                                <MapPin className="h-4 w-4" />
+                                <span>{user.location}</span>
+                            </div>
+                        )}
+                        {user.website && (
+                            <div className="flex items-center gap-1.5">
+                                <LinkIcon className="h-4 w-4" />
+                                <a 
+                                    href={user.website.startsWith('http') ? user.website : `https://${user.website}`} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    className="text-primary hover:underline"
+                                >
+                                    {user.website.replace(/^https?:\/\//, '')}
+                                </a>
+                            </div>
+                        )}
+                        {user.createdAt && !isNaN(new Date(user.createdAt).getTime()) && (
+                            <div className="flex items-center gap-1.5">
+                                <Calendar className="h-4 w-4" />
+                                <span>Joined {new Date(user.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</span>
+                            </div>
                         )}
                     </div>
                 </div>
