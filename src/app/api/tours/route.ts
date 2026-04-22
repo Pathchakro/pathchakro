@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { revalidatePath } from 'next/cache';
+import { revalidatePath, revalidateTag } from 'next/cache';
 import { auth } from '@/auth';
 import dbConnect from '@/lib/mongodb';
 import Tour from '@/models/Tour';
@@ -163,6 +163,8 @@ export async function POST(request: NextRequest) {
             .lean();
 
         revalidatePath('/', 'layout');
+        revalidateTag('tours', 'max');
+        revalidateTag('feed', 'max');
 
         return NextResponse.json(
             { tour: popularTour },

@@ -21,7 +21,7 @@ export async function GET(req: NextRequest) {
         const session = await auth();
 
         if (upcomingParam === 'true') {
-            filter = { 
+            filter = {
                 classStartDate: { $gte: new Date() },
                 privacy: 'public' // Only show public courses in the upcoming section
             };
@@ -85,7 +85,8 @@ export async function POST(req: NextRequest) {
         });
 
         revalidatePath('/', 'layout');
-        revalidateTag('courses', 'default');
+        revalidateTag('courses', 'max');
+        revalidateTag('feed', "max");
 
         return NextResponse.json(course, { status: 201 });
     } catch (error) {

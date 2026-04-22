@@ -59,6 +59,7 @@ export async function GET(request: NextRequest) {
             Course.find(query)
                 .sort({ createdAt: -1 })
                 .limit(limit)
+                .populate('instructor', 'name image')
                 .lean(),
             Tour.find(query)
                 .sort({ createdAt: -1 })
