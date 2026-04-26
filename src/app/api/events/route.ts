@@ -3,10 +3,15 @@ import { revalidatePath, revalidateTag } from 'next/cache';
 import { auth } from '@/auth';
 import dbConnect from '@/lib/mongodb';
 import Event from '@/models/Event';
+import User from '@/models/User';
 import Team from '@/models/Team';
 import { generateUniqueSlug } from '@/lib/slug-utils';
 
 export async function GET(request: NextRequest) {
+    const escapeRegex = (string: string): string => {
+        return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    };
+
     try {
         await dbConnect();
 
@@ -33,6 +38,43 @@ export async function GET(request: NextRequest) {
             filter.status = { $in: ['upcoming', 'ongoing'] };
         }
 
+        const query = searchParams.get('q');
+        if (query) {
+            const escapedQuery = escapeRegex(query);
+            // Find users matching the query to search in participant fields
+            const matchingUsers = await User.find({ 
+                name: { $regex: escapedQuery, $options: 'i' } 
+            }).select('_id');
+            const userIds = matchingUsers.map(u => u._id);
+
+            const searchOr = [
+                { title: { $regex: escapedQuery, $options: 'i' } },
+                { description: { $regex: escapedQuery, $options: 'i' } },
+                { 'roles.speakers.topic': { $regex: escapedQuery, $options: 'i' } },
+                { organizer: { $in: userIds } },
+                { 'roles.speakers.user': { $in: userIds } },
+                { 'listeners.user': { $in: userIds } }
+            ];
+
+            if (filter.$or) {
+                // Combine existing $or (like team filters) with search $or
+                filter.$and = [
+                    { $or: filter.$or },
+                    { $or: searchOr }
+                ];
+                delete filter.$or;
+            } else {
+                filter.$or = searchOr;
+            }
+            
+            // If we are searching, we might want to include both upcoming and past events
+            // unless upcoming was explicitly requested.
+            // If the user unchecks "upcoming only" in UI, 'upcoming' param will be false.
+            if (!upcoming) {
+                delete filter.status; // Remove status filter to show all
+            }
+        }
+
         const organizer = searchParams.get('organizer');
         if (organizer) {
             filter.organizer = organizer;
@@ -47,10 +89,26 @@ export async function GET(request: NextRequest) {
             .limit(50)
             .lean();
 
-        console.log('GET /api/events filter:', JSON.stringify(filter, null, 2));
-        console.log('Found events:', events.length);
+        // Auto-fix stale statuses for returned events
+        const now = new Date();
+        const processedEvents = events.map(event => {
+            const startTime = new Date(event.startTime);
+            // If event started more than 3 hours ago and is still 'upcoming' or 'ongoing'
+            if (startTime.getTime() < now.getTime() - (3 * 60 * 60 * 1000) && 
+                (event.status === 'upcoming' || event.status === 'ongoing')) {
+                
+                // Fire and forget update in DB
+                Event.findByIdAndUpdate(event._id, { status: 'completed' }).exec()
+                    .catch(err => console.error(`Failed to auto-complete event ${event._id}:`, err));
+                return { ...event, status: 'completed' };
+            }
+            return event;
+        });
 
-        return NextResponse.json({ events });
+        console.log('GET /api/events filter:', JSON.stringify(filter, null, 2));
+        console.log('Found events:', processedEvents.length);
+
+        return NextResponse.json({ events: processedEvents });
     } catch (error: any) {
         console.error('Error fetching events:', error);
         return NextResponse.json(

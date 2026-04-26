@@ -5,12 +5,13 @@ import { useSession } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
 import { LoginModal } from '@/components/auth/LoginModal';
 import { Select } from '@/components/ui/select';
-import { Calendar, MapPin, Users, Video, Plus, Clock } from 'lucide-react';
+import { Calendar, MapPin, Users, Video, Plus, Clock, Search } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { EventCard } from '@/components/events/EventCard';
 import LoadingSpinner from '@/components/ui/Loading';
+import { Input } from '@/components/ui/input';
 
 
 interface Event {
@@ -44,6 +45,8 @@ export default function EventsClient({ initialEvents }: { initialEvents: Event[]
     const [loading, setLoading] = useState(false);
     const [statusFilter, setStatusFilter] = useState('');
     const [showUpcoming, setShowUpcoming] = useState(true);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
     const [isFirstLoad, setIsFirstLoad] = useState(true);
     const [showLoginModal, setShowLoginModal] = useState(false);
 
@@ -60,6 +63,7 @@ export default function EventsClient({ initialEvents }: { initialEvents: Event[]
             const params = new URLSearchParams();
             if (statusFilter) params.append('status', statusFilter);
             if (showUpcoming) params.append('upcoming', 'true');
+            if (debouncedSearchQuery) params.append('q', debouncedSearchQuery);
 
             const response = await fetch(`/api/events?${params}`);
 
@@ -91,6 +95,13 @@ export default function EventsClient({ initialEvents }: { initialEvents: Event[]
         fetchEvents();
     }, [fetchEvents, isFirstLoad]);
 
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedSearchQuery(searchQuery);
+        }, 500);
+        return () => clearTimeout(timer);
+    }, [searchQuery]);
+
     const getStatusColor = (status: string) => {
         switch (status) {
             case 'upcoming': return 'bg-blue-100 text-blue-700';
@@ -118,29 +129,47 @@ export default function EventsClient({ initialEvents }: { initialEvents: Event[]
                     </Link>
                 </div>
 
-                {/* Filters */}
-                <div className="flex flex-wrap gap-3">
-                    <Select
-                        value={statusFilter}
-                        onChange={(e: any) => setStatusFilter(e.target.value)}
-                    >
-                        <option value="">All Status</option>
-                        <option value="upcoming">Upcoming</option>
-                        <option value="ongoing">Ongoing</option>
-                        <option value="completed">Completed</option>
-                    </Select>
-
-                    <div className="flex items-center gap-2">
-                        <input
-                            type="checkbox"
-                            id="upcoming"
-                            checked={showUpcoming}
-                            onChange={(e) => setShowUpcoming(e.target.checked)}
-                            className="rounded"
+                {/* Search & Filters */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 bg-muted/20 p-4 rounded-xl border">
+                    <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                        <Input
+                            value={searchQuery}
+                            onChange={(e) => {
+                                setSearchQuery(e.target.value);
+                                if (e.target.value && showUpcoming) {
+                                    setShowUpcoming(false);
+                                }
+                            }}
+                            placeholder="Search events, topics, or participants..."
+                            className="pl-10 h-11 bg-background"
                         />
-                        <label htmlFor="upcoming" className="text-sm cursor-pointer">
-                            Show upcoming events only
-                        </label>
+                    </div>
+
+                    <div className="flex flex-wrap gap-3 items-center">
+                        <Select
+                            value={statusFilter}
+                            onChange={(e: any) => setStatusFilter(e.target.value)}
+                            className="h-11 bg-card flex-1"
+                        >
+                            <option value="">All Status</option>
+                            <option value="upcoming">Upcoming</option>
+                            <option value="ongoing">Ongoing</option>
+                            <option value="completed">Completed</option>
+                        </Select>
+
+                        <div className="flex items-center gap-2 px-3 py-2 bg-background rounded-md border h-11">
+                            <input
+                                type="checkbox"
+                                id="upcoming"
+                                checked={showUpcoming}
+                                onChange={(e) => setShowUpcoming(e.target.checked)}
+                                className="rounded"
+                            />
+                            <label htmlFor="upcoming" className="text-sm cursor-pointer select-none whitespace-nowrap">
+                                Upcoming only
+                            </label>
+                        </div>
                     </div>
                 </div>
             </div>
