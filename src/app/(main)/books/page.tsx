@@ -3,15 +3,13 @@
 import { useState, useEffect, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import { toast } from 'sonner';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Select } from '@/components/ui/select';
-import { Book, Search, Plus, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Book, Search, Plus } from 'lucide-react';
 import Link from 'next/link';
 import { CATEGORIES } from '@/lib/constants';
 import { LoginModal } from '@/components/auth/LoginModal';
 import { BookCard, type BookItem } from '@/components/BookCard';
 import LoadingSpinner from '@/components/ui/Loading';
+import { Pagination } from '@/components/ui/Pagination';
 
 export default function BooksPage() {
     const { data: session } = useSession();
@@ -269,64 +267,17 @@ export default function BooksPage() {
                     </div>
 
                     {/* Pagination Controls */}
-                    {totalPages > 1 && (
-                        <div className="flex flex-col items-center gap-4 pt-8 border-t">
-                            <div className="flex items-center gap-2">
-                                <Button
-                                    variant="outline"
-                                    size="icon"
-                                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                                    disabled={currentPage === 1}
-                                    className="h-10 w-10 shadow-sm"
-                                >
-                                    <ChevronLeft className="h-5 w-5" />
-                                </Button>
+                    <div className="flex flex-col items-center gap-4">
+                        <Pagination
+                            currentPage={currentPage}
+                            totalPages={totalPages}
+                            onPageChange={setCurrentPage}
+                        />
 
-                                <div className="flex items-center gap-1.5">
-                                    {[...Array(totalPages)].map((_, i) => {
-                                        const pageNum = i + 1;
-                                        if (
-                                            pageNum === 1 ||
-                                            pageNum === totalPages ||
-                                            (pageNum >= currentPage - 2 && pageNum <= currentPage + 2)
-                                        ) {
-                                            return (
-                                                <Button
-                                                    key={pageNum}
-                                                    variant={currentPage === pageNum ? "default" : "outline"}
-                                                    size="sm"
-                                                    onClick={() => setCurrentPage(pageNum)}
-                                                    className={`w-10 h-10 transition-all ${currentPage === pageNum ? 'shadow-md scale-105' : 'hover:bg-muted font-medium'}`}
-                                                >
-                                                    {pageNum}
-                                                </Button>
-                                            );
-                                        } else if (
-                                            pageNum === currentPage - 3 ||
-                                            pageNum === currentPage + 3
-                                        ) {
-                                            return <span key={pageNum} className="px-1 text-muted-foreground font-bold">...</span>;
-                                        }
-                                        return null;
-                                    })}
-                                </div>
-
-                                <Button
-                                    variant="outline"
-                                    size="icon"
-                                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                                    disabled={currentPage === totalPages}
-                                    className="h-10 w-10 shadow-sm"
-                                >
-                                    <ChevronRight className="h-5 w-5" />
-                                </Button>
-                            </div>
-
-                            <p className="text-sm font-medium text-muted-foreground bg-muted/50 px-4 py-1.5 rounded-full border">
-                                Showing <span className="text-foreground">{((currentPage - 1) * 20) + 1}</span> to <span className="text-foreground">{Math.min(currentPage * 20, totalBooks)}</span> of <span className="text-foreground font-bold">{totalBooks}</span> books
-                            </p>
-                        </div>
-                    )}
+                        <p className="text-sm font-medium text-muted-foreground bg-muted/50 px-4 py-1.5 rounded-full border">
+                            Showing <span className="text-foreground">{((currentPage - 1) * 20) + 1}</span> to <span className="text-foreground">{Math.min(currentPage * 20, totalBooks)}</span> of <span className="text-foreground font-bold">{totalBooks}</span> books
+                        </p>
+                    </div>
                 </div>
             )}
 

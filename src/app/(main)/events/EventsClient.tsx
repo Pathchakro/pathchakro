@@ -12,6 +12,8 @@ import { useRouter } from 'next/navigation';
 import { EventCard } from '@/components/events/EventCard';
 import LoadingSpinner from '@/components/ui/Loading';
 import { Input } from '@/components/ui/input';
+import { useRef } from 'react';
+import { Pagination } from '@/components/ui/Pagination';
 
 
 interface Event {
@@ -50,6 +52,15 @@ export default function EventsClient({ initialEvents }: { initialEvents: Event[]
     const [isFirstLoad, setIsFirstLoad] = useState(true);
     const [showLoginModal, setShowLoginModal] = useState(false);
 
+    // Pagination state
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const [totalEvents, setTotalEvents] = useState(0);
+
+    const prevStatusRef = useRef(statusFilter);
+    const prevUpcomingRef = useRef(showUpcoming);
+    const prevSearchRef = useRef(debouncedSearchQuery);
+
     const handleCreateEventClick = (e: React.MouseEvent) => {
         if (!session) {
             e.preventDefault();
@@ -57,10 +68,13 @@ export default function EventsClient({ initialEvents }: { initialEvents: Event[]
         }
     };
 
-    const fetchEvents = useCallback(async () => {
+    const fetchEvents = useCallback(async (page = 1) => {
         setLoading(true);
         try {
             const params = new URLSearchParams();
+            params.append('page', page.toString());
+            params.append('limit', '10');
+            
             if (statusFilter) params.append('status', statusFilter);
             if (showUpcoming) params.append('upcoming', 'true');
             if (debouncedSearchQuery) params.append('q', debouncedSearchQuery);
@@ -75,13 +89,17 @@ export default function EventsClient({ initialEvents }: { initialEvents: Event[]
 
             if (data.events) {
                 setEvents(data.events);
+                if (data.pagination) {
+                    setTotalPages(data.pagination.totalPages);
+                    setTotalEvents(data.pagination.totalEvents);
+                }
             }
         } catch (error) {
             console.error('Error fetching events:', error);
         } finally {
             setLoading(false);
         }
-    }, [statusFilter, showUpcoming]);
+    }, [statusFilter, showUpcoming, debouncedSearchQuery]);
 
     const handleDelete = (deletedId: string) => {
         setEvents(prev => prev.filter(e => e._id !== deletedId));
@@ -90,10 +108,29 @@ export default function EventsClient({ initialEvents }: { initialEvents: Event[]
     useEffect(() => {
         if (isFirstLoad) {
             setIsFirstLoad(false);
-            return;
+            // Even on first load, we might want to fetch if we want pagination info
+            // But let's follow the books page pattern where it resets/fetches on change
         }
-        fetchEvents();
-    }, [fetchEvents, isFirstLoad]);
+
+        const filtersChanged = 
+            prevStatusRef.current !== statusFilter || 
+            prevUpcomingRef.current !== showUpcoming || 
+            prevSearchRef.current !== debouncedSearchQuery;
+
+        if (filtersChanged) {
+            prevStatusRef.current = statusFilter;
+            prevUpcomingRef.current = showUpcoming;
+            prevSearchRef.current = debouncedSearchQuery;
+
+            if (currentPage !== 1) {
+                setCurrentPage(1);
+            } else {
+                fetchEvents(1);
+            }
+        } else {
+            fetchEvents(currentPage);
+        }
+    }, [fetchEvents, currentPage, statusFilter, showUpcoming, debouncedSearchQuery, isFirstLoad]);
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -193,14 +230,29 @@ export default function EventsClient({ initialEvents }: { initialEvents: Event[]
                     </Link>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {events.map((event) => (
-                        <EventCard 
-                            key={event._id} 
-                            event={event as any} 
-                            onDelete={handleDelete}
+                <div className="space-y-8">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {events.map((event) => (
+                            <EventCard 
+                                key={event._id} 
+                                event={event as any} 
+                                onDelete={handleDelete}
+                            />
+                        ))}
+                    </div>
+
+                    {/* Pagination Controls */}
+                    <div className="flex flex-col items-center gap-4">
+                        <Pagination
+                            currentPage={currentPage}
+                            totalPages={totalPages}
+                            onPageChange={setCurrentPage}
                         />
-                    ))}
+
+                        <p className="text-sm font-medium text-muted-foreground bg-muted/50 px-4 py-1.5 rounded-full border">
+                            Showing <span className="text-foreground">{((currentPage - 1) * 10) + 1}</span> to <span className="text-foreground">{Math.min(currentPage * 10, totalEvents)}</span> of <span className="text-foreground font-bold">{totalEvents}</span> events
+                        </p>
+                    </div>
                 </div>
             )}
             <LoginModal

@@ -21,7 +21,7 @@ export default async function EventsPage() {
             .populate('organizer', 'name image rankTier')
             .populate('team', 'name')
             .sort({ startTime: 1 })
-            .limit(20)
+            .limit(10)
             .lean();
 
         // Serialize data for Client Component

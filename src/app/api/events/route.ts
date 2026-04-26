@@ -80,14 +80,24 @@ export async function GET(request: NextRequest) {
             filter.organizer = organizer;
         }
 
-        const events = await Event.find(filter)
-            .populate('organizer', 'name image rankTier')
-            .populate('team', 'name')
-            .populate('roles.speakers.user', 'name image')
-            .populate('listeners.user', 'name image')
-            .sort({ startTime: 1 })
-            .limit(50)
-            .lean();
+        const page = parseInt(searchParams.get('page') || '1');
+        const limit = parseInt(searchParams.get('limit') || '10');
+        const skip = (page - 1) * limit;
+
+        const [events, totalEvents] = await Promise.all([
+            Event.find(filter)
+                .populate('organizer', 'name image rankTier')
+                .populate('team', 'name')
+                .populate('roles.speakers.user', 'name image')
+                .populate('listeners.user', 'name image')
+                .sort({ startTime: 1 })
+                .skip(skip)
+                .limit(limit)
+                .lean(),
+            Event.countDocuments(filter)
+        ]);
+
+        const totalPages = Math.ceil(totalEvents / limit);
 
         // Auto-fix stale statuses for returned events
         const now = new Date();
@@ -108,7 +118,15 @@ export async function GET(request: NextRequest) {
         console.log('GET /api/events filter:', JSON.stringify(filter, null, 2));
         console.log('Found events:', processedEvents.length);
 
-        return NextResponse.json({ events: processedEvents });
+        return NextResponse.json({ 
+            events: processedEvents,
+            pagination: {
+                totalEvents,
+                totalPages,
+                currentPage: page,
+                limit
+            }
+        });
     } catch (error: any) {
         console.error('Error fetching events:', error);
         return NextResponse.json(
