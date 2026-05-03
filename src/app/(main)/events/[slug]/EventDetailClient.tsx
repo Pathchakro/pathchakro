@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Calendar, MapPin, Video, Users, Clock, ArrowLeft, User } from 'lucide-react';
+import { Calendar, MapPin, Video, Users, Clock, ArrowLeft, User, PlayCircle, ExternalLink } from 'lucide-react';
 import { formatDate, formatTime } from '@/lib/utils';
 import { useSession } from 'next-auth/react';
 import { LoginModal } from '@/components/auth/LoginModal';
@@ -70,6 +70,7 @@ interface Event {
         user: { _id: string; name: string; image?: string };
     }>;
     createdAt: string;
+    recordingLink?: string;
 }
 export default function EventDetailClient({ slug, initialData }: { slug: string; initialData?: Event }) {
     const { data: session } = useSession();
@@ -238,6 +239,37 @@ export default function EventDetailClient({ slug, initialData }: { slug: string;
         }
     };
 
+    const [isAddingLink, setIsAddingLink] = useState(false);
+    const [newRecordingLink, setNewRecordingLink] = useState('');
+
+    const handleAddRecordingLink = async () => {
+        if (!event || !newRecordingLink.trim()) return;
+
+        try {
+            const response = await fetch(`/api/events/${slug}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    recordingLink: newRecordingLink,
+                }),
+            });
+
+            if (response.ok) {
+                toast.success('Recording link added successfully');
+                fetchEvent();
+                setIsAddingLink(false);
+                setNewRecordingLink('');
+            } else {
+                toast.error('Failed to add recording link');
+            }
+        } catch (error) {
+            console.error('Error adding recording link:', error);
+            toast.error('An error occurred');
+        }
+    };
+
     if (loading) {
         return (
             <div className="max-w-5xl mx-auto p-4">
@@ -382,6 +414,67 @@ export default function EventDetailClient({ slug, initialData }: { slug: string;
                         </div>
                     </div>
                 </div>
+
+                {/* Recording Link Section */}
+                {event.recordingLink ? (
+                    <div className="mt-6 bg-primary/5 border border-primary/20 rounded-xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+                        <div className="flex items-center gap-3">
+                            <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                                <PlayCircle className="h-6 w-6 text-primary" />
+                            </div>
+                            <div>
+                                <p className="font-semibold text-primary">Event Recording Available</p>
+                                <p className="text-xs text-muted-foreground">Watch the recorded session of this event.</p>
+                            </div>
+                        </div>
+                        <a 
+                            href={event.recordingLink} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-2 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors"
+                        >
+                            Watch Recording
+                            <ExternalLink className="h-4 w-4" />
+                        </a>
+                    </div>
+                ) : (event.status === 'completed' && (session?.user?.id === event.organizer._id || session?.user?.role === 'admin')) && (
+                    <div className="mt-6 bg-muted/50 border border-dashed rounded-xl p-6 text-center">
+                        <PlayCircle className="h-8 w-8 text-muted-foreground mx-auto mb-2 opacity-50" />
+                        <h3 className="font-medium">No recording link yet</h3>
+                        <p className="text-sm text-muted-foreground mb-4">As the organizer, you can add a link to the recording here.</p>
+                        
+                        <Dialog open={isAddingLink} onOpenChange={setIsAddingLink}>
+                            <DialogTrigger asChild>
+                                <Button variant="outline" size="sm" className="gap-2">
+                                    <PlayCircle className="h-4 w-4" />
+                                    Add Recording Link
+                                </Button>
+                            </DialogTrigger>
+                            <DialogContent>
+                                <DialogHeader>
+                                    <DialogTitle>Add Event Recording</DialogTitle>
+                                    <DialogDescription>
+                                        Enter the URL of the recorded video (YouTube, Drive, etc.)
+                                    </DialogDescription>
+                                </DialogHeader>
+                                <div className="space-y-4 pt-4">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="rec-link">Recording URL</Label>
+                                        <Input 
+                                            id="rec-link"
+                                            placeholder="https://youtube.com/watch?v=..."
+                                            value={newRecordingLink}
+                                            onChange={(e) => setNewRecordingLink(e.target.value)}
+                                        />
+                                    </div>
+                                    <Button className="w-full" onClick={handleAddRecordingLink}>
+                                        Save Recording Link
+                                    </Button>
+                                </div>
+                            </DialogContent>
+                        </Dialog>
+                    </div>
+                )}
 
                 <div className="mt-4 pt-4 border-t flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <p className="text-sm text-muted-foreground leading-relaxed">

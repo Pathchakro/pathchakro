@@ -24,6 +24,7 @@ const eventSchema = z.object({
     meetingLink: z.string().optional(),
     startDate: z.string().min(1, 'Date is required'),
     startTime: z.string().min(1, 'Time is required'),
+    recordingLink: z.string().url('Please enter a valid URL').optional().or(z.literal('')),
 });
 
 export type EventFormValues = z.infer<typeof eventSchema>;
@@ -37,6 +38,7 @@ export interface EventData {
     startDate: string;
     startTime: string;
     banner?: string;
+    recordingLink?: string;
 }
 
 interface EventFormProps {
@@ -76,6 +78,7 @@ export function EventForm({ initialData, onSubmit, isLoading, uploadingBanner, m
             if (initialData.eventType) setValue('eventType', initialData.eventType);
             if (initialData.location) setValue('location', initialData.location);
             if (initialData.meetingLink) setValue('meetingLink', initialData.meetingLink);
+            if (initialData.recordingLink) setValue('recordingLink', initialData.recordingLink);
 
             if (initialData.startTime) {
                 const start = new Date(initialData.startTime);
@@ -158,6 +161,7 @@ export function EventForm({ initialData, onSubmit, isLoading, uploadingBanner, m
             meetingLink: values.meetingLink,
             startDate: values.startDate,
             startTime: values.startTime,
+            recordingLink: values.recordingLink,
         };
 
         onSubmit(data, bannerFile);
@@ -314,6 +318,23 @@ export function EventForm({ initialData, onSubmit, isLoading, uploadingBanner, m
                             )}
                         </div>
                     )}
+
+                    <div className="space-y-2">
+                        <Label htmlFor="recordingLink">Recording Link (Optional)</Label>
+                        <Input
+                            id="recordingLink"
+                            type="url"
+                            placeholder="https://youtube.com/watch?v=... or https://drive.google.com/..."
+                            {...register('recordingLink')}
+                            disabled={isLoading}
+                        />
+                        <p className="text-xs text-muted-foreground">
+                            Add the link to the event recording after it's finished.
+                        </p>
+                        {errors.recordingLink && (
+                            <p className="text-sm text-red-500">{errors.recordingLink.message}</p>
+                        )}
+                    </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-2">

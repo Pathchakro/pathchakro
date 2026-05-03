@@ -31,6 +31,7 @@ export interface IEvent {
     }>;
 
     createdAt: Date;
+    recordingLink?: string;
 }
 
 const EventSchema = new Schema<IEvent>(
@@ -62,6 +63,7 @@ const EventSchema = new Schema<IEvent>(
         },
         location: String,
         meetingLink: String,
+        recordingLink: String,
         startTime: {
             type: Date,
             required: [true, 'Start time is required'],

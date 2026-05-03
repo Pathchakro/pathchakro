@@ -97,7 +97,7 @@ export async function PUT(
         const body = await request.json();
         const {
             title, description, eventType, location,
-            meetingLink, startDate, startTime, banner
+            meetingLink, startDate, startTime, banner, recordingLink
         } = body;
 
         const updateData: any = {};
@@ -117,6 +117,7 @@ export async function PUT(
             updateData.startTime = new Date(`${d}T${t}`);
         }
         if (banner !== undefined) updateData.banner = banner;
+        if (recordingLink !== undefined) updateData.recordingLink = recordingLink;
 
         const updatedEvent = await Event.findByIdAndUpdate(
             event._id, // Use the resolved ID

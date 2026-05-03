@@ -158,6 +158,7 @@ export async function POST(request: NextRequest) {
             startTime,
             teamId,
             banner,
+            recordingLink,
         } = body;
 
         if (!title || !description || !eventType || !startDate || !startTime) {
@@ -214,6 +215,7 @@ export async function POST(request: NextRequest) {
                     meetingLink,
                     startTime: new Date(`${startDate}T${startTime}`),
                     banner,
+                    recordingLink,
                     status: 'upcoming',
                     roles: {
                         speakers: [],
