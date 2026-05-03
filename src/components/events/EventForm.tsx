@@ -55,6 +55,21 @@ export function EventForm({ initialData, onSubmit, isLoading, uploadingBanner, m
     const [previewUrl, setPreviewUrl] = useState<string | null>(initialData?.banner || null);
     const [isDragging, setIsDragging] = useState(false);
 
+    const getInitialDateInfo = () => {
+        if (initialData?.startTime) {
+            const start = new Date(initialData.startTime);
+            if (!isNaN(start.getTime())) {
+                return {
+                    startDate: start.toISOString().split('T')[0],
+                    startTime: start.toTimeString().slice(0, 5)
+                };
+            }
+        }
+        return { startDate: '', startTime: '' };
+    };
+
+    const dateInfo = getInitialDateInfo();
+
     const {
         register,
         handleSubmit,
@@ -64,13 +79,20 @@ export function EventForm({ initialData, onSubmit, isLoading, uploadingBanner, m
     } = useForm<EventFormValues>({
         resolver: zodResolver(eventSchema),
         defaultValues: {
-            eventType: 'online',
+            title: initialData?.title || '',
+            description: initialData?.description || '',
+            eventType: initialData?.eventType as 'online' | 'offline' || 'online',
+            location: initialData?.location || '',
+            meetingLink: initialData?.meetingLink || '',
+            recordingLink: initialData?.recordingLink || '',
+            startDate: dateInfo.startDate,
+            startTime: dateInfo.startTime,
         }
     });
 
     const eventType = watch('eventType');
 
-    // Handle initial data for date fields
+    // Handle initial data for date fields - redundant now but keeping for any dynamic updates if initialData changes
     useEffect(() => {
         if (initialData) {
             if (initialData.title) setValue('title', initialData.title);
@@ -83,7 +105,6 @@ export function EventForm({ initialData, onSubmit, isLoading, uploadingBanner, m
             if (initialData.startTime) {
                 const start = new Date(initialData.startTime);
                 if (!isNaN(start.getTime())) {
-                    // Split into YYYY-MM-DD and HH:mm
                     const datePart = start.toISOString().split('T')[0];
                     const timePart = start.toTimeString().slice(0, 5);
                     setValue('startDate', datePart);
