@@ -407,8 +407,8 @@ export default function EventDetailClient({ slug, initialData }: { slug: string;
                             <p className="text-[11px] uppercase tracking-wider text-muted-foreground/80">Participants</p>
                             <p className="text-sm font-semibold">{
                                 (event.listeners || []).filter(l => {
-                                    const lId = (l.user?._id || l.user)?.toString();
-                                    return !event.roles?.speakers?.some(s => (s.user?._id || s.user)?.toString() === lId);
+                                    const lId = (l.user?._id || l.user)?.toString() || '';
+                                    return lId && !event.roles?.speakers?.some(s => (s.user?._id || s.user)?.toString() === lId);
                                 }).length
                             } registered</p>
                         </div>
@@ -437,7 +437,7 @@ export default function EventDetailClient({ slug, initialData }: { slug: string;
                             <ExternalLink className="h-4 w-4" />
                         </a>
                     </div>
-                ) : (event.status === 'completed' && (session?.user?.id === event.organizer._id || session?.user?.role === 'admin')) && (
+                ) : (event.status === 'completed' && (session?.user?.id === event.organizer?._id || session?.user?.role === 'admin')) && (
                     <div className="mt-6 bg-muted/50 border border-dashed rounded-xl p-6 text-center">
                         <PlayCircle className="h-8 w-8 text-muted-foreground mx-auto mb-2 opacity-50" />
                         <h3 className="font-medium">No recording link yet</h3>
@@ -483,8 +483,14 @@ export default function EventDetailClient({ slug, initialData }: { slug: string;
                     </p>
 
                     {(() => {
-                        const isSpeaker = event.roles?.speakers?.some(s => (s.user?._id || s.user)?.toString() === session?.user?.id);
-                        const isListener = event.listeners?.some(l => (l.user?._id || l.user)?.toString() === session?.user?.id);
+                        const isSpeaker = event.roles?.speakers?.some(s => {
+                            const sId = (s.user?._id || s.user)?.toString();
+                            return sId && sId === session?.user?.id;
+                        });
+                        const isListener = event.listeners?.some(l => {
+                            const lId = (l.user?._id || l.user)?.toString();
+                            return lId && lId === session?.user?.id;
+                        });
                         const isRegistered = isSpeaker || isListener;
 
                         if (isRegistered) {
@@ -581,7 +587,7 @@ export default function EventDetailClient({ slug, initialData }: { slug: string;
                             <UsersIcon className="h-4 w-4" />
                             Listeners ({(event.listeners || []).filter(l => {
                                 const lId = (l.user?._id || l.user)?.toString();
-                                return !event.roles?.speakers?.some(s => (s.user?._id || s.user)?.toString() === lId);
+                                return lId && !event.roles?.speakers?.some(s => (s.user?._id || s.user)?.toString() === lId);
                             }).length})
                         </TabsTrigger>
                     </TabsList>
@@ -647,7 +653,7 @@ export default function EventDetailClient({ slug, initialData }: { slug: string;
                                 {(event.listeners || [])
                                     .filter(l => {
                                         const lId = (l.user?._id || l.user)?.toString();
-                                        return !event.roles?.speakers?.some(s => (s.user?._id || s.user)?.toString() === lId);
+                                        return lId && !event.roles?.speakers?.some(s => (s.user?._id || s.user)?.toString() === lId);
                                     })
                                     .map((listener, i) => (
                                         <div key={listener.user?._id || `listener-${i}`} className="flex items-center justify-between p-4 hover:bg-muted/30 transition-colors">
