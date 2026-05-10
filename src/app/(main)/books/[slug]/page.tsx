@@ -33,5 +33,5 @@ export default async function BookDetailPage(props: { params: Promise<{ slug: st
 
     if (!book) notFound();
 
-    return <BookDetailClient initialBook={book} sessionUser={session?.user} />;
+    return <BookDetailClient initialBook={book} sessionUser={session?.user || null} />;
 }
