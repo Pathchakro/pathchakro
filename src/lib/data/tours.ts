@@ -6,12 +6,24 @@ import Tour from '@/models/Tour';
 /**
  * Persistent cache factory for fetching tours
  */
-const fetchTours = (destination: string, status: string, upcoming: boolean, dateBoundary: string = '') => unstable_cache(
+const fetchTours = (destination: string, status: string, upcoming: boolean, filter: string = '', dateBoundary: string = '') => unstable_cache(
     async () => {
         try {
             await dbConnect();
             
             let mongoFilter: any = {};
+
+            if (destination) {
+                mongoFilter.destination = { $regex: destination, $options: 'i' };
+            }
+            
+            if (status) {
+                mongoFilter.status = status;
+            }
+
+            if (filter) {
+                mongoFilter.title = { $regex: filter, $options: 'i' };
+            }
 
             if (destination) {
                 mongoFilter.destination = { $regex: destination, $options: 'i' };
@@ -37,7 +49,7 @@ const fetchTours = (destination: string, status: string, upcoming: boolean, date
             return [];
         }
     },
-    [`tours-list-${destination}-${status}-${upcoming}-${dateBoundary}`],
+    [`tours-list-${destination}-${status}-${upcoming}-${filter}-${dateBoundary}`],
     {
         tags: ['tours'],
         revalidate: 3600
@@ -80,7 +92,7 @@ const getTourCache = (slug: string) => {
  * Fetch tours with persistent caching.
  * Standardizes the query interface while using persistent caching factories.
  */
-export const getCachedTours = cache(async (query: { destination?: string; status?: string; upcoming?: boolean }) => {
+export const getCachedTours = cache(async (query: { destination?: string; status?: string; upcoming?: boolean; filter?: string }) => {
     // Only round current date if we are filtering for upcoming tours
     let dateBoundary: string | undefined;
     if (query.upcoming) {
@@ -93,6 +105,7 @@ export const getCachedTours = cache(async (query: { destination?: string; status
         query.destination || '', 
         query.status || '', 
         query.upcoming || false,
+        query.filter || '',
         dateBoundary || ''
     );
 });
