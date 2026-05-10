@@ -24,32 +24,31 @@ export const getCachedAssignments = cache(
 
         return unstable_cache(
             async () => {
-                try {
-                    await dbConnect();
-                    
-                    let mongoFilter: any = {};
+                await dbConnect();
+                
+                let mongoFilter: any = {};
 
-                    if (role === 'teacher' && userId) {
-                        mongoFilter.teacher = userId;
-                    } else if (userId) {
-                        // Enforce authorization for non-teachers: must be a student or part of the team
-                        mongoFilter.$or = [
-                            { 'submissions.student': userId },
-                            { teamMembers: userId } // Assuming teamMembers exists or is part of schema
-                        ];
-                    } else {
-                        // If no userId provided and not a public fetch, restrict
-                        throw new Error('Unauthorized: userId is required for assignment listing');
-                    }
+                if (role === 'teacher' && userId) {
+                    mongoFilter.teacher = userId;
+                } else if (userId) {
+                    // Enforce authorization for non-teachers: must be a student or part of the team
+                    mongoFilter.$or = [
+                        { 'submissions.student': userId },
+                        { teamMembers: userId } // Assuming teamMembers exists or is part of schema
+                    ];
+                } else {
+                    // If no userId provided and not a public fetch, restrict
+                    throw new Error('Unauthorized: userId is required for assignment listing');
+                }
 
-                    const assignments = await Assignment.find(mongoFilter)
-                        .populate('teacher', 'name image')
-                        .populate('team', 'name')
-                        .sort({ dueDate: 1 })
-                        .limit(50)
-                        .lean();
+                const assignments = await Assignment.find(mongoFilter)
+                    .populate('teacher', 'name image')
+                    .populate('team', 'name')
+                    .sort({ dueDate: 1 })
+                    .limit(50)
+                    .lean();
 
-                    return JSON.parse(JSON.stringify(assignments));
+                return JSON.parse(JSON.stringify(assignments));
             },
             [`assignments-list-${sortedQueryKey}`],
             {
