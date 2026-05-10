@@ -10,6 +10,7 @@ export interface PopulatedOrder {
     seller: { _id: string; name: string; image?: string };
     product: { _id: string; title: string; price: number; images: string[]; category: string };
     status: string;
+    quantity: number;
     createdAt: string | Date;
     totalPrice: number;
 }
