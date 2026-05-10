@@ -23,17 +23,17 @@ const fetchAdminAnalytics = unstable_cache(
             const days = isNaN(daysInt) || daysInt <= 0 ? 30 : daysInt;
             const startDate = subDays(new Date(), days);
 
-            // Fetch period-specific counts for consistency across the dashboard
+            // Fetch total counts for platform-wide metrics
             const [
-                userCount, productCount, bookCount, writingCount, postCount, teamCount,
+                totalUsers, totalProducts, totalBooks, totalWritingProjects, totalPosts, totalTeams,
                 orders
             ] = await Promise.all([
-                User.countDocuments({ createdAt: { $gte: startDate } }),
-                Product.countDocuments({ createdAt: { $gte: startDate } }),
-                Book.countDocuments({ createdAt: { $gte: startDate } }),
-                WritingProject.countDocuments({ createdAt: { $gte: startDate } }),
-                Post.countDocuments({ createdAt: { $gte: startDate } }),
-                Team.countDocuments({ createdAt: { $gte: startDate } }),
+                User.countDocuments(),
+                Product.countDocuments(),
+                Book.countDocuments(),
+                WritingProject.countDocuments(),
+                Post.countDocuments(),
+                Team.countDocuments(),
                 Order.find({ 
                     createdAt: { $gte: startDate },
                     status: 'completed'
@@ -47,12 +47,12 @@ const fetchAdminAnalytics = unstable_cache(
 
             return {
                 platformStats: {
-                    periodUsers: userCount,
-                    periodProducts: productCount,
-                    periodBooks: bookCount,
-                    periodWritingProjects: writingCount,
-                    periodPosts: postCount,
-                    periodTeams: teamCount,
+                    totalUsers,
+                    totalProducts,
+                    totalBooks,
+                    totalWritingProjects,
+                    totalPosts,
+                    totalTeams,
                 },
                 financials: {
                     totalRevenue,
@@ -66,7 +66,7 @@ const fetchAdminAnalytics = unstable_cache(
         } catch (error) {
             console.error('[ADMIN_ANALYTICS_ERROR]:', error);
             return {
-                platformStats: { periodUsers: 0, periodProducts: 0, periodBooks: 0, periodWritingProjects: 0, periodPosts: 0, periodTeams: 0 },
+                platformStats: { totalUsers: 0, totalProducts: 0, totalBooks: 0, totalWritingProjects: 0, totalPosts: 0, totalTeams: 0 },
                 financials: { totalRevenue: 0, totalPlatformFee: 0, totalSellerEarnings: 0, totalTransactions: 0, averageTransactionValue: 0 },
                 recentTransactions: []
             };
