@@ -64,7 +64,7 @@ export async function DELETE(
 
         revalidatePath('/');
         revalidatePath(`/posts/${params.slug}`);
-        revalidateTag('feed');
+        revalidateTag('feed', 'max');
 
         return NextResponse.json({ message: 'Post deleted successfully' });
     } catch (error) {
@@ -139,7 +139,7 @@ export async function PATCH(
         if (post.slug !== params.slug) {
             revalidatePath(`/posts/${post.slug}`);
         }
-        revalidateTag('feed');
+        revalidateTag('feed', 'max');
 
         return NextResponse.json({ post });
     } catch (error) {
