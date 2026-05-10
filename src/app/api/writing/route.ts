@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
         }
 
         const requestBody = await request.json();
-        const { title, coverImage, introduction, description, category, visibility } = requestBody;
+        const { title, coverImage, introduction, description, category, visibility, slug: customSlug } = requestBody;
 
         if (!title) {
             return NextResponse.json(
@@ -88,8 +88,27 @@ export async function POST(request: NextRequest) {
 
         await dbConnect();
 
-        // Generate unique slug
-        const slug = await generateUniqueSlug(WritingProject, title);
+        // Robust customSlug validation and sanitization
+        let validatedSlug = undefined;
+        if (typeof customSlug === 'string' && customSlug.trim()) {
+            const trimmed = customSlug.trim().toLowerCase();
+            
+            // Validation: alphanumeric and hyphens only, no leading/trailing hyphens
+            const isValidPattern = /^[a-z0-9]+(-[a-z0-9]+)*$/.test(trimmed);
+            const isReserved = ['admin', 'api', 'settings', 'auth', 'dashboard', 'profile', 'writing', 'projects'].includes(trimmed);
+            
+            if (trimmed.length >= 3 && trimmed.length <= 100 && isValidPattern && !isReserved) {
+                validatedSlug = trimmed;
+            } else {
+                 return NextResponse.json(
+                    { error: 'Invalid custom slug. Use 3-100 characters, lowercase letters, numbers, and hyphens. No reserved words.' },
+                    { status: 400 }
+                );
+            }
+        }
+
+        // Generate unique slug from validated input or title fallback
+        const slug = await generateUniqueSlug(WritingProject, validatedSlug || title);
 
         const initialChapters = [];
         let totalWords = 0;
@@ -97,7 +116,6 @@ export async function POST(request: NextRequest) {
 
         // If initial chapter details are provided, create the first chapter
         if (requestBody.chapterName) {
-            // Create initial chapter placeholder; content added via chapter editing later
             initialChapters.push({
                 chapterNumber: 1,
                 title: requestBody.chapterName,
@@ -109,13 +127,14 @@ export async function POST(request: NextRequest) {
             });
             totalChapters = 1;
         }
+
         const project = await WritingProject.create({
             author: session.user.id,
             title,
             slug,
             coverImage,
             introduction,
-            description, // This remains book description
+            description,
             category: category || [],
             status: 'draft',
             visibility: visibility || 'private',

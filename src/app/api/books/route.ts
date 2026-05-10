@@ -4,7 +4,7 @@ import dbConnect from '@/lib/mongodb';
 import Book from '@/models/Book';
 import { auth } from '@/auth';
 import { revalidatePath, revalidateTag } from 'next/cache';
-import { calculateProfileCompletion } from '@/lib/utils';
+import { calculateProfileCompletion, escapeRegExp } from '@/lib/utils';
 import User from '@/models/User';
 import { generateUniqueSlug } from '@/lib/slug-utils';
 
@@ -19,9 +19,10 @@ export async function GET(request: NextRequest) {
         let filter: any = {};
 
         if (query) {
+            const escapedQuery = escapeRegExp(query.trim().substring(0, 100));
             filter.$or = [
-                { title: { $regex: query, $options: 'i' } },
-                { author: { $regex: query, $options: 'i' } },
+                { title: { $regex: escapedQuery, $options: 'i' } },
+                { author: { $regex: escapedQuery, $options: 'i' } },
             ];
         }
 
@@ -34,8 +35,13 @@ export async function GET(request: NextRequest) {
             filter.copies = { $gt: 0 };
         }
 
-        const page = parseInt(searchParams.get('page') || '1');
-        const limit = parseInt(searchParams.get('limit') || '20');
+        let page = Number.parseInt(searchParams.get('page') || '1', 10);
+        if (Number.isNaN(page) || page < 1) page = 1;
+
+        let limit = Number.parseInt(searchParams.get('limit') || '20', 10);
+        if (Number.isNaN(limit) || limit < 1) limit = 20;
+        if (limit > 100) limit = 100;
+
         const skip = (page - 1) * limit;
 
         const [books, totalBooks] = await Promise.all([
@@ -96,7 +102,7 @@ export async function POST(request: NextRequest) {
         }
 
         const body = await request.json();
-        const { title, author, publisher, isbn, category, coverImage, buyingLink } = body;
+        const { title, author, publisher, isbn, category, coverImage, buyingLink, slug: customSlug } = body;
 
         if (!title) {
             return NextResponse.json(
@@ -105,28 +111,39 @@ export async function POST(request: NextRequest) {
             );
         }
 
+        // Validate and sanitize customSlug if provided to ensure URL safety
+        let sanitizedCustomSlug = undefined;
+        if (typeof customSlug === 'string' && customSlug.trim()) {
+            // Only allow alphanumeric, hyphen, underscore
+            sanitizedCustomSlug = customSlug.toLowerCase()
+                .trim()
+                .replace(/[^a-z0-9-_]+/g, '-')
+                .replace(/^-+|-+$/g, '');
+        }
+
         // Check if book already exists
         const duplicateCheckQuery: any = {
-            title: { $regex: `^${title}$`, $options: 'i' },
+            title: title.trim(),
         };
 
         if (author) {
-            duplicateCheckQuery.author = { $regex: `^${author}$`, $options: 'i' };
+            duplicateCheckQuery.author = author.trim();
         }
 
-        let book = await Book.findOne(duplicateCheckQuery);
+        let book = await Book.findOne(duplicateCheckQuery).collation({ locale: 'en', strength: 2 });
 
         if (!book) {
             const userId = session.user.id;
-            const slug = await generateUniqueSlug(Book, author ? `${title} ${author}` : title);
+            const slug = await generateUniqueSlug(Book, sanitizedCustomSlug || (author ? `${title} ${author}` : title));
 
             book = await Book.create({
-                title,
-                author,
+                title: title.trim(),
+                author: author ? author.trim() : '',
                 slug,
                 publisher: publisher || '',
                 isbn: isbn || undefined,
                 category: category || [],
+                coverImage: coverImage || '', // Pass coverImage to be stored as suggested
                 totalReviews: 0,
                 addedBy: userId,
                 buyingLink: buyingLink || '',

@@ -51,7 +51,13 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // Only admins can create contests (you can add admin check here)
+        // Only admins can create contests
+        if ((session.user as any).role !== 'admin') {
+            return NextResponse.json(
+                { error: 'Forbidden' },
+                { status: 403 }
+            );
+        }
 
         const body = await request.json();
         const {
@@ -63,6 +69,7 @@ export async function POST(request: NextRequest) {
             startDate,
             endDate,
             prize,
+            slug: customSlug,
         } = body;
 
         if (!title || !description || !category || !month || !year || !startDate || !endDate || !prize) {
@@ -74,7 +81,27 @@ export async function POST(request: NextRequest) {
 
         await dbConnect();
 
-        const slug = await generateUniqueSlug(Contest, title);
+        // Robust customSlug validation and sanitization
+        let validatedSlug = undefined;
+        if (typeof customSlug === 'string' && customSlug.trim()) {
+            const trimmed = customSlug.trim().toLowerCase();
+            
+            // Validation: alphanumeric and hyphens only, no leading/trailing hyphens
+            const isValidPattern = /^[a-z0-9]+(-[a-z0-9]+)*$/.test(trimmed);
+            const isReserved = ['admin', 'api', 'settings', 'auth', 'dashboard', 'profile', 'contests', 'winners'].includes(trimmed);
+            
+            if (trimmed.length >= 3 && trimmed.length <= 64 && isValidPattern && !isReserved) {
+                validatedSlug = trimmed;
+            } else {
+                 return NextResponse.json(
+                    { error: 'Invalid custom slug. Use 3-64 characters, lowercase letters, numbers, and hyphens. No reserved words.' },
+                    { status: 400 }
+                );
+            }
+        }
+
+        // Generate unique slug from validated input or title fallback
+        const slug = await generateUniqueSlug(Contest, validatedSlug || title);
 
         const contest = await Contest.create({
             title,

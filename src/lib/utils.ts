@@ -1,5 +1,6 @@
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
+import { transliterate } from 'transliteration';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -24,17 +25,41 @@ export function formatTime(input: string | number | Date): string {
   }).replace(/\u202f/g, ' ')
 }
 
-export function slugify(text: string): string {
-  return text
-    .toString()
-    .toLowerCase()
-    .trim()
-    .replace(/\s+/g, '-')     // Replace spaces with -
-    .replace(/[^\p{L}\p{N}\p{M}\-]+/gu, '') // Remove non-word chars (keeping letters, numbers, AND marks)
-    .replace(/\-\-+/g, '-')   // Replace multiple - with single -
-    .replace(/^-+/, '')       // Trim - from start of text
-    .replace(/-+$/, '');      // Trim - from end of text
+/**
+ * Transliterates Bengali text to English using the professional 'transliteration' library.
+ * Handles complex abugida rules like conjuncts and diacritics.
+ */
+export function transliterateBengali(text: string): string {
+    return transliterate(text);
 }
+
+/**
+ * Converts text into a URL-safe slug.
+ * Detects Bengali characters and performs context-aware transliteration.
+ */
+export function slugify(text: string): string {
+  if (!text) return '';
+  
+  let processedText = text.toString().trim();
+  
+  // Detect Bengali characters (\u0980-\u09FF) or other non-ASCII scripts
+  const hasBengali = /[\u0980-\u09FF]/.test(processedText);
+  const isNonAscii = /[^\x00-\x7F]/.test(processedText);
+
+  if (hasBengali || isNonAscii) {
+    // Apply professional transliteration if non-ASCII content is detected
+    processedText = transliterate(processedText);
+  }
+
+  return processedText
+    .toLowerCase()
+    .replace(/\s+/g, '-')       // Replace spaces with -
+    .replace(/[^a-z0-9-]/g, '')   // Keep ASCII letters, numbers, and hyphens only
+    .replace(/\-\-+/g, '-')     // Replace multiple - with single -
+    .replace(/^-+/, '')         // Trim - from start of text
+    .replace(/-+$/, '');        // Trim - from end of text
+}
+
 export function calculateProfileCompletion(user: any): number {
   if (!user) return 0;
 
@@ -66,13 +91,10 @@ export function validateAndSanitizeImage(image: any): string | undefined {
   // Data URI validation
   if (image.startsWith('data:')) {
     // Check max size (approx 5MB)
-    // Base64 is ~1.33x larger than binary. 5MB binary ~= 6.65MB base64
     if (image.length > 7 * 1024 * 1024) {
       throw new Error('Image is too large. Maximum size is 5MB.');
     }
 
-    // Validate MIME type and format
-    // Allow commonly supported web image formats
     const dataUriPattern = /^data:image\/(png|jpeg|jpg|gif|webp);base64,[A-Za-z0-9+/=]+$/;
     if (!dataUriPattern.test(image)) {
       throw new Error('Invalid image format. Only PNG, JPEG, GIF, and WebP are allowed.');
@@ -99,7 +121,6 @@ export function validateAndSanitizeImage(image: any): string | undefined {
     }
   }
 
-  // Reject unsupported formats
   throw new Error('Invalid image source. Must be a valid HTTPS URL or Data URI.');
 }
 
@@ -121,30 +142,24 @@ export function extractPlainText(description: string | any): string {
   try {
     let content = description;
 
-    // Handle stringified JSON (including potentially double-stringified)
     if (typeof content === "string") {
       try {
         let parsed = JSON.parse(content);
         if (typeof parsed === "string") {
           try {
             parsed = JSON.parse(parsed);
-          } catch (e) {
-            // ignore second parse error
-          }
+          } catch (e) {}
         }
         content = parsed;
       } catch (e) {
-        // content is already plain text
         return content;
       }
     }
 
-    // Ensure content matches Tiptap schema structure
     if (!content || typeof content !== "object") {
       return String(content || "");
     }
 
-    // Handle both { type: 'doc', content: [...] } and direct array
     const nodes = Array.isArray(content) ? content : content.content;
 
     if (!Array.isArray(nodes)) {
@@ -163,7 +178,6 @@ export function extractPlainText(description: string | any): string {
           if (node.type === "hardBreak") {
             return "\n";
           }
-          // Add spacing for block elements
           if (["paragraph", "heading", "listItem"].includes(node.type)) {
             return processNodes(node.content || []) + "\n";
           }
@@ -178,5 +192,3 @@ export function extractPlainText(description: string | any): string {
     return typeof description === "string" ? description : "";
   }
 }
-
-

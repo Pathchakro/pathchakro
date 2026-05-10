@@ -3,6 +3,7 @@ import { auth } from '@/auth';
 import dbConnect from '@/lib/mongodb';
 import Post from '@/models/Post';
 import { revalidatePath, revalidateTag } from 'next/cache';
+import { generateUniqueSlug } from '@/lib/slug-utils';
 
 export async function GET(
     request: NextRequest,
@@ -63,7 +64,7 @@ export async function DELETE(
 
         revalidatePath('/');
         revalidatePath(`/posts/${params.slug}`);
-        revalidateTag('feed', 'default');
+        revalidateTag('feed');
 
         return NextResponse.json({ message: 'Post deleted successfully' });
     } catch (error) {
@@ -84,7 +85,7 @@ export async function PATCH(
         }
 
         const body = await request.json();
-        const { title, content, category, privacy, media } = body;
+        const { title, content, category, privacy, media, slug: newSlug } = body;
 
         await dbConnect();
 
@@ -105,21 +106,40 @@ export async function PATCH(
         }
 
         // Update fields
-        if (title) post.title = title;
-        if (content) post.content = content;
-        if (category) post.category = category;
-        if (privacy) post.privacy = privacy;
-        if (media) post.media = media;
+        if (title !== undefined) post.title = title;
+        if (content !== undefined) post.content = content;
+        if (category !== undefined) post.category = category;
+        if (privacy !== undefined) post.privacy = privacy;
+        if (media !== undefined) post.media = media;
 
-        // If title changed, maybe regenerate slug? 
-        // For simplicity, let's NOT regenerate slug to keep URLs stable unless explicitly requested.
-        // User asked for "edit" functionality, typically implies content. 
+        // Handle slug update with robust validation
+        if (newSlug !== undefined && newSlug !== post.slug) {
+            const trimmedSlug = typeof newSlug === 'string' ? newSlug.trim().toLowerCase() : '';
+
+            if (trimmedSlug) {
+                // Validation pattern: alphanumeric and hyphens only, no leading/trailing hyphens
+                const isValidPattern = /^[a-z0-9]+(-[a-z0-9]+)*$/.test(trimmedSlug);
+                const isReserved = ['admin', 'api', 'settings', 'auth', 'dashboard', 'profile'].includes(trimmedSlug);
+
+                if (isValidPattern && !isReserved && trimmedSlug.length >= 3 && trimmedSlug.length <= 100) {
+                    post.slug = await generateUniqueSlug(Post, trimmedSlug, 'slug', true, post._id.toString());
+                } else {
+                    return NextResponse.json(
+                        { error: 'Invalid custom slug. Use 3-100 characters, lowercase letters, numbers, and hyphens. No reserved words.' },
+                        { status: 400 }
+                    );
+                }
+            }
+        }
 
         await post.save();
 
         revalidatePath('/');
         revalidatePath(`/posts/${params.slug}`);
-        revalidateTag('feed', 'default');
+        if (post.slug !== params.slug) {
+            revalidatePath(`/posts/${post.slug}`);
+        }
+        revalidateTag('feed');
 
         return NextResponse.json({ post });
     } catch (error) {

@@ -37,18 +37,24 @@ export async function GET(request: NextRequest) {
             filter.category = category;
         }
 
+        /**
+         * Helper to escape regex special characters
+         */
+        const escapeRegex = (str: string) => str.replace(/[/\-\\^$*+?.()|[\]{}]/g, '\\$&');
+
         if (university) {
-            filter.university = { $regex: university, $options: 'i' };
+            filter.university = { $regex: escapeRegex(university), $options: 'i' };
         }
 
         if (location) {
-            filter.location = { $regex: location, $options: 'i' };
+            filter.location = { $regex: escapeRegex(location), $options: 'i' };
         }
 
         if (search) {
+            const escapedSearch = escapeRegex(search);
             filter.$or = [
-                { name: { $regex: search, $options: 'i' } },
-                { description: { $regex: search, $options: 'i' } },
+                { name: { $regex: escapedSearch, $options: 'i' } },
+                { description: { $regex: escapedSearch, $options: 'i' } },
             ];
         }
 
@@ -57,12 +63,7 @@ export async function GET(request: NextRequest) {
         // Dynamic sort object
         const sortOptions: any = {};
         if (sortBy === 'members') {
-            // For array length sorting we might need aggregation, but for simplicity let's stick to simple fields or handle members differently.
-            // Standard Mongoose sort on virtuals or array length isn't direct. 
-            // Falling back to basic fields for now, or using a specific hack if needed.
-            // Actually, 'members' is an array. Sorting by size requires aggregation.
-            // Let's stick to simpler sorts first: createdAt, name, location, university.
-            sortOptions['createdAt'] = -1; // Default fallback for members if not aggregating
+            sortOptions['createdAt'] = -1;
         } else {
             sortOptions[sortBy] = order;
         }
@@ -75,18 +76,13 @@ export async function GET(request: NextRequest) {
             .limit(limit)
             .lean();
 
-        // Handle array size sort if absolutely necessary later, but for now apply standard sort
         if (sortBy !== 'members') {
             query = query.sort(sortOptions);
         } else {
-            // Default sort if members sort requested but not implemented via aggregation yet
             query = query.sort({ createdAt: -1 });
         }
 
         const teams = await query;
-
-        // If sorting by members is requested, we can do it in memory for the current page (imperfect) or switch to aggregation.
-        // Given the user wants to see "all", aggregation is better, but let's stick to standard first.
 
         return NextResponse.json({
             teams,
@@ -118,7 +114,7 @@ export async function POST(request: NextRequest) {
         }
 
         const body = await request.json();
-        const { name, description, type, privacy, university, location, category } = body;
+        const { name, description, type, privacy, university, location, category, slug: customSlug } = body;
 
         if (!name || !description || !type || !category) {
             return NextResponse.json(
@@ -129,8 +125,28 @@ export async function POST(request: NextRequest) {
 
         await dbConnect();
 
-        // Generate slug from name, supporting Unicode characters
-        const slug = await generateUniqueSlug(Team, name);
+        // Robust customSlug validation and sanitization
+        let normalizedSlug = undefined;
+        if (typeof customSlug === 'string' && customSlug.trim()) {
+            const trimmed = customSlug.trim().toLowerCase();
+            
+            // Validation: alphanumeric and hyphens only, no leading/trailing hyphens, no consecutive hyphens
+            const isValidPattern = /^[a-z0-9]+(-[a-z0-9]+)*$/.test(trimmed);
+            const isReserved = ['admin', 'api', 'settings', 'auth', 'dashboard', 'profile', 'teams', 'posts', 'courses'].includes(trimmed);
+            const hasPathTraversal = trimmed.includes('..') || trimmed.includes('/') || trimmed.includes('\\');
+            
+            if (trimmed.length >= 3 && trimmed.length <= 63 && isValidPattern && !isReserved && !hasPathTraversal) {
+                normalizedSlug = trimmed;
+            } else {
+                 return NextResponse.json(
+                    { error: 'Invalid custom slug. Use 3-63 characters, lowercase letters, numbers, and single hyphens. No reserved words or path separators.' },
+                    { status: 400 }
+                );
+            }
+        }
+
+        // Generate slug from the validated customSlug or fallback to name
+        const slug = await generateUniqueSlug(Team, normalizedSlug || name);
 
         const team = await Team.create({
             name,

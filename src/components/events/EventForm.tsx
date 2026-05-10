@@ -5,7 +5,7 @@ import { useForm, FieldErrors } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
+import { slugify } from '@/lib/utils';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -25,6 +25,11 @@ const eventSchema = z.object({
     startDate: z.string().min(1, 'Date is required'),
     startTime: z.string().min(1, 'Time is required'),
     recordingLink: z.string().url('Please enter a valid URL').optional().or(z.literal('')),
+    slug: z.string().optional()
+        .refine(val => !val || /^[a-z0-9]+(-[a-z0-9]+)*$/.test(val), {
+            message: 'Use lowercase letters, numbers, and hyphens only'
+        })
+        .or(z.literal('')),
 });
 
 export type EventFormValues = z.infer<typeof eventSchema>;
@@ -39,6 +44,7 @@ export interface EventData {
     startTime: string;
     banner?: string;
     recordingLink?: string;
+    slug?: string;
 }
 
 interface EventFormProps {
@@ -54,6 +60,7 @@ export function EventForm({ initialData, onSubmit, isLoading, uploadingBanner, m
     const [bannerFile, setBannerFile] = useState<File | null>(null);
     const [previewUrl, setPreviewUrl] = useState<string | null>(initialData?.banner || null);
     const [isDragging, setIsDragging] = useState(false);
+    const [isSlugModified, setIsSlugModified] = useState(mode === 'edit' && !!initialData?.slug);
 
     const getInitialDateInfo = () => {
         if (initialData?.startTime) {
@@ -87,12 +94,22 @@ export function EventForm({ initialData, onSubmit, isLoading, uploadingBanner, m
             recordingLink: initialData?.recordingLink || '',
             startDate: dateInfo.startDate,
             startTime: dateInfo.startTime,
+            slug: initialData?.slug || '',
         }
     });
 
     const eventType = watch('eventType');
+    const title = watch('title');
+    const startDate = watch('startDate');
 
-    // Handle initial data for date fields - redundant now but keeping for any dynamic updates if initialData changes
+    // Auto-generate slug from title and date
+    useEffect(() => {
+        if (mode === 'create' && !isSlugModified && title) {
+            const combined = startDate ? `${title}-${startDate}` : title;
+            setValue('slug', slugify(combined), { shouldValidate: true });
+        }
+    }, [title, startDate, mode, isSlugModified, setValue]);
+
     useEffect(() => {
         if (initialData) {
             if (initialData.title) setValue('title', initialData.title);
@@ -111,10 +128,10 @@ export function EventForm({ initialData, onSubmit, isLoading, uploadingBanner, m
                     setValue('startTime', timePart);
                 }
             }
+            if (initialData.slug) setValue('slug', initialData.slug);
         }
     }, [initialData, setValue]);
 
-    // Cleanup preview URL to avoid memory leaks
     useEffect(() => {
         return () => {
             if (previewUrl && previewUrl.startsWith('blob:')) {
@@ -125,12 +142,10 @@ export function EventForm({ initialData, onSubmit, isLoading, uploadingBanner, m
 
     const processFile = (file: File) => {
         if (file) {
-            // Validate file size (max 5MB)
             if (file.size > 5 * 1024 * 1024) {
                 toast.error('File size too large. Max 5MB allowed.');
                 return;
             }
-
             setBannerFile(file);
             const url = URL.createObjectURL(file);
             setPreviewUrl(url);
@@ -165,15 +180,11 @@ export function EventForm({ initialData, onSubmit, isLoading, uploadingBanner, m
     const removeBanner = () => {
         setBannerFile(null);
         setPreviewUrl(null);
-        // Reset file input value
         const fileInput = document.getElementById('banner') as HTMLInputElement;
         if (fileInput) fileInput.value = '';
     };
 
     const onFormSubmit = (values: EventFormValues) => {
-        // Merge date and time
-        const startTime = new Date(`${values.startDate}T${values.startTime}`).toISOString();
-
         const data: EventData = {
             title: values.title,
             description: values.description,
@@ -183,6 +194,7 @@ export function EventForm({ initialData, onSubmit, isLoading, uploadingBanner, m
             startDate: values.startDate,
             startTime: values.startTime,
             recordingLink: values.recordingLink,
+            slug: values.slug,
         };
 
         onSubmit(data, bannerFile);
@@ -285,6 +297,25 @@ export function EventForm({ initialData, onSubmit, isLoading, uploadingBanner, m
                         />
                         {errors.title && (
                             <p className="text-sm text-red-500">{errors.title.message}</p>
+                        )}
+                    </div>
+                    
+                    <div className="space-y-2">
+                        <Label htmlFor="slug">Custom URL Slug (Optional)</Label>
+                        <Input
+                            id="slug"
+                            placeholder="e.g. book-discussion-may-2026"
+                            {...register('slug', {
+                                onChange: () => setIsSlugModified(true)
+                            })}
+                            disabled={isLoading}
+                        />
+                        <p className="text-xs text-muted-foreground">
+                            If left empty, a URL will be automatically generated from the title. 
+                            Use lowercase English letters, numbers, and hyphens only.
+                        </p>
+                        {errors.slug && (
+                            <p className="text-sm text-red-500">{errors.slug.message}</p>
                         )}
                     </div>
 

@@ -40,6 +40,8 @@ export default function EditPostPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [isUploading, setIsUploading] = useState(false);
+    const [editSlug, setEditSlug] = useState('');
+    const [isSlugModified, setIsSlugModified] = useState(false);
 
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -48,6 +50,13 @@ export default function EditPostPage() {
             fetchPost();
         }
     }, [slug]);
+
+    useEffect(() => {
+        if (!isSlugModified && title) {
+            const { slugify } = require('@/lib/utils');
+            setEditSlug(slugify(title));
+        }
+    }, [title, isSlugModified]);
 
     const fetchPost = async () => {
         try {
@@ -80,6 +89,7 @@ export default function EditPostPage() {
 
                 setMediaUrls(data.post.media || []);
                 setCategory(data.post.category || CATEGORIES[0]);
+                setEditSlug(data.post.slug || '');
 
                 // Verify ownership
                 if (session?.user?.id && data.post.author._id !== session.user.id) {
@@ -164,6 +174,7 @@ export default function EditPostPage() {
                     category,
                     privacy: 'public', // Keep public for now as per previous constraint
                     media: mediaUrls,
+                    slug: editSlug,
                 }),
             });
 
@@ -251,6 +262,39 @@ export default function EditPostPage() {
                             placeholder="Post Title"
                             className="w-full rounded-md border border-input px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                         />
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label htmlFor="slug" className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Custom URL Slug</Label>
+                        <div className="flex gap-2">
+                            <input
+                                id="slug"
+                                type="text"
+                                value={editSlug}
+                                onChange={(e) => {
+                                    setEditSlug(e.target.value);
+                                    setIsSlugModified(true);
+                                }}
+                                placeholder="url-slug"
+                                className="flex-1 rounded-md border border-input px-3 py-1.5 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                            />
+                            {!isSlugModified && (
+                                <Button 
+                                    type="button" 
+                                    variant="outline" 
+                                    size="sm"
+                                    onClick={() => {
+                                        const { slugify } = require('@/lib/utils');
+                                        setEditSlug(slugify(title));
+                                    }}
+                                >
+                                    Regenerate
+                                </Button>
+                            )}
+                        </div>
+                        <p className="text-[10px] text-muted-foreground">
+                            Preview: /posts/{editSlug || '...'}
+                        </p>
                     </div>
 
                     <NovelEditor

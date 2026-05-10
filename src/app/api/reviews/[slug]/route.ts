@@ -6,6 +6,40 @@ import Review from '@/models/Review';
 import Book from '@/models/Book';
 import User from '@/models/User';
 import { validateAndSanitizeImage } from '@/lib/utils';
+import { generateUniqueSlug } from '@/lib/slug-utils';
+
+export async function GET(
+    request: NextRequest,
+    props: { params: Promise<{ slug: string }> }
+) {
+    const params = await props.params;
+    try {
+        const { slug } = params;
+        await dbConnect();
+
+        let review;
+        if (/^[0-9a-fA-F]{24}$/.test(slug)) {
+            review = await Review.findById(slug)
+                .populate('book', 'title author coverImage slug')
+                .populate('user', 'name image username rankTier');
+        }
+
+        if (!review) {
+            review = await Review.findOne({ slug })
+                .populate('book', 'title author coverImage slug')
+                .populate('user', 'name image username rankTier');
+        }
+
+        if (!review) {
+            return NextResponse.json({ error: 'Review not found' }, { status: 404 });
+        }
+
+        return NextResponse.json({ review });
+    } catch (error: any) {
+        console.error('Error fetching review:', error);
+        return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    }
+}
 
 export async function DELETE(
     request: NextRequest,
@@ -64,7 +98,6 @@ export async function DELETE(
             totalReviews: allReviews.length,
         });
 
-        // Update user's rank (remove 10 points)
         // Update user's rank (remove 10 points, floor at 0)
         await User.findByIdAndUpdate(session.user.id, [
             {
@@ -102,7 +135,7 @@ export async function PATCH(
         }
 
         const body = await request.json();
-        const { rating, content, tags, image } = body;
+        const { rating, content, tags, image, title, slug: newSlug } = body;
 
         await dbConnect();
 
@@ -130,7 +163,6 @@ export async function PATCH(
             );
         }
 
-        // Update fields
         // Update fields with validation
         if (rating !== undefined) {
             const numRating = Number(rating);
@@ -153,7 +185,7 @@ export async function PATCH(
             const trimmedContent = content.trim();
             if (trimmedContent.length === 0 || trimmedContent.length > 5000) {
                 return NextResponse.json(
-                    { error: 'Content must be a non-empty string (max 5000 characters after trimming)' },
+                    { error: 'Content must be a non-empty string (max 5000 characters)' },
                     { status: 400 }
                 );
             }
@@ -178,6 +210,40 @@ export async function PATCH(
                     { error: error.message },
                     { status: 400 }
                 );
+            }
+        }
+
+        if (title !== undefined) {
+            if (typeof title !== 'string' || title.trim().length === 0 || title.trim().length > 200) {
+                return NextResponse.json(
+                    { error: 'Title must be a non-empty string (max 200 characters)' },
+                    { status: 400 }
+                );
+            }
+            review.title = title.trim();
+        }
+
+        if (newSlug !== undefined && newSlug !== review.slug) {
+            if (typeof newSlug !== 'string') {
+                return NextResponse.json(
+                    { error: 'Slug must be a string' },
+                    { status: 400 }
+                );
+            }
+
+            const trimmedSlug = newSlug.trim().toLowerCase();
+            if (trimmedSlug) {
+                const isValidPattern = /^[a-z0-9]+(-[a-z0-9]+)*$/.test(trimmedSlug);
+                const isReserved = ['admin', 'api', 'settings', 'auth', 'dashboard', 'profile'].includes(trimmedSlug);
+                
+                if (isValidPattern && !isReserved && trimmedSlug.length >= 3 && trimmedSlug.length <= 100) {
+                    review.slug = await generateUniqueSlug(Review, trimmedSlug, 'slug', true, review._id.toString());
+                } else {
+                    return NextResponse.json(
+                        { error: 'Invalid custom slug. Use 3-100 characters, lowercase letters, numbers, and hyphens.' },
+                        { status: 400 }
+                    );
+                }
             }
         }
 

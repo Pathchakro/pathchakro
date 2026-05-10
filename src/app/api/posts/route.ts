@@ -103,7 +103,7 @@ export async function POST(request: NextRequest) {
         }
 
         const body = await request.json();
-        const { content, type, privacy, media, title, category } = body;
+        const { content, type, privacy, media, title, category, slug: customSlug } = body;
 
         if (!title) {
             return NextResponse.json(
@@ -144,7 +144,7 @@ export async function POST(request: NextRequest) {
         }
 
         // Generate slug
-        const slug = await generateUniqueSlug(Post, title);
+        const slug = await generateUniqueSlug(Post, customSlug || title);
 
         const post = await Post.create({
             author: session.user.id,

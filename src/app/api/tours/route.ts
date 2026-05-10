@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+export const dynamic = 'force-dynamic';
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { auth } from '@/auth';
 import dbConnect from '@/lib/mongodb';
@@ -21,9 +22,6 @@ export async function GET(request: NextRequest) {
         if (filterParam === 'mine') {
             const session = await auth();
             if (session?.user?.id) {
-                // My tours: Created by me OR I am a confirmed participant
-                // But typically "My Tours" implies managed by me or joined by me.
-                // Let's stick to the logic: organizer OR participant
                 filter = {
                     $or: [
                         { organizer: session.user.id },
@@ -44,9 +42,6 @@ export async function GET(request: NextRequest) {
         }
 
         if (userId) {
-            // If viewing specific user's tours (created or joined), show all public/team tours
-            // or all tours if they are the organizer (handling privacy).
-            // For now, simpler: show everything related to them.
             filter = {
                 $or: [
                     { organizer: userId },
@@ -112,6 +107,7 @@ export async function POST(request: NextRequest) {
             privacy,
             teamId,
             departureDateTime,
+            slug: customSlug,
         } = body;
 
         if (!title || !destination || !departureLocation || !description || !startDate || !endDate || budget === undefined) {
@@ -129,7 +125,36 @@ export async function POST(request: NextRequest) {
             return isNaN(d.getTime()) ? undefined : d;
         };
 
-        const slug = await generateUniqueSlug(Tour, title);
+        // Robust customSlug validation and sanitization
+        let sanitizedCustomSlug = undefined;
+        if (typeof customSlug === 'string' && customSlug.trim()) {
+            const trimmed = customSlug.trim();
+            // Enforce length limit and URL-safe alphanumeric/hyphen/underscore pattern
+            // Reject path traversal characters like "/", "..", "\"
+            if (trimmed.length > 100 || !/^[A-Za-z0-9_-]+$/.test(trimmed)) {
+                return NextResponse.json(
+                    { error: 'Invalid custom slug. Use alphanumeric, hyphens or underscores (max 100 chars).' },
+                    { status: 400 }
+                );
+            }
+            sanitizedCustomSlug = trimmed.toLowerCase();
+        }
+
+        // Consistent slug pattern: sanitize title and optionally append date
+        const normalizedTitle = title.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+        
+        let slugBase = sanitizedCustomSlug || normalizedTitle;
+        if (!sanitizedCustomSlug && startDate) {
+            // Append date only when customSlug is absent for a unique base
+            const dateObj = new Date(startDate);
+            const dateStr = isNaN(dateObj.getTime()) ? '' : dateObj.toISOString().split('T')[0];
+            if (dateStr) {
+                slugBase = `${normalizedTitle}-${dateStr}`;
+            }
+        }
+        
+        // Final unique slug generation with database collision check
+        const slug = await generateUniqueSlug(Tour, slugBase);
 
         const tour = await Tour.create({
             organizer: session.user.id,

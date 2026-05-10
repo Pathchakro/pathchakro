@@ -20,6 +20,7 @@ export interface IUser {
     lastDateOfDonateBlood?: Date;
     bookPreferences?: string[];
     rank?: number;
+    points?: number;
     profileCompletion?: number;
     rankTier?: 'Beginner' | 'Reader' | 'Critic' | 'Scholar' | 'Master';
     followers?: string[] | IUser[];

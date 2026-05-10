@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
@@ -21,6 +21,7 @@ import { WRITERS_LIST } from '@/lib/constants';
 import { AuthorSearch } from '@/components/books/AuthorSearch';
 import { useDynamicConfig } from '@/hooks/useDynamicConfig';
 import AuthGuard from '@/components/auth/AuthGuard';
+import { slugify } from '@/lib/utils';
 
 // const CATEGORIES = BOOK_CATEGORIES; // Removed as it's fetched dynamically
 
@@ -33,6 +34,7 @@ const bookSchema = z.object({
     pdfUrl: z.string().optional(),
     description: z.string().optional(),
     buyingLink: z.string().url('Please enter a valid URL').optional().or(z.literal('')),
+    slug: z.string().optional().or(z.literal('')),
 });
 
 type BookData = z.infer<typeof bookSchema>;
@@ -42,6 +44,7 @@ export default function AddBookPage() {
     const [isLoading, setIsLoading] = useState(false);
     const [uploadingPdf, setUploadingPdf] = useState(false);
     const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+    const [isSlugModified, setIsSlugModified] = useState(false);
 
     // Dynamic config
     const { categories } = useDynamicConfig();
@@ -57,6 +60,14 @@ export default function AddBookPage() {
     });
 
     const coverImage = watch('coverImage');
+    const title = watch('title');
+
+    // Auto-generate slug from title
+    useEffect(() => {
+        if (!isSlugModified && title) {
+            setValue('slug', slugify(title), { shouldValidate: true });
+        }
+    }, [title, isSlugModified, setValue]);
 
     const toggleCategory = (category: string) => {
         setSelectedCategories(prev =>
@@ -131,6 +142,24 @@ export default function AddBookPage() {
                                 />
                                 {errors.title && (
                                     <p className="text-sm text-red-500">{errors.title.message}</p>
+                                )}
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="slug">Custom URL Slug (Optional)</Label>
+                                <Input
+                                    id="slug"
+                                    placeholder="e.g. naming-of-the-rose"
+                                    {...register('slug', {
+                                        onChange: () => setIsSlugModified(true)
+                                    })}
+                                    disabled={isLoading}
+                                />
+                                <p className="text-xs text-muted-foreground">
+                                    Generated in real-time from the Title. Automatic updates stop once you manually edit this field.
+                                </p>
+                                {errors.slug && (
+                                    <p className="text-sm text-red-500">{errors.slug.message}</p>
                                 )}
                             </div>
 

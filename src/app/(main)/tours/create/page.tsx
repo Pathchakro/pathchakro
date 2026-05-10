@@ -15,6 +15,7 @@ import Link from 'next/link';
 
 import Image from 'next/image';
 import { useAccessControl } from '@/hooks/useAccessControl';
+import { SlugField } from '@/components/shared/SlugField';
 import dynamic from 'next/dynamic';
 
 const NovelEditor = dynamic(() => import('@/components/editor/NovelEditor'), { ssr: false });
@@ -36,6 +37,7 @@ const tourSchema = z.object({
         description: z.string(),
         location: z.string().optional(),
     })).optional(),
+    slug: z.string().optional().or(z.literal('')),
 });
 
 type TourData = z.infer<typeof tourSchema>;
@@ -113,19 +115,14 @@ export default function CreateTourPage() {
         setImagePreviews(newPreviews);
     };
 
-    const {
-        register,
-        handleSubmit,
-        control,
-        formState: { errors },
-        setValue,
-        watch,
-    } = useForm<TourData>({
+    const form = useForm<TourData>({
         resolver: zodResolver(tourSchema),
         defaultValues: {
             itinerary: [{ day: 1, title: '', description: '', location: '' }],
         },
     });
+    
+    const { register, handleSubmit, control, formState: { errors }, setValue, watch } = form;
 
     const description = watch('description');
 
@@ -312,6 +309,12 @@ export default function CreateTourPage() {
                                 <p className="text-sm text-red-500">{errors.title.message}</p>
                             )}
                         </div>
+
+                        <SlugField
+                            form={form}
+                            watchField="title"
+                            disabled={isLoading}
+                        />
 
                         <div className="space-y-2">
                             <Label htmlFor="destination">Destination *</Label>

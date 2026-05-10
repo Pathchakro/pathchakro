@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
         }
 
         const body = await request.json();
-        const { title, description, dueDate, totalPoints, teamId, attachments } = body;
+        const { title, description, dueDate, totalPoints, teamId, attachments, slug: customSlug } = body;
 
         if (!title || !description || !dueDate || !totalPoints) {
             return NextResponse.json(
@@ -72,7 +72,25 @@ export async function POST(request: NextRequest) {
 
         await dbConnect();
 
-        const slug = await generateUniqueSlug(Assignment, title);
+        // Robust customSlug validation and sanitization
+        let validatedSlug = undefined;
+        if (typeof customSlug === 'string' && customSlug.trim()) {
+            const trimmed = customSlug.trim().toLowerCase();
+            
+            // Validation: alphanumeric and hyphens only, no leading/trailing hyphens, no consecutive hyphens
+            const isValidPattern = /^[a-z0-9]+(-[a-z0-9]+)*$/.test(trimmed);
+            
+            if (trimmed.length >= 1 && trimmed.length <= 100 && isValidPattern) {
+                validatedSlug = trimmed;
+            } else {
+                 return NextResponse.json(
+                    { error: 'Invalid custom slug. Use 1-100 characters, lowercase letters, numbers, and hyphens.' },
+                    { status: 400 }
+                );
+            }
+        }
+
+        const slug = await generateUniqueSlug(Assignment, validatedSlug || title);
 
         const assignment = await Assignment.create({
             teacher: session.user.id,

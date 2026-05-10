@@ -17,8 +17,6 @@ export async function GET(
         await dbConnect();
 
         const slug = decodeURIComponent(params.slug);
-        console.log('GET /api/events/[slug] decoded slug:', slug);
-
         const isObjectId = /^[0-9a-fA-F]{24}$/.test(slug);
         let event = null;
 
@@ -39,8 +37,6 @@ export async function GET(
                 .populate('listeners.user', 'name image')
                 .lean();
         }
-
-        console.log('Event found:', !!event);
 
         if (!event) {
             return NextResponse.json(
@@ -97,18 +93,28 @@ export async function PUT(
         const body = await request.json();
         const {
             title, description, eventType, location,
-            meetingLink, startDate, startTime, banner, recordingLink
+            meetingLink, startDate, startTime, banner, recordingLink, slug: newSlug
         } = body;
 
         const updateData: any = {};
-        if (title !== undefined) {
-            updateData.title = title;
-            updateData.slug = await generateUniqueSlug(Event, title, 'slug', true, event._id.toString());
+        
+        // Precise field presence checks to support falsy values (empty string, null)
+        if (newSlug !== undefined || title !== undefined) {
+            if (title !== undefined) updateData.title = title;
+            
+            // Prefer non-empty newSlug if provided, else non-empty title if provided, otherwise fall back to current title
+            const slugBase = (typeof newSlug === 'string' && newSlug.trim()) 
+                ? newSlug 
+                : (typeof title === 'string' && title.trim() ? title : event.title);
+                
+            updateData.slug = await generateUniqueSlug(Event, slugBase, 'slug', true, event._id.toString());
         }
+
         if (description !== undefined) updateData.description = description;
         if (eventType !== undefined) updateData.eventType = eventType;
         if (location !== undefined) updateData.location = location;
         if (meetingLink !== undefined) updateData.meetingLink = meetingLink;
+        
         if (startDate !== undefined || startTime !== undefined) {
             const currentEvent = await Event.findById(event._id);
             const currentStart = new Date(currentEvent.startTime);
@@ -116,11 +122,12 @@ export async function PUT(
             const t = startTime || currentStart.toTimeString().slice(0, 5);
             updateData.startTime = new Date(`${d}T${t}`);
         }
+        
         if (banner !== undefined) updateData.banner = banner;
         if (recordingLink !== undefined) updateData.recordingLink = recordingLink;
 
         const updatedEvent = await Event.findByIdAndUpdate(
-            event._id, // Use the resolved ID
+            event._id,
             { $set: updateData },
             { new: true }
         );

@@ -1,36 +1,39 @@
 import { Metadata } from 'next';
 import EventsClient from './EventsClient';
-import dbConnect from '@/lib/mongodb';
-import Event from '@/models/Event';
+import { getCachedEvents } from '@/lib/data/events';
 
 export const metadata: Metadata = {
     title: 'Events | Pathchakro',
     description: 'Discover and join educational events and meetups on Pathchakro.',
 };
 
-export default async function EventsPage() {
+export default async function EventsPage(props: {
+    searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
+    const searchParams = await props.searchParams;
+    const q = typeof searchParams.q === 'string' ? searchParams.q : Array.isArray(searchParams.q) ? searchParams.q[0] : undefined;
+    const status = typeof searchParams.status === 'string' ? searchParams.status : Array.isArray(searchParams.status) ? searchParams.status[0] : undefined;
+    
+    // Normalize upcoming parameter, handling potential array input
+    const upcomingParam = Array.isArray(searchParams.upcoming) ? searchParams.upcoming[0] : searchParams.upcoming;
+    const upcoming = upcomingParam === 'true';
+    
+    const pageParam = Array.isArray(searchParams.page) ? searchParams.page[0] : searchParams.page;
+    const page = Math.max(1, parseInt(typeof pageParam === 'string' ? pageParam : '1') || 1);
+
     try {
-        await dbConnect();
+        // Fetch events via getCachedEvents (uses caching layer)
+        const data = await getCachedEvents({
+            destination: q,
+            status,
+            upcoming,
+            page,
+            limit: 10
+        });
 
-        // Fetch initial events (upcoming by default)
-        const eventData = await Event.find({
-            $or: [{ team: { $exists: false } }, { team: null }],
-            startTime: { $gte: new Date() },
-            status: { $in: ['upcoming', 'ongoing'] }
-        })
-            .populate('organizer', 'name image rankTier')
-            .populate('team', 'name')
-            .sort({ startTime: 1 })
-            .limit(10)
-            .lean();
-
-        // Serialize data for Client Component
-        const serializedEvents = JSON.parse(JSON.stringify(eventData));
-
-        return <EventsClient initialEvents={serializedEvents} />;
+        return <EventsClient initialData={data} />;
     } catch (error) {
         console.error('Error in EventsPage:', error);
-        // Fallback UI to prevent page crash on DB error
-        return <EventsClient initialEvents={[]} />;
+        return <EventsClient initialData={{ events: [], pagination: { totalEvents: 0, totalPages: 1, currentPage: 1, limit: 10 } }} />;
     }
 }

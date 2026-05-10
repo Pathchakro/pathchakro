@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -7,13 +6,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Star, Image as ImageIcon, X, Loader2 } from 'lucide-react';
+import { Star, Image as ImageIcon, X, Loader2, AlertCircle } from 'lucide-react';
 import NovelEditor from '@/components/editor/NovelEditor';
 import { BookSearch } from '@/components/books/BookSearch';
 import { toast } from 'sonner';
 import { useAuthProtection } from '@/hooks/useAuthProtection';
 import { ProfileCompletionModal } from '@/components/auth/ProfileCompletionModal';
 import { LoginModal } from '@/components/auth/LoginModal';
+import { slugify } from '@/lib/utils';
 
 interface CreateReviewDialogProps {
     open: boolean;
@@ -44,8 +44,7 @@ export function CreateReviewDialog({ open, onOpenChange, initialBook }: CreateRe
             setSelectedBook(initialBook);
         }
     }, [initialBook]);
-    const [canPublish, setCanPublish] = useState(true);
-
+    
     useEffect(() => {
         if (open) {
             const authorized = checkAuth();
@@ -54,12 +53,17 @@ export function CreateReviewDialog({ open, onOpenChange, initialBook }: CreateRe
             }
         }
     }, [open, checkAuth, onOpenChange]);
+
     const [hoveredRating, setHoveredRating] = useState(0);
     const [title, setTitle] = useState('');
     const [content, setContent] = useState('');
     const [imageUrl, setImageUrl] = useState('');
+    const [canPublish, setCanPublish] = useState(true);
     const [isLoading, setIsLoading] = useState(false);
     const [isUploadingImage, setIsUploadingImage] = useState(false);
+    const [editSlug, setEditSlug] = useState('');
+    const [isSlugModified, setIsSlugModified] = useState(false);
+    const [slugError, setSlugError] = useState<string | null>(null);
 
     const STORAGE_KEY = 'draft_review';
 
@@ -69,12 +73,13 @@ export function CreateReviewDialog({ open, onOpenChange, initialBook }: CreateRe
         if (savedDraft) {
             try {
                 const parsed = JSON.parse(savedDraft);
-                // Only use draft book if no initialBook was provided
                 if (parsed.selectedBook && !initialBook) setSelectedBook(parsed.selectedBook);
                 if (parsed.rating) setRating(parsed.rating);
                 if (parsed.title) setTitle(parsed.title);
                 if (parsed.content) setContent(parsed.content);
                 if (parsed.imageUrl) setImageUrl(parsed.imageUrl);
+                if (parsed.editSlug) setEditSlug(parsed.editSlug);
+                if (parsed.isSlugModified) setIsSlugModified(parsed.isSlugModified);
             } catch (e) {
                 console.error('Failed to parse draft review', e);
             }
@@ -83,28 +88,36 @@ export function CreateReviewDialog({ open, onOpenChange, initialBook }: CreateRe
 
     // Save draft to localStorage whenever state changes
     useEffect(() => {
-        // Debounce could be good, but for now simple 
         const draft = {
             selectedBook,
             rating,
             title,
             content,
-            imageUrl
+            imageUrl,
+            editSlug,
+            isSlugModified
         };
         localStorage.setItem(STORAGE_KEY, JSON.stringify(draft));
-    }, [selectedBook, rating, title, content, imageUrl]);
+    }, [selectedBook, rating, title, content, imageUrl, editSlug, isSlugModified]);
+
+    // Auto-generate slug from title
+    useEffect(() => {
+        if (!isSlugModified && title.trim()) {
+            setEditSlug(slugify(title));
+            setSlugError(null);
+        }
+    }, [title, isSlugModified]);
 
     const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
 
-        // Validations
         if (!file.type.startsWith('image/')) {
             toast.error('Please select an image file');
             return;
         }
 
-        if (file.size > 5 * 1024 * 1024) { // 5MB Limit for UI feedback, though API allows 32MB
+        if (file.size > 5 * 1024 * 1024) {
             toast.error('Image size should be less than 5MB');
             return;
         }
@@ -132,7 +145,6 @@ export function CreateReviewDialog({ open, onOpenChange, initialBook }: CreateRe
             toast.error(error.message || 'Failed to upload image');
         } finally {
             setIsUploadingImage(false);
-            // Reset input value to allow selecting same file again if needed (optional)
             e.target.value = '';
         }
     };
@@ -140,12 +152,14 @@ export function CreateReviewDialog({ open, onOpenChange, initialBook }: CreateRe
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        if (!selectedBook || rating === 0 || !title || !content) return;
+        if (!selectedBook || rating === 0 || !title.trim() || !content.trim()) {
+            toast.error("Please fill in all required fields");
+            return;
+        }
 
         setIsLoading(true);
 
         try {
-            // Create the review
             const reviewResponse = await fetch('/api/reviews', {
                 method: 'POST',
                 headers: {
@@ -156,7 +170,8 @@ export function CreateReviewDialog({ open, onOpenChange, initialBook }: CreateRe
                     rating,
                     title,
                     content,
-                    image: imageUrl || undefined, // Send image if provided
+                    image: imageUrl || undefined,
+                    slug: editSlug.trim() || undefined,
                 }),
             });
 
@@ -166,14 +181,40 @@ export function CreateReviewDialog({ open, onOpenChange, initialBook }: CreateRe
                 setTitle('');
                 setContent('');
                 setImageUrl('');
-                localStorage.removeItem('draft_review'); // Clear draft
+                setEditSlug('');
+                setIsSlugModified(false);
+                setSlugError(null);
+                localStorage.removeItem(STORAGE_KEY);
                 onOpenChange(false);
+                toast.success("Review published successfully!");
                 window.location.reload();
+            } else {
+                const data = await reviewResponse.json();
+                toast.error(data.error || "Failed to publish review");
             }
         } catch (error) {
             console.error('Error creating review:', error);
+            toast.error("An unexpected error occurred");
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    const handleSlugChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const rawValue = e.target.value;
+        const sanitizedValue = rawValue.toLowerCase()
+            .replace(/\s+/g, '-')
+            .replace(/[^a-z0-9-]/g, '')
+            .replace(/-+/g, '-')
+            .replace(/^-+|-+$/g, '');
+
+        setEditSlug(rawValue);
+        setIsSlugModified(true);
+
+        if (rawValue !== sanitizedValue) {
+            setSlugError("Slug sanitized to URL-safe format");
+        } else {
+            setSlugError(null);
         }
     };
 
@@ -190,133 +231,186 @@ export function CreateReviewDialog({ open, onOpenChange, initialBook }: CreateRe
                 description="Sign in to share your thoughts on books and help the community discover great reads."
             />
             <Dialog open={open} onOpenChange={onOpenChange}>
-                <DialogContent className="sm:max-w-4xl max-h-[80vh] overflow-y-auto">
-                    <DialogHeader>
-                        <DialogTitle>Write a Book Review</DialogTitle>
+                <DialogContent className="sm:max-w-4xl max-h-[85vh] flex flex-col p-0 overflow-hidden rounded-3xl border-2">
+                    <DialogHeader className="p-6 border-b bg-muted/20">
+                        <DialogTitle className="text-2xl font-black uppercase tracking-tight">Write a Book Review</DialogTitle>
                     </DialogHeader>
 
-                    <form onSubmit={handleSubmit} className="space-y-4">
-                        {/* Form Body ... */}
-                        <div className="space-y-2">
-                            <Label>Select Book *</Label>
-                            <BookSearch
-                                selectedBook={selectedBook}
-                                onSelect={(book) => setSelectedBook(book)}
-                            />
-                        </div>
+                    <div className="overflow-y-auto flex-1 p-6">
+                        <form onSubmit={handleSubmit} className="space-y-6">
+                            <div className="space-y-2">
+                                <Label className="font-black text-xs uppercase tracking-widest text-muted-foreground ml-1">Select Book *</Label>
+                                <BookSearch
+                                    selectedBook={selectedBook}
+                                    onSelect={(book) => setSelectedBook(book)}
+                                />
+                            </div>
 
-                        <div className="space-y-2">
-                            <Label>Rating *</Label>
-                            <div className="flex gap-2">
-                                {[1, 2, 3, 4, 5].map((star) => (
-                                    <button
-                                        key={star}
-                                        type="button"
-                                        onClick={() => setRating(star)}
-                                        onMouseEnter={() => setHoveredRating(star)}
-                                        onMouseLeave={() => setHoveredRating(0)}
-                                        className="transition-transform hover:scale-110"
-                                    >
-                                        <Star
-                                            className={`h-8 w-8 ${star <= (hoveredRating || rating)
-                                                ? 'fill-yellow-400 text-yellow-400'
-                                                : 'text-gray-300'
-                                                }`}
-                                        />
-                                    </button>
-                                ))}
-                                {rating > 0 && (
-                                    <span className="ml-2 text-sm text-muted-foreground self-center">
-                                        {rating} star{rating !== 1 ? 's' : ''}
+                            <div className="space-y-2">
+                                <Label className="font-black text-xs uppercase tracking-widest text-muted-foreground ml-1">Rating *</Label>
+                                <div className="flex items-center gap-3 bg-muted/20 p-4 rounded-2xl border-2 shadow-inner">
+                                    <div className="flex gap-2">
+                                        {[1, 2, 3, 4, 5].map((star) => (
+                                            <button
+                                                key={star}
+                                                type="button"
+                                                onClick={() => setRating(star)}
+                                                onMouseEnter={() => setHoveredRating(star)}
+                                                onMouseLeave={() => setHoveredRating(0)}
+                                                className="transition-all hover:scale-125"
+                                            >
+                                                <Star
+                                                    className={`h-10 w-10 transition-colors ${star <= (hoveredRating || rating)
+                                                        ? 'fill-yellow-400 text-yellow-400 drop-shadow-sm'
+                                                        : 'text-gray-300'
+                                                        }`}
+                                                />
+                                            </button>
+                                        ))}
+                                    </div>
+                                    {rating > 0 && (
+                                        <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center border-2 border-primary/20 animate-in zoom-in">
+                                            <span className="font-black text-lg text-primary">{rating}</span>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div className="space-y-2">
+                                <div className="flex justify-between items-center px-1">
+                                    <Label htmlFor="title" className="font-black text-xs uppercase tracking-widest text-muted-foreground">Review Title *</Label>
+                                    <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                                        {title.length} / 70
                                     </span>
-                                )}
+                                </div>
+                                <Input
+                                    id="title"
+                                    value={title}
+                                    onChange={(e) => {
+                                        setTitle(e.target.value);
+                                        setIsSlugModified(false);
+                                    }}
+                                    placeholder="e.g. A Masterpiece of Modern Literature"
+                                    maxLength={70}
+                                    required
+                                    className="h-14 rounded-2xl border-2 font-bold text-lg px-4"
+                                />
                             </div>
-                        </div>
 
-                        <div className="space-y-2">
-                            <div className="flex justify-between items-center">
-                                <Label htmlFor="title">Review Title *</Label>
-                                <span className="text-xs text-muted-foreground">
-                                    {title.length}/70
-                                </span>
-                            </div>
-                            <Input
-                                id="title"
-                                value={title}
-                                onChange={(e) => setTitle(e.target.value)}
-                                placeholder="Enter a short title for your review"
-                                maxLength={70}
-                                required
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="content">Your Review *</Label>
-                            <NovelEditor
-                                initialValue={useMemo(() => {
-                                    if (!content) return undefined;
-                                    try {
-                                        return JSON.parse(content);
-                                    } catch (e) {
-                                        return undefined;
-                                    }
-                                }, [content])}
-                                onChange={(val) => setContent(val)}
-                            />
-                        </div>
-
-                        <div className="space-y-2">
-                            <Label htmlFor="image">Review Image (Optional)</Label>
-                            <div className="flex flex-col gap-2">
-                                {imageUrl ? (
-                                    <div className="relative w-full h-48 bg-muted rounded-md overflow-hidden border">
-                                        <Image src={imageUrl} alt="Review attachment" fill className="object-cover" />
-                                        <Button
-                                            type="button"
-                                            variant="destructive"
-                                            size="sm"
-                                            className="absolute top-2 right-2 h-8 w-8 p-0"
-                                            onClick={() => setImageUrl('')}
+                            <div className="space-y-2">
+                                <div className="flex items-center justify-between px-1">
+                                    <Label htmlFor="slug" className="font-black text-xs uppercase tracking-widest text-muted-foreground">Custom URL Slug</Label>
+                                    {editSlug && (
+                                        <span className="text-[10px] font-black text-primary uppercase">Preview: /reviews/{slugify(editSlug)}</span>
+                                    )}
+                                </div>
+                                <div className="flex gap-3">
+                                    <Input
+                                        id="slug"
+                                        value={editSlug}
+                                        onChange={handleSlugChange}
+                                        onBlur={() => setEditSlug(slugify(editSlug))}
+                                        placeholder="url-slug"
+                                        className={`h-12 rounded-2xl border-2 px-4 transition-all ${slugError ? 'border-amber-400 focus-visible:ring-amber-400' : 'focus-visible:ring-primary'}`}
+                                    />
+                                    {!isSlugModified && (
+                                        <Button 
+                                            type="button" 
+                                            variant="outline" 
+                                            onClick={() => {
+                                                setEditSlug(slugify(title));
+                                                setSlugError(null);
+                                            }}
+                                            className="h-12 rounded-2xl font-black border-2 px-6"
                                         >
-                                            <X className="h-4 w-4" />
+                                            REGENERATE
                                         </Button>
-                                    </div>
-                                ) : (
-                                    <div className="flex items-center gap-2">
-                                        <Input
-                                            id="image"
-                                            type="file"
-                                            accept="image/*"
-                                            onChange={handleImageUpload}
-                                            disabled={isUploadingImage}
-                                            className="cursor-pointer"
-                                        />
-                                        {isUploadingImage && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
+                                    )}
+                                </div>
+                                {slugError && (
+                                    <div className="flex items-center gap-1.5 text-[10px] font-bold text-amber-600 px-1 animate-in fade-in slide-in-from-top-1">
+                                        <AlertCircle className="h-3 w-3" />
+                                        {slugError}
                                     </div>
                                 )}
-                                <p className="text-xs text-muted-foreground">
-                                    Upload a photo of the book (optional). If empty, we'll use the book cover.
-                                </p>
                             </div>
-                        </div>
 
-                        <div className="flex gap-2 pt-4">
-                            <Button
-                                type="button"
-                                variant="outline"
-                                onClick={() => onOpenChange(false)}
-                                className="flex-1"
-                            >
-                                Cancel
-                            </Button>
-                            <Button
-                                type="submit"
-                                disabled={!selectedBook || rating === 0 || !title || !content || isLoading || !canPublish}
-                                className="flex-1"
-                            >
-                                {isLoading ? 'Publishing...' : 'Publish Review'}
-                            </Button>
-                        </div>
-                    </form>
+                            <div className="space-y-2">
+                                <Label htmlFor="content" className="font-black text-xs uppercase tracking-widest text-muted-foreground ml-1">Your Review *</Label>
+                                <div className="rounded-2xl border-2 overflow-hidden shadow-sm">
+                                    <NovelEditor
+                                        initialValue={useMemo(() => {
+                                            if (!content) return undefined;
+                                            try {
+                                                return JSON.parse(content);
+                                            } catch (e) {
+                                                return undefined;
+                                            }
+                                        }, [content])}
+                                        onChange={(val) => setContent(val)}
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="image" className="font-black text-xs uppercase tracking-widest text-muted-foreground ml-1">Review Image (Optional)</Label>
+                                <div className="flex flex-col gap-3">
+                                    {imageUrl ? (
+                                        <div className="relative w-full h-56 bg-muted rounded-3xl overflow-hidden border-2 shadow-inner group">
+                                            <Image src={imageUrl} alt="Review attachment" fill className="object-cover" />
+                                            <Button
+                                                type="button"
+                                                variant="destructive"
+                                                size="sm"
+                                                className="absolute top-3 right-3 h-10 w-10 rounded-2xl shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                                                onClick={() => setImageUrl('')}
+                                            >
+                                                <X className="h-5 w-5" />
+                                            </Button>
+                                        </div>
+                                    ) : (
+                                        <div className="bg-muted/10 p-4 rounded-2xl border-2 border-dashed flex flex-col items-center gap-3">
+                                            <div className="h-12 w-12 rounded-xl bg-primary/5 flex items-center justify-center">
+                                                <ImageIcon className="h-6 w-6 text-primary/40" />
+                                            </div>
+                                            <div className="text-center">
+                                                <Label htmlFor="image" className="cursor-pointer font-black text-primary hover:underline">Upload photo</Label>
+                                                <p className="text-[10px] text-muted-foreground font-medium">PNG, JPG up to 5MB</p>
+                                            </div>
+                                            <Input
+                                                id="image"
+                                                type="file"
+                                                accept="image/*"
+                                                onChange={handleImageUpload}
+                                                disabled={isUploadingImage}
+                                                className="hidden"
+                                            />
+                                            {isUploadingImage && <Loader2 className="h-5 w-5 animate-spin text-primary mt-2" />}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div className="flex gap-4 pt-4 sticky bottom-0 bg-background/80 backdrop-blur-md pb-2">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={() => onOpenChange(false)}
+                                    className="flex-1 h-14 rounded-2xl font-black border-2"
+                                >
+                                    CANCEL
+                                </Button>
+                                <Button
+                                    type="submit"
+                                    disabled={!selectedBook || rating === 0 || !title.trim() || !content.trim() || isLoading || !canPublish}
+                                    className="flex-1 h-14 rounded-2xl font-black text-lg shadow-lg hover:shadow-xl transition-all"
+                                >
+                                    {isLoading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : null}
+                                    {isLoading ? 'PUBLISHING...' : 'PUBLISH REVIEW'}
+                                </Button>
+                            </div>
+                        </form>
+                    </div>
                 </DialogContent>
             </Dialog>
         </>

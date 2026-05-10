@@ -3,6 +3,7 @@ import { revalidatePath } from 'next/cache';
 import { auth } from '@/auth';
 import dbConnect from '@/lib/mongodb';
 import Tour from '@/models/Tour';
+import { generateUniqueSlug } from '@/lib/slug-utils';
 
 export async function GET(
     request: NextRequest,
@@ -104,6 +105,11 @@ export async function PUT(
                 sanitizedUpdate[field] = body[field];
             }
         });
+
+        // Handle slug separately to ensure uniqueness and proper validation
+        if (body.slug !== undefined && body.slug !== tour.slug) {
+            sanitizedUpdate.slug = await generateUniqueSlug(Tour, body.slug, 'slug', true, tour._id.toString());
+        }
 
         const updatedTour = await Tour.findByIdAndUpdate(tour._id, sanitizedUpdate, {
             new: true,

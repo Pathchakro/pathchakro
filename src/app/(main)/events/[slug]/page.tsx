@@ -1,9 +1,8 @@
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import EventDetailClient from './EventDetailClient';
-import dbConnect from '@/lib/mongodb';
 import { extractPlainText } from '@/lib/utils';
-import Event from '@/models/Event';
+import { getCachedEventBySlug } from '@/lib/data/events';
 
 interface Props {
     params: Promise<{ slug: string }>;
@@ -13,16 +12,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const decodedParams = await params;
     const slug = decodeURIComponent(decodedParams.slug);
 
-    await dbConnect();
-
-    const isObjectId = /^[0-9a-fA-F]{24}$/.test(slug);
-    let event;
-
-    if (isObjectId) {
-        event = await Event.findById(slug).select('title description banner').lean();
-    } else {
-        event = await Event.findOne({ slug: slug }).select('title description banner').lean();
-    }
+    const event = await getCachedEventBySlug(slug);
 
     if (!event) {
         return {
@@ -62,24 +52,12 @@ export default async function EventPage(props: Props) {
     const decodedParams = await props.params;
     const slug = decodeURIComponent(decodedParams.slug);
 
-    await dbConnect();
-
-    const isObjectId = /^[0-9a-fA-F]{24}$/.test(slug);
-
-    const query = isObjectId ? { _id: slug } : { slug: slug };
-
-    const eventData = await Event.findOne(query)
-        .populate('organizer', 'name image rankTier')
-        .populate('team', 'name')
-        .populate('roles.speakers.user', 'name image').populate('listeners.user', 'name image')
-        .lean();
+    // Direct database call with unstable_cache
+    const eventData = await getCachedEventBySlug(slug);
 
     if (!eventData) {
         notFound();
     }
-
-    // Convert ObjectIds to strings for passing to Client Component
-    const serializedEvent = JSON.parse(JSON.stringify(eventData));
 
     // Structured Data for SEO
     const cleanDescription = extractPlainText(eventData.description || '');
@@ -118,8 +96,6 @@ export default async function EventPage(props: Props) {
         })),
     };
 
-    // To prevent XSS, we need to escape '</' inside script tags.
-    // Replacing '<' with unicode escape '\u003c' is a safe way to do this.
     const safeJsonLd = JSON.stringify(jsonLd).replace(/</g, '\\u003c');
 
     return (
@@ -128,7 +104,7 @@ export default async function EventPage(props: Props) {
                 type="application/ld+json"
                 dangerouslySetInnerHTML={{ __html: safeJsonLd }}
             />
-            <EventDetailClient slug={slug} initialData={serializedEvent} />
+            <EventDetailClient slug={slug} initialData={eventData} />
         </>
     );
 }

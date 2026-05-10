@@ -99,7 +99,7 @@ export async function PATCH(
         const allowedFields = [
             'title', 'description', 'author', 'category', 'tags',
             'publishedDate', 'condition', 'price', 'images', 'stock', 'status',
-            'coverImage', 'pdfUrl', 'publisher', 'isbn', 'buyingLink'
+            'coverImage', 'pdfUrl', 'publisher', 'isbn', 'buyingLink', 'slug'
         ];
 
         const updateDoc: any = {};
@@ -108,6 +108,12 @@ export async function PATCH(
                 updateDoc[field] = body[field];
             }
         });
+
+        // 3b. Handle Slug changes
+        if (body.slug && body.slug !== book.slug) {
+            const { generateUniqueSlug } = await import('@/lib/slug-utils');
+            updateDoc.slug = await generateUniqueSlug(Book, body.slug, 'slug', true, book._id.toString());
+        }
 
         // Ensure buyingLink is explicitly handled
         if (body.buyingLink !== undefined) {

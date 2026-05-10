@@ -14,12 +14,14 @@ import { z } from 'zod';
 import Link from 'next/link';
 import { useAuthProtection } from '@/hooks/useAuthProtection';
 import { ProfileCompletionModal } from '@/components/auth/ProfileCompletionModal';
+import { SlugField } from '@/components/shared/SlugField';
 
 const assignmentSchema = z.object({
     title: z.string().min(5, 'Title must be at least 5 characters'),
     description: z.string().min(20, 'Description must be at least 20 characters'),
     dueDate: z.string().min(1, 'Due date is required'),
     totalPoints: z.number().min(1, 'Points must be at least 1').max(1000, 'Points cannot exceed 1000'),
+    slug: z.string().optional().or(z.literal('')),
 });
 
 type AssignmentData = z.infer<typeof assignmentSchema>;
@@ -38,16 +40,18 @@ export default function CreateAssignmentPage() {
         checkAuth();
     }, [checkAuth]);
 
-    const {
-        register,
-        handleSubmit,
-        formState: { errors },
-    } = useForm<AssignmentData>({
+    const form = useForm<AssignmentData>({
         resolver: zodResolver(assignmentSchema),
         defaultValues: {
             totalPoints: 100,
         },
     });
+
+    const {
+        register,
+        handleSubmit,
+        formState: { errors },
+    } = form;
 
     const onSubmit = async (data: AssignmentData) => {
         setSubmitting(true);
@@ -148,6 +152,12 @@ export default function CreateAssignmentPage() {
                                 <p className="text-sm text-red-500">{errors.title.message}</p>
                             )}
                         </div>
+
+                        <SlugField
+                            form={form}
+                            watchField="title"
+                            disabled={submitting}
+                        />
 
                         <div className="space-y-2">
                             <Label htmlFor="description">Description & Instructions *</Label>

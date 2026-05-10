@@ -15,9 +15,6 @@ export async function GET(request: NextRequest) {
         const limit = parseInt(searchParams.get('limit') || '20');
         const skip = (page - 1) * limit;
 
-        // Lazy Seeding / Syncing
-        // We check if DB has fewer authors than our static list. 
-        // If so, we attempt to insert missing ones.
         const count = await Author.estimatedDocumentCount();
 
         if (count < WRITERS_LIST.length) {
@@ -29,11 +26,9 @@ export async function GET(request: NextRequest) {
             }));
 
             try {
-                // ordered: false lets it continue even if some duplicates fail (which they will)
                 await Author.insertMany(seedData, { ordered: false });
                 console.log('Syncing complete.');
             } catch (e) {
-                // Ignore duplicate key errors, that's expected
                 console.log('Syncing partial (some existed).');
             }
         }
@@ -63,7 +58,7 @@ export async function POST(request: NextRequest) {
     try {
         await dbConnect();
         const body = await request.json();
-        const { name, bio, image } = body;
+        const { name, bio, image, slug: customSlug } = body;
 
         if (!name) {
             return NextResponse.json(
@@ -72,7 +67,27 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        const slug = await generateUniqueSlug(Author, name);
+        // Robust customSlug validation and sanitization
+        let normalizedSlug = undefined;
+        if (typeof customSlug === 'string' && customSlug.trim()) {
+            const trimmed = customSlug.trim().toLowerCase();
+            
+            // Validation: alphanumeric and hyphens only, no leading/trailing hyphens, no consecutive hyphens
+            const isValidPattern = /^[a-z0-9]+(-[a-z0-9]+)*$/.test(trimmed);
+            const isReserved = ['admin', 'api', 'settings', 'auth', 'dashboard', 'profile'].includes(trimmed);
+            const hasPathTraversal = trimmed.includes('..') || trimmed.includes('/') || trimmed.includes('\\');
+            
+            if (trimmed.length >= 3 && trimmed.length <= 64 && isValidPattern && !isReserved && !hasPathTraversal) {
+                normalizedSlug = trimmed;
+            } else {
+                 return NextResponse.json(
+                    { error: 'Invalid custom slug. Use 3-64 characters, lowercase letters, numbers, and single hyphens. No reserved words or path separators.' },
+                    { status: 400 }
+                );
+            }
+        }
+
+        const slug = await generateUniqueSlug(Author, normalizedSlug || name);
 
         const author = await Author.create({
             name,

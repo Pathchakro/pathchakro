@@ -5,6 +5,7 @@ import dbConnect from '@/lib/mongodb';
 import Review from '@/models/Review';
 import Book from '@/models/Book';
 import User from '@/models/User';
+import mongoose from 'mongoose';
 import { validateAndSanitizeImage } from '@/lib/utils';
 import { generateUniqueSlug } from '@/lib/slug-utils';
 
@@ -41,7 +42,6 @@ export async function GET(request: NextRequest) {
         }
 
         if (search) {
-            // Find books that match the search term
             const matchingBooks = await Book.find({
                 title: { $regex: search, $options: 'i' }
             }).select('_id');
@@ -84,7 +84,7 @@ export async function POST(request: NextRequest) {
         }
 
         const body = await request.json();
-        const { bookId, rating, title, content, tags, image } = body;
+        const { bookId, rating, title, content, tags, image, slug: customSlug } = body;
 
         if (!bookId || !rating || !content || !title) {
             return NextResponse.json(
@@ -107,6 +107,25 @@ export async function POST(request: NextRequest) {
             );
         }
 
+        // Robust customSlug validation and sanitization
+        let validatedSlug = undefined;
+        if (typeof customSlug === 'string' && customSlug.trim()) {
+            const trimmed = customSlug.trim().toLowerCase();
+            
+            // Validation: alphanumeric and hyphens only, no leading/trailing hyphens
+            const isValidPattern = /^[a-z0-9]+(-[a-z0-9]+)*$/.test(trimmed);
+            const isReserved = ['admin', 'api', 'settings', 'auth', 'dashboard', 'profile'].includes(trimmed);
+            
+            if (trimmed.length >= 3 && trimmed.length <= 100 && isValidPattern && !isReserved) {
+                validatedSlug = trimmed;
+            } else {
+                 return NextResponse.json(
+                    { error: 'Invalid custom slug. Use 3-100 characters, lowercase letters, numbers, and hyphens. No reserved words.' },
+                    { status: 400 }
+                );
+            }
+        }
+
         let sanitizedImage: string | undefined;
         try {
             sanitizedImage = validateAndSanitizeImage(image);
@@ -120,7 +139,6 @@ export async function POST(request: NextRequest) {
 
         await dbConnect();
 
-        // Check if user already reviewed this book
         const existingReview = await Review.findOne({
             book: bookId,
             user: session.user.id,
@@ -133,40 +151,56 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // Generate unique slug
-        const slug = await generateUniqueSlug(Review, title || 'review');
+        // Generate unique slug from validated input or title fallback
+        const slug = await generateUniqueSlug(Review, validatedSlug || title || 'review');
 
-        const review = await Review.create({
-            book: bookId,
-            user: session.user.id,
-            rating,
-            title,
-            slug,
-            content,
-            image: sanitizedImage,
-            tags: tags || [],
-            helpful: 0,
+        const session_db = await mongoose.startSession();
+        let populatedReview;
+
+        await session_db.withTransaction(async () => {
+            const [review] = await Review.create([{
+                book: bookId,
+                user: session.user.id,
+                rating,
+                title,
+                slug,
+                content,
+                image: sanitizedImage,
+                tags: tags || [],
+                helpful: 0,
+            }], { session: session_db });
+
+            // Atomic update of book rating and review count using aggregation
+            const stats = await Review.aggregate([
+                { $match: { book: new mongoose.Types.ObjectId(bookId) } },
+                { 
+                    $group: { 
+                        _id: null, 
+                        averageRating: { $avg: '$rating' },
+                        totalReviews: { $sum: 1 }
+                    } 
+                }
+            ]).session(session_db);
+
+            if (stats.length > 0) {
+                await Book.findByIdAndUpdate(bookId, {
+                    averageRating: stats[0].averageRating,
+                    totalReviews: stats[0].totalReviews,
+                }, { session: session_db });
+            }
+
+            await User.findByIdAndUpdate(session.user.id, {
+                $inc: { rank: 10 },
+            }, { session: session_db });
+
+            populatedReview = await Review.findById(review._id)
+                .populate('book', 'title author coverImage slug')
+                .populate('user', 'name image username rankTier')
+                .session(session_db)
+                .lean();
         });
 
-        // Update book's average rating
-        const allReviews = await Review.find({ book: bookId });
-        const totalRating = allReviews.reduce((sum, r) => sum + r.rating, 0);
-        const averageRating = totalRating / allReviews.length;
-
-        await Book.findByIdAndUpdate(bookId, {
-            averageRating: averageRating,
-            totalReviews: allReviews.length,
-        });
-
-        // Update user's rank (add 10 points for a review)
-        await User.findByIdAndUpdate(session.user.id, {
-            $inc: { rank: 10 },
-        });
-
-        const populatedReview = await Review.findById(review._id)
-            .populate('book', 'title author coverImage slug')
-            .populate('user', 'name image username rankTier')
-            .lean();
+        await session_db.endSession();
 
         revalidatePath('/', 'layout');
 

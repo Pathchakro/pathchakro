@@ -1,9 +1,8 @@
 import { Metadata } from 'next';
-// Course details page for Pathchakro
 import Link from 'next/link';
 import Image from 'next/image';
 import { notFound } from 'next/navigation';
-import { Calendar, Users, Clock, Share2, Info, CheckCircle2 } from 'lucide-react';
+import { Calendar, Users, Clock, Share2, CheckCircle2 } from 'lucide-react';
 import he from 'he';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -12,25 +11,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { EnrollButton } from '@/components/courses/EnrollButton';
 import { CourseDescription } from '@/components/courses/CourseDescription';
-
 import { generateHtml } from '@/lib/server-html';
-
-// Helper to fetch course
-async function getCourse(slug: string) {
-    if (!process.env.NEXTAUTH_URL) return null;
-
-    try {
-        const res = await fetch(`${process.env.NEXTAUTH_URL}/api/courses/${slug}`, {
-            cache: 'force-cache',
-            next: { tags: ['courses', `course-${slug}`] }
-        });
-        if (!res.ok) return null;
-        return await res.json();
-    } catch (error) {
-        console.error('Error fetching course:', error);
-        return null;
-    }
-}
+import { getCachedCourseBySlug } from '@/lib/data/courses';
 
 // Helper to format date with fallback
 function formatDate(dateString: string | Date | null | undefined) {
@@ -42,14 +24,13 @@ function formatDate(dateString: string | Date | null | undefined) {
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
     const { slug } = await params;
-    const course = await getCourse(slug);
+    const course = await getCachedCourseBySlug(slug);
     if (!course) return {};
 
     // Generate description from content
     let description = '';
     if (course.description) {
         const htmlContent = generateHtml(course.description);
-        // Strip HTML, decode entities, and truncate gracefully
         const plainText = he.decode(htmlContent.replace(/<[^>]*>?/gm, ''));
         if (plainText.length <= 160) {
             description = plainText.trim();
@@ -81,14 +62,15 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
 export default async function CourseDetailsPage({ params }: { params: Promise<{ slug: string }> }) {
     const { slug } = await params;
-    const course = await getCourse(slug);
+    
+    // Direct database call with unstable_cache
+    const course = await getCachedCourseBySlug(slug);
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || '';
 
     if (!course) notFound();
 
     return (
         <div className="container py-10 space-y-8">
-            {/* Banner */}
             <div className="relative h-[300px] md:h-[400px] w-full rounded-2xl overflow-hidden shadow-lg">
                 <Image
                     src={course.banner}
@@ -99,7 +81,6 @@ export default async function CourseDetailsPage({ params }: { params: Promise<{ 
                 />
             </div>
 
-            {/* Course Header Info */}
             <div className="space-y-6">
                 <Badge className="bg-primary hover:bg-primary/90 text-white font-bold px-4 py-1.5 capitalize text-sm md:text-base w-fit">
                     {course.mode}
@@ -144,7 +125,6 @@ export default async function CourseDetailsPage({ params }: { params: Promise<{ 
             </div>
 
             <div className="grid lg:grid-cols-3 gap-10">
-                {/* Main Content */}
                 <div className="lg:col-span-2 space-y-8">
                     <div className="prose dark:prose-invert max-w-none">
                         <h2 className="text-2xl font-bold mb-4">About this Course</h2>
@@ -153,7 +133,6 @@ export default async function CourseDetailsPage({ params }: { params: Promise<{ 
 
                     <Separator />
 
-                    {/* Enrolled Students */}
                     <div>
                         <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
                             <Users className="h-5 w-5" /> Enrolled Students
@@ -178,7 +157,6 @@ export default async function CourseDetailsPage({ params }: { params: Promise<{ 
                     </div>
                 </div>
 
-                {/* Sidebar */}
                 <div className="space-y-6">
                     <Card className="sticky top-24 border-primary/20 shadow-lg bg-card/50 backdrop-blur-sm">
                         <CardHeader>

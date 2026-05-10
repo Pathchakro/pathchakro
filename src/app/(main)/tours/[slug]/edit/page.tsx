@@ -15,6 +15,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import LoadingSpinner from '@/components/ui/Loading';
 import dynamic from 'next/dynamic';
+import { SlugField } from '@/components/shared/SlugField';
 
 const NovelEditor = dynamic(() => import('@/components/editor/NovelEditor'), { ssr: false });
 
@@ -35,6 +36,7 @@ const tourSchema = z.object({
         description: z.string(),
         location: z.string().optional(),
     })).optional(),
+    slug: z.string().optional().or(z.literal('')),
 });
 
 type TourData = z.infer<typeof tourSchema>;
@@ -52,6 +54,14 @@ export default function EditTourPage() {
     const [tourId, setTourId] = useState<string | null>(null);
     const previewUrlsRef = useRef<string[]>([]);
 
+    const form = useForm<TourData>({
+        resolver: zodResolver(tourSchema),
+        defaultValues: {
+            itinerary: [{ day: 1, title: '', description: '', location: '' }],
+            images: [],
+        },
+    });
+
     const {
         register,
         handleSubmit,
@@ -60,13 +70,7 @@ export default function EditTourPage() {
         setValue,
         watch,
         formState: { errors },
-    } = useForm<TourData>({
-        resolver: zodResolver(tourSchema),
-        defaultValues: {
-            itinerary: [{ day: 1, title: '', description: '', location: '' }],
-            images: [],
-        },
-    });
+    } = form;
 
     const description = watch('description');
     const images = watch('images') || [];
@@ -357,6 +361,12 @@ export default function EditTourPage() {
                                     <p className="text-sm text-red-500">{errors.title.message}</p>
                                 )}
                             </div>
+
+                            <SlugField
+                                form={form}
+                                watchField="title"
+                                disabled={isSaving}
+                            />
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="space-y-2">

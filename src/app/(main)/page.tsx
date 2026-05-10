@@ -1,6 +1,8 @@
 import { auth } from '@/auth';
 import HomeContent from '@/components/home/HomeContent';
 import { Metadata } from 'next';
+import { getCachedFeed } from '@/lib/data/feed';
+import { getCachedSavedReviewIds } from '@/lib/data/reviews';
 
 export const metadata: Metadata = {
     title: 'Pathchakro - Journey of Knowledge',
@@ -14,59 +16,34 @@ export const metadata: Metadata = {
     },
 };
 
-async function getInitialData() {
+export default async function HomePage() {
     const session = await auth();
     const userId = session?.user?.id;
 
-    const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
+    // Define safe fallbacks
+    let feedData: any = { items: [], nextCursor: null };
+    let bookmarks: string[] = [];
 
-    // Fetch feed and bookmarks in parallel
-    const [feedRes, bookmarksRes] = await Promise.all([
-        fetch(`${baseUrl}/api/feed?limit=10`, {
-            cache: 'force-cache',
-            next: { tags: ['feed'] }
-        }),
-        userId ? fetch(`${baseUrl}/api/users/bookmarks?userId=${userId}`, {
-            cache: 'force-cache',
-            next: { tags: [`bookmarks-${userId}`] }
-        }) : Promise.resolve(null)
-    ]);
-
-    const feedData = await feedRes.json();
-    let bookmarks = [];
-
-    if (bookmarksRes) {
-        try {
-            if (bookmarksRes.ok) {
-                const bookmarksData = await bookmarksRes.json();
-                if (bookmarksData.bookmarks) {
-                    bookmarks = bookmarksData.bookmarks.map((b: any) => b._id);
-                }
-            } else {
-                console.error(`Failed to fetch bookmarks: ${bookmarksRes.status} ${bookmarksRes.statusText}`);
-            }
-        } catch (error) {
-            console.error('Error parsing bookmarks data:', error);
-        }
+    try {
+        // Parallel direct database calls with unstable_cache
+        const [fetchedFeed, fetchedBookmarks] = await Promise.all([
+            getCachedFeed({ limit: 10 }),
+            userId ? getCachedSavedReviewIds(userId) : Promise.resolve([])
+        ]);
+        
+        feedData = fetchedFeed || feedData;
+        bookmarks = fetchedBookmarks || bookmarks;
+    } catch (error) {
+        console.error('[HOME_PAGE_DATA_FETCH_ERROR]:', error);
+        // Page remains functional with default fallback values
     }
-
-    return {
-        initialItems: feedData.items || [],
-        initialCursor: feedData.nextCursor || null,
-        initialBookmarks: bookmarks,
-        session
-    };
-}
-
-export default async function HomePage() {
-    const data = await getInitialData();
 
     return (
         <HomeContent
-            initialItems={data.initialItems}
-            initialCursor={data.initialCursor}
-            initialBookmarks={data.initialBookmarks}
-            session={data.session}
+            initialItems={feedData?.items || []}
+            initialCursor={feedData?.nextCursor || null}
+            initialBookmarks={bookmarks || []}
+            session={session}
         />
     );
 }

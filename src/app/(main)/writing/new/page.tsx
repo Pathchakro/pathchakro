@@ -18,6 +18,7 @@ import NovelEditor from '@/components/editor/NovelEditor';
 import { toast } from 'sonner';
 import { useAuthProtection } from '@/hooks/useAuthProtection';
 import { ProfileCompletionModal } from '@/components/auth/ProfileCompletionModal';
+import { SlugField } from '@/components/shared/SlugField';
 
 const projectSchema = z.object({
     title: z.string().min(1, 'Title is required'),
@@ -29,6 +30,7 @@ const projectSchema = z.object({
     category: z.array(z.string())
         .min(1, 'Please select at least one category')
         .max(3, 'Maximum 3 categories allowed'),
+    slug: z.string().optional().or(z.literal('')),
 });
 
 type ProjectData = z.infer<typeof projectSchema>;
@@ -47,13 +49,7 @@ export default function NewWritingProjectPage() {
         checkAuth();
     }, [checkAuth]);
 
-    const {
-        register,
-        handleSubmit,
-        setValue,
-        watch,
-        formState: { errors },
-    } = useForm<ProjectData>({
+    const form = useForm<ProjectData>({
         resolver: zodResolver(projectSchema),
         defaultValues: {
             visibility: 'private',
@@ -61,6 +57,7 @@ export default function NewWritingProjectPage() {
         },
     });
 
+    const { register, handleSubmit, setValue, watch, formState: { errors } } = form;
     const coverImage = watch('coverImage');
     const selectedCategories = watch('category') || [];
 
@@ -176,6 +173,12 @@ export default function NewWritingProjectPage() {
                                 <p className="text-sm text-red-500">{errors.title.message}</p>
                             )}
                         </div>
+
+                        <SlugField
+                            form={form}
+                            watchField="title"
+                            disabled={submitting}
+                        />
 
                         <div className="space-y-2">
                             <Label>Cover Image</Label>

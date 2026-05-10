@@ -1,52 +1,24 @@
-'use client';
-
-import { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { PenTool, Plus, BookOpen, Eye, EyeOff, DollarSign } from 'lucide-react';
+import { auth } from '@/auth';
+import { getCachedUserWritingProjects } from '@/lib/data/writing';
+import { PenTool, Plus } from 'lucide-react';
 import Link from 'next/link';
+import { Button } from '@/components/ui/button';
 import { WritingProjectCard } from '@/components/writing/WritingProjectCard';
-import LoadingSpinner from '@/components/ui/Loading';
+import { redirect } from 'next/navigation';
 
+export const metadata = {
+    title: 'My Writing Projects - Pathchakro',
+    description: 'Manage your books and writing projects on Pathchakro.',
+};
 
-interface WritingProject {
-    _id: string;
-    title: string;
-    slug?: string;
-    coverImage?: string;
-    description?: string;
-    author: any;
-    category: string[];
-    status: 'draft' | 'published';
-    visibility: 'private' | 'public';
-    totalWords: number;
-    totalChapters: number;
-    forSale: boolean;
-    updatedAt: string;
-}
+export default async function WritingDashboardPage() {
+    const session = await auth();
+    if (!session?.user?.id) {
+        redirect('/login?callbackUrl=/writing');
+    }
 
-export default function WritingDashboardPage() {
-    const [projects, setProjects] = useState<WritingProject[]>([]);
-    const [loading, setLoading] = useState(true);
-
-    useEffect(() => {
-        fetchProjects();
-    }, []);
-
-    const fetchProjects = async () => {
-        setLoading(true);
-        try {
-            const response = await fetch('/api/writing?mine=true');
-            const data = await response.json();
-
-            if (data.projects) {
-                setProjects(data.projects);
-            }
-        } catch (error) {
-            console.error('Error fetching projects:', error);
-        } finally {
-            setLoading(false);
-        }
-    };
+    // Cached Database Call
+    const serializedProjects = await getCachedUserWritingProjects(session.user.id);
 
     return (
         <div className="max-w-7xl mx-auto p-4">
@@ -68,9 +40,7 @@ export default function WritingDashboardPage() {
                 </div>
             </div>
 
-            {loading ? (
-                <LoadingSpinner />
-            ) : projects.length === 0 ? (
+            {serializedProjects.length === 0 ? (
                 <div className="text-center py-12">
                     <PenTool className="h-16 w-16 text-muted-foreground mx-auto mb-4 opacity-50" />
                     <h3 className="text-xl font-semibold mb-2">No writing projects yet</h3>
@@ -83,7 +53,7 @@ export default function WritingDashboardPage() {
                 </div>
             ) : (
                 <div className="grid grid-cols-1 gap-6">
-                    {projects.map((project) => (
+                    {serializedProjects.map((project: any) => (
                         <WritingProjectCard
                             key={project._id}
                             project={project}

@@ -119,7 +119,7 @@ export async function PUT(
             'title', 'description', 'price',
             'duration', 'level', 'tags',
             'image', 'curriculum',
-            'whatYouWillLearn', 'requirements'
+            'whatYouWillLearn', 'requirements', 'slug', 'fee', 'lastDateRegistration', 'classStartDate', 'mode', 'totalClasses', 'banner'
         ];
 
         const updateData: any = {};
@@ -127,6 +127,11 @@ export async function PUT(
             if (data[field] !== undefined) {
                 updateData[field] = data[field];
             }
+        }
+
+        if (data.slug && data.slug !== course.slug) {
+            const { generateUniqueSlug } = await import('@/lib/slug-utils');
+            updateData.slug = await generateUniqueSlug(Course, data.slug, 'slug', true, course._id.toString());
         }
 
         const updatedCourse = await Course.findByIdAndUpdate(

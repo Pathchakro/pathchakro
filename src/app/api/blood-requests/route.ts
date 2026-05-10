@@ -56,6 +56,7 @@ export async function POST(request: NextRequest) {
             hospital,
             contactNumber,
             additionalInfo,
+            slug: customSlug,
         } = body;
 
         if (!patientName || !bloodType || !unitsNeeded || !location || !hospital || !contactNumber) {
@@ -67,14 +68,42 @@ export async function POST(request: NextRequest) {
 
         await dbConnect();
 
+        const dateStr = new Date().toISOString().split('T')[0].replace(/-/g, ''); // YYYYMMDD
+        let finalBaseSlug = `blood-request-${hospital.toLowerCase().replace(/[^a-z0-9]/g, '-')}-${dateStr}`;
+
+        // 1. Validate and Sanitize Custom Slug if provided
+        if (customSlug && typeof customSlug === 'string') {
+            const sanitized = customSlug.trim()
+                .toLowerCase()
+                .replace(/[^a-z0-9-]/g, '-')
+                .replace(/-+/g, '-')
+                .slice(0, 64);
+
+            // Basic validation for format
+            if (sanitized.length < 3 || sanitized === '---') {
+                return NextResponse.json(
+                    { error: 'Custom slug is too short or invalid' },
+                    { status: 400 }
+                );
+            }
+
+            // PII check (simple regex for email/phone patterns)
+            const containsPII = /[\w.-]+@[\w.-]+\.\w{2,}|(\+?\d{1,3}[- ]?)?\d{10,12}/.test(sanitized);
+            
+            if (!containsPII) {
+                finalBaseSlug = sanitized;
+            } else {
+                // Log the attempt and fallback to anonymous slug for security
+                console.warn(`[BLOOD_REQUEST_SECURITY]: User ${session.user.id} attempted to use PII in slug. Falling back to anonymous.`);
+            }
+        }
+
+        // Generate unique slug using the determined base (uses custom if safe, else anonymous)
+        const slug = await generateUniqueSlug(BloodRequest, finalBaseSlug);
+
         // Calculate expiry (7 days from now)
         const expiresAt = new Date();
         expiresAt.setDate(expiresAt.getDate() + 7);
-
-        // Generate anonymous slug: hospital-date-unique
-        const dateStr = new Date().toISOString().split('T')[0].replace(/-/g, ''); // YYYYMMDD
-        const baseSlugString = `blood-request-${hospital}-${dateStr}`;
-        const slug = await generateUniqueSlug(BloodRequest, baseSlugString);
 
         const bloodRequest = await BloodRequest.create({
             requester: session.user.id,

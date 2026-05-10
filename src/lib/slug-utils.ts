@@ -1,10 +1,13 @@
 import { Model } from 'mongoose';
 import slugify from 'slugify';
+import { transliterateBengali } from './utils';
 
 // Helper to escape regex special characters
 const escapeRegex = (string: string): string => {
     return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 };
+
+
 
 // Use the package if available, or fallback to a simple implementation
 const createSlug = (text: string): string => {
@@ -12,21 +15,20 @@ const createSlug = (text: string): string => {
         return `untitled-${Date.now()}`;
     }
 
-    const trimmedText = text.trim();
+    let trimmedText = text.trim();
     const isNonAscii = /[^\x00-\x7F]/.test(trimmedText);
 
-    let slug = '';
-    
-    // Only use slugify package for pure ASCII to avoid stripping Unicode chars
-    if (!isNonAscii) {
-        slug = slugify(trimmedText, { lower: true, strict: true, trim: true });
+    if (isNonAscii) {
+        trimmedText = transliterateBengali(trimmedText);
     }
 
+    let slug = slugify(trimmedText, { lower: true, strict: true, trim: true });
+
     if (!slug) {
-        // Fallback or primary logic for non-ASCII (e.g. Bengali)
+        // Fallback for cases where slugify might return empty (though transliteration should help)
         slug = trimmedText.toLowerCase()
             .replace(/[\s-]+/g, '-')
-            .replace(/[^\p{L}\p{N}\p{M}-]/gu, '') // Keep letters, numbers, AND marks (vowels)
+            .replace(/[^\p{L}\p{N}\p{M}-]/gu, '')
             .replace(/\-\-+/g, '-')
             .replace(/^-+|-+$/g, '');
     }

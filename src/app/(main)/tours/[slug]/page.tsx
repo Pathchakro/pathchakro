@@ -1,7 +1,5 @@
 import { Metadata } from 'next';
-import { cache } from 'react';
-import dbConnect from '@/lib/mongodb';
-import Tour from '@/models/Tour';
+import { getCachedTourBySlug } from '@/lib/data/tours';
 import TourDetailsClient from './TourDetailsClient';
 import { notFound, redirect } from 'next/navigation';
 
@@ -9,45 +7,9 @@ interface Props {
     params: Promise<{ slug: string }>;
 }
 
-const getTour = cache(async (slug: string) => {
-    await dbConnect();
-
-    let decodedSlug = slug;
-    try {
-        decodedSlug = decodeURIComponent(slug);
-    } catch (error) {
-        console.error('[URI_DECODE_ERROR]:', error);
-    }
-
-    let tour = await Tour.findOne({ slug: decodedSlug })
-        .populate('organizer', 'name image university rankTier')
-        .populate('participants.user', 'name image university rankTier')
-        .populate('team', 'name text')
-        .lean();
-
-    if (!tour) {
-        // Try without decoding if decoding failed or if it was already decoded
-        tour = await Tour.findOne({ slug })
-            .populate('organizer', 'name image university rankTier')
-            .populate('participants.user', 'name image university rankTier')
-            .populate('team', 'name text')
-            .lean();
-    }
-
-    if (!tour && slug.match(/^[0-9a-fA-F]{24}$/)) {
-        tour = await Tour.findById(slug)
-            .populate('organizer', 'name image university rankTier')
-            .populate('participants.user', 'name image university rankTier')
-            .populate('team', 'name text')
-            .lean();
-    }
-
-    return tour;
-});
-
 export async function generateMetadata(props: Props): Promise<Metadata> {
     const params = await props.params;
-    const tour = await getTour(params.slug);
+    const tour = await getCachedTourBySlug(params.slug);
 
     if (!tour) {
         return {
@@ -86,7 +48,9 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
 
 export default async function TourPage(props: Props) {
     const params = await props.params;
-    const tour = await getTour(params.slug);
+    
+    // Direct database call with unstable_cache
+    const tour = await getCachedTourBySlug(params.slug);
 
     if (!tour) {
         notFound();
@@ -97,8 +61,9 @@ export default async function TourPage(props: Props) {
         redirect(`/tours/${tour.slug}`);
     }
 
-    // Convert MongoDB document to plain object for client component
-    const plainTour = JSON.parse(JSON.stringify(tour));
+    // Ensure the tour object is fully JSON-serializable before passing to the client component
+    // This prevents "cannot serialize Mongoose document" errors
+    const serializedTour = JSON.parse(JSON.stringify(tour));
 
-    return <TourDetailsClient initialTour={plainTour} slug={params.slug} />;
+    return <TourDetailsClient initialTour={serializedTour} slug={params.slug} />;
 }

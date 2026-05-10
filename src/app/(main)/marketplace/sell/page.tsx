@@ -16,6 +16,7 @@ import { z } from 'zod';
 import Link from 'next/link';
 import { useAccessControl } from '@/hooks/useAccessControl';
 import { useEffect } from 'react';
+import { SlugField } from '@/components/shared/SlugField';
 
 const productSchema = z.object({
     title: z.string().min(5, 'Title must be at least 5 characters'),
@@ -27,6 +28,7 @@ const productSchema = z.object({
     condition: z.string().min(1, 'Condition is required'),
     location: z.string().min(3, 'Location is required'),
     tags: z.string().optional(),
+    slug: z.string().optional().or(z.literal('')),
 });
 
 type ProductData = z.infer<typeof productSchema>;
@@ -43,17 +45,19 @@ export default function SellPage() {
     const [error, setError] = useState('');
     const [productImages, setProductImages] = useState<string[]>([]);
 
-    const {
-        register,
-        handleSubmit,
-        formState: { errors },
-    } = useForm<ProductData>({
+    const form = useForm<ProductData>({
         resolver: zodResolver(productSchema),
         defaultValues: {
             stock: 1,
             condition: 'new',
         },
     });
+
+    const {
+        register,
+        handleSubmit,
+        formState: { errors },
+    } = form;
 
     const onSubmit = async (data: ProductData) => {
         if (productImages.length === 0) {
@@ -154,6 +158,12 @@ export default function SellPage() {
                                 <p className="text-sm text-red-500">{errors.title.message}</p>
                             )}
                         </div>
+
+                        <SlugField
+                            form={form}
+                            watchField="title"
+                            disabled={isLoading}
+                        />
 
                         <div className="space-y-2">
                             <Label htmlFor="description">Description *</Label>

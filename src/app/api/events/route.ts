@@ -25,7 +25,6 @@ export async function GET(request: NextRequest) {
         if (teamId) {
             filter.team = teamId;
         } else {
-            // Universal events (no team) or user has access
             filter.$or = [{ team: { $exists: false } }, { team: null }];
         }
 
@@ -41,11 +40,16 @@ export async function GET(request: NextRequest) {
         const query = searchParams.get('q');
         if (query) {
             const escapedQuery = escapeRegex(query);
-            // Find users matching the query to search in participant fields
-            const matchingUsers = await User.find({ 
-                name: { $regex: escapedQuery, $options: 'i' } 
-            }).select('_id');
-            const userIds = matchingUsers.map(u => u._id);
+            let userIds: any[] = [];
+            try {
+                const matchingUsers = await User.find({ 
+                    name: { $regex: escapedQuery, $options: 'i' } 
+                }).select('_id');
+                userIds = matchingUsers.map(u => u._id);
+            } catch (userError) {
+                console.error('Error finding matching users for event search:', userError);
+                // Gracefully degrade: continue search without user-based filters
+            }
 
             const searchOr = [
                 { title: { $regex: escapedQuery, $options: 'i' } },
@@ -57,7 +61,6 @@ export async function GET(request: NextRequest) {
             ];
 
             if (filter.$or) {
-                // Combine existing $or (like team filters) with search $or
                 filter.$and = [
                     { $or: filter.$or },
                     { $or: searchOr }
@@ -67,11 +70,8 @@ export async function GET(request: NextRequest) {
                 filter.$or = searchOr;
             }
             
-            // If we are searching, we might want to include both upcoming and past events
-            // unless upcoming was explicitly requested.
-            // If the user unchecks "upcoming only" in UI, 'upcoming' param will be false.
             if (!upcoming) {
-                delete filter.status; // Remove status filter to show all
+                delete filter.status;
             }
         }
 
@@ -99,24 +99,16 @@ export async function GET(request: NextRequest) {
 
         const totalPages = Math.ceil(totalEvents / limit);
 
-        // Auto-fix stale statuses for returned events
         const now = new Date();
         const processedEvents = events.map(event => {
             const startTime = new Date(event.startTime);
-            // If event started more than 3 hours ago and is still 'upcoming' or 'ongoing'
             if (startTime.getTime() < now.getTime() - (3 * 60 * 60 * 1000) && 
                 (event.status === 'upcoming' || event.status === 'ongoing')) {
-                
-                // Fire and forget update in DB
-                Event.findByIdAndUpdate(event._id, { status: 'completed' }).exec()
-                    .catch(err => console.error(`Failed to auto-complete event ${event._id}:`, err));
+                // Return 'completed' in response for stale events without mutating DB in GET handler
                 return { ...event, status: 'completed' };
             }
             return event;
         });
-
-        console.log('GET /api/events filter:', JSON.stringify(filter, null, 2));
-        console.log('Found events:', processedEvents.length);
 
         return NextResponse.json({ 
             events: processedEvents,
@@ -159,6 +151,7 @@ export async function POST(request: NextRequest) {
             teamId,
             banner,
             recordingLink,
+            slug: customSlug,
         } = body;
 
         if (!title || !description || !eventType || !startDate || !startTime) {
@@ -168,7 +161,6 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // Validate event type requirements
         if (eventType === 'offline' && !location) {
             return NextResponse.json(
                 { error: 'Location is required for offline events' },
@@ -183,7 +175,8 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // Check if user is team leader (if team event)
+        await dbConnect();
+
         if (teamId) {
             const team = await Team.findById(teamId);
             if (!team || team.leader?.toString() !== session.user.id) {
@@ -194,7 +187,24 @@ export async function POST(request: NextRequest) {
             }
         }
 
-        await dbConnect();
+        // Robust customSlug validation and sanitization
+        let validatedSlug = undefined;
+        if (typeof customSlug === 'string' && customSlug.trim()) {
+            const trimmed = customSlug.trim().toLowerCase();
+            
+            // Validation: alphanumeric and hyphens only, no leading/trailing hyphens
+            const isValidPattern = /^[a-z0-9]+(-[a-z0-9]+)*$/.test(trimmed);
+            const isReserved = ['admin', 'api', 'settings', 'auth', 'dashboard', 'profile', 'events', 'teams'].includes(trimmed);
+            
+            if (trimmed.length >= 3 && trimmed.length <= 100 && isValidPattern && !isReserved) {
+                validatedSlug = trimmed;
+            } else {
+                 return NextResponse.json(
+                    { error: 'Invalid custom slug. Use 3-100 characters, lowercase letters, numbers, and hyphens. No reserved words.' },
+                    { status: 400 }
+                );
+            }
+        }
 
         let event = null;
         let attempts = 0;
@@ -202,7 +212,13 @@ export async function POST(request: NextRequest) {
 
         while (attempts < maxAttempts) {
             try {
-                const slug = await generateUniqueSlug(Event, title);
+                let slugBase = validatedSlug || title;
+                if (!validatedSlug && startDate) {
+                    slugBase = `${title}-${startDate}`;
+                }
+                
+                // Fixed: Removed the undefined 'dbSession' argument
+                const slug = await generateUniqueSlug(Event, slugBase, 'slug', false, '');
 
                 event = await Event.create({
                     organizer: session.user.id,
@@ -226,10 +242,7 @@ export async function POST(request: NextRequest) {
             } catch (error: any) {
                 if (error.code === 11000) {
                     attempts++;
-                    if (attempts < maxAttempts) {
-                        continue;
-                    }
-                    // Break on final attempt to fall through to 409 response
+                    if (attempts < maxAttempts) continue;
                     break;
                 }
                 throw error;

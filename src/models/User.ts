@@ -68,6 +68,10 @@ const UserSchema = new Schema<IUser>(
             type: Number,
             default: 0,
         },
+        points: {
+            type: Number,
+            default: 0,
+        },
         profileCompletion: {
             type: Number,
             default: 0,

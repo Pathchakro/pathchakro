@@ -71,6 +71,7 @@ export async function POST(request: NextRequest) {
             condition,
             tags,
             location,
+            slug: customSlug,
         } = body;
 
         if (!title || !description || !category || !price || !images || !stock || !location) {
@@ -88,7 +89,7 @@ export async function POST(request: NextRequest) {
 
         while (attempts < maxAttempts) {
             try {
-                const slug = await generateUniqueSlug(Product, title);
+                const slug = await generateUniqueSlug(Product, customSlug || title);
 
                 product = await Product.create({
                     seller: session.user.id,

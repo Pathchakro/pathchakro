@@ -19,6 +19,7 @@ import { AuthorSearch } from '@/components/books/AuthorSearch';
 import { useDynamicConfig } from '@/hooks/useDynamicConfig';
 import AuthGuard from '@/components/auth/AuthGuard';
 import LoadingSpinner from '@/components/ui/Loading';
+import { SlugField } from '@/components/shared/SlugField';
 
 const bookSchema = z.object({
     title: z.string().min(1, 'Title is required'),
@@ -29,6 +30,7 @@ const bookSchema = z.object({
     pdfUrl: z.string().optional(),
     description: z.string().optional(),
     buyingLink: z.string().optional().or(z.literal('')),
+    slug: z.string().optional().or(z.literal('')),
 });
 
 type BookData = z.infer<typeof bookSchema>;
@@ -50,6 +52,10 @@ export default function EditBookPage() {
     // Dynamic config
     const { categories } = useDynamicConfig();
 
+    const form = useForm<BookData>({
+        resolver: zodResolver(bookSchema),
+    });
+
     const {
         register,
         handleSubmit,
@@ -57,9 +63,7 @@ export default function EditBookPage() {
         watch,
         reset,
         formState: { errors },
-    } = useForm<BookData>({
-        resolver: zodResolver(bookSchema),
-    });
+    } = form;
 
     const coverImage = watch('coverImage');
 
@@ -92,6 +96,7 @@ export default function EditBookPage() {
                     pdfUrl: book.pdfUrl || '',
                     description: book.description || '',
                     buyingLink: book.buyingLink || '',
+                    slug: book.slug || '',
                 });
                 setInitialFieldValues({
                     title: book.title || '',
@@ -102,7 +107,8 @@ export default function EditBookPage() {
                     pdfUrl: book.pdfUrl || '',
                     description: book.description || '',
                     buyingLink: book.buyingLink || '',
-                    category: book.category || []
+                    category: book.category || [],
+                    slug: book.slug || '',
                 });
                 setBookData(book);
                 setSelectedCategories(book.category || []);
@@ -221,6 +227,14 @@ export default function EditBookPage() {
                                     <p className="text-sm text-red-500">{errors.title.message}</p>
                                 )}
                             </div>
+
+                            <SlugField
+                                form={form}
+                                watchField="title"
+                                mode="edit"
+                                initialValue={initialFieldValues.slug}
+                                disabled={isFieldDisabled('slug')}
+                            />
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="space-y-2">

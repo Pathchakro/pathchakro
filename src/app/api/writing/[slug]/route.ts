@@ -3,6 +3,7 @@ import { revalidatePath } from 'next/cache';
 import { auth } from '@/auth';
 import dbConnect from '@/lib/mongodb';
 import WritingProject from '@/models/WritingProject';
+import { generateUniqueSlug } from '@/lib/slug-utils';
 
 export async function GET(
     request: NextRequest,
@@ -31,7 +32,7 @@ export async function GET(
         }
 
         // Check access permissions
-        const authorId = project.author?._id?.toString() || project.author?.toString();
+        const authorId = (project.author as any)?._id?.toString() || project.author?.toString();
         if (project.visibility === 'private' && authorId !== session?.user?.id) {
             return NextResponse.json(
                 { error: 'Access denied' },
@@ -131,14 +132,14 @@ export async function PUT(
             );
         }
 
-        // Update fields
-        if (body.title) project.title = body.title;
+        // Update fields with presence checks
+        if (body.title !== undefined) project.title = body.title;
         if (body.coverImage !== undefined) project.coverImage = body.coverImage;
         if (body.introduction !== undefined) project.introduction = body.introduction;
         if (body.description !== undefined) project.description = body.description;
-        if (body.category) project.category = body.category;
-        if (body.status) project.status = body.status;
-        if (body.visibility) {
+        if (body.category !== undefined) project.category = body.category;
+        if (body.status !== undefined) project.status = body.status;
+        if (body.visibility !== undefined) {
             project.visibility = body.visibility;
             // Sync all chapters to have the same visibility
             if (project.chapters && project.chapters.length > 0) {
@@ -149,7 +150,34 @@ export async function PUT(
         }
         if (body.forSale !== undefined) project.forSale = body.forSale;
         if (body.salePrice !== undefined) project.salePrice = body.salePrice;
-        if (body.saleType) project.saleType = body.saleType;
+        if (body.saleType !== undefined) project.saleType = body.saleType;
+
+        // Handle slug update with robust validation and sanitization
+        if (body.slug !== undefined && body.slug !== project.slug) {
+            if (typeof body.slug !== 'string') {
+                return NextResponse.json(
+                    { error: 'Slug must be a string' },
+                    { status: 400 }
+                );
+            }
+
+            const trimmedSlug = body.slug.trim().toLowerCase();
+            
+            if (trimmedSlug) {
+                // Validation pattern: alphanumeric and hyphens only, no leading/trailing hyphens
+                const isValidPattern = /^[a-z0-9]+(-[a-z0-9]+)*$/.test(trimmedSlug);
+                const isReserved = ['admin', 'api', 'settings', 'auth', 'dashboard', 'profile', 'writing'].includes(trimmedSlug);
+                
+                if (isValidPattern && !isReserved && trimmedSlug.length >= 3 && trimmedSlug.length <= 100) {
+                    project.slug = await generateUniqueSlug(WritingProject, trimmedSlug, 'slug', true, project._id.toString());
+                } else {
+                    return NextResponse.json(
+                        { error: 'Invalid custom slug. Use 3-100 characters, lowercase letters, numbers, and hyphens.' },
+                        { status: 400 }
+                    );
+                }
+            }
+        }
 
         await project.save();
 
