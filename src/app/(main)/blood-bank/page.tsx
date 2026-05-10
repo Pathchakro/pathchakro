@@ -12,7 +12,6 @@ export default async function BloodBankPage(props: {
 }) {
     const searchParams = await props.searchParams;
     const session = await auth();
-    const isAuthenticated = !!session?.user;
 
     const bloodGroup = typeof searchParams.bloodGroup === 'string' ? searchParams.bloodGroup : undefined;
     const district = typeof searchParams.district === 'string' ? searchParams.district : undefined;
@@ -23,7 +22,7 @@ export default async function BloodBankPage(props: {
         bloodGroup,
         district,
         thana
-    }, isAuthenticated);
+    });
 
     return <BloodBankClient initialDonors={donors} />;
 }
