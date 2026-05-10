@@ -14,7 +14,7 @@ export interface WritingProject {
         rankTier?: string;
     };
     title: string;
-    slug?: string;
+    slug: string;
     coverImage?: string;
     introduction?: string;
     description?: string;
