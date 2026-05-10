@@ -9,9 +9,9 @@ export interface PopulatedOrder {
     buyer: { _id: string; name: string; image?: string };
     seller: { _id: string; name: string; image?: string };
     product: { _id: string; title: string; price: number; images: string[]; category: string };
-    status: string;
+    status: 'pending' | 'confirmed' | 'completed' | 'cancelled';
     quantity: number;
-    createdAt: string | Date;
+    createdAt: string;
     totalPrice: number;
 }
 
