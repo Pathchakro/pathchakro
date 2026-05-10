@@ -98,10 +98,10 @@ export default function AdminDashboardClient({ initialData, period }: { initialD
                 </div>
                 <div className="flex bg-muted/50 p-1.5 rounded-2xl border-2 shadow-sm">
                     {['7', '30', '90'].map(p => (
-                        <Button 
-                            key={p} 
-                            variant={period === p ? 'default' : 'ghost'} 
-                            size="sm" 
+                        <Button
+                            key={p}
+                            variant={period === p ? 'default' : 'ghost'}
+                            size="sm"
                             onClick={() => handlePeriodChange(p)}
                             className={`rounded-xl px-6 font-bold ${period === p ? 'shadow-md' : ''}`}
                         >
@@ -112,31 +112,31 @@ export default function AdminDashboardClient({ initialData, period }: { initialD
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <StatCard 
-                    title="Total Revenue" 
-                    value={formatCurrency(financials.totalRevenue)} 
-                    sub={`${period} Days`} 
-                    icon={<DollarSign className="h-5 w-5 text-blue-500" />} 
+                <StatCard
+                    title="Total Revenue"
+                    value={formatCurrency(financials.totalRevenue)}
+                    sub={`${period} Days`}
+                    icon={<DollarSign className="h-5 w-5 text-blue-500" />}
                 />
-                <StatCard 
-                    title="Platform Profit" 
-                    value={formatCurrency(financials.totalPlatformFee)} 
-                    sub="Fee Collected" 
-                    icon={<TrendingUp className="h-5 w-5 text-green-500" />} 
-                    color="text-green-600" 
+                <StatCard
+                    title="Platform Profit"
+                    value={formatCurrency(financials.totalPlatformFee)}
+                    sub="Fee Collected"
+                    icon={<TrendingUp className="h-5 w-5 text-green-500" />}
+                    color="text-green-600"
                 />
-                <StatCard 
-                    title="Seller Earnings" 
-                    value={formatCurrency(financials.totalSellerEarnings)} 
-                    sub="Payouts" 
-                    icon={<Users className="h-5 w-5 text-red-500" />} 
-                    color="text-red-500" 
+                <StatCard
+                    title="Seller Earnings"
+                    value={formatCurrency(financials.totalSellerEarnings)}
+                    sub="Payouts"
+                    icon={<Users className="h-5 w-5 text-red-500" />}
+                    color="text-red-500"
                 />
-                <StatCard 
-                    title="Transactions" 
-                    value={financials.totalTransactions || 0} 
-                    sub={`Avg: ${formatCurrency(financials.averageTransactionValue)}`} 
-                    icon={<Activity className="h-5 w-5 text-purple-500" />} 
+                <StatCard
+                    title="Transactions"
+                    value={financials.totalTransactions || 0}
+                    sub={`Avg: ${formatCurrency(financials.averageTransactionValue)}`}
+                    icon={<Activity className="h-5 w-5 text-purple-500" />}
                 />
             </div>
 

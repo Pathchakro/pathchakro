@@ -42,8 +42,8 @@ export async function GET(request: NextRequest) {
             const escapedQuery = escapeRegex(query);
             let userIds: any[] = [];
             try {
-                const matchingUsers = await User.find({ 
-                    name: { $regex: escapedQuery, $options: 'i' } 
+                const matchingUsers = await User.find({
+                    name: { $regex: escapedQuery, $options: 'i' }
                 }).select('_id');
                 userIds = matchingUsers.map(u => u._id);
             } catch (userError) {
@@ -69,7 +69,7 @@ export async function GET(request: NextRequest) {
             } else {
                 filter.$or = searchOr;
             }
-            
+
             if (!upcoming) {
                 delete filter.status;
             }
@@ -102,7 +102,7 @@ export async function GET(request: NextRequest) {
         const now = new Date();
         const processedEvents = events.map(event => {
             const startTime = new Date(event.startTime);
-            if (startTime.getTime() < now.getTime() - (3 * 60 * 60 * 1000) && 
+            if (startTime.getTime() < now.getTime() - (3 * 60 * 60 * 1000) &&
                 (event.status === 'upcoming' || event.status === 'ongoing')) {
                 // Return 'completed' in response for stale events without mutating DB in GET handler
                 return { ...event, status: 'completed' };
@@ -110,7 +110,7 @@ export async function GET(request: NextRequest) {
             return event;
         });
 
-        return NextResponse.json({ 
+        return NextResponse.json({
             events: processedEvents,
             pagination: {
                 totalEvents,
@@ -191,15 +191,15 @@ export async function POST(request: NextRequest) {
         let validatedSlug = undefined;
         if (typeof customSlug === 'string' && customSlug.trim()) {
             const trimmed = customSlug.trim().toLowerCase();
-            
+
             // Validation: alphanumeric and hyphens only, no leading/trailing hyphens
             const isValidPattern = /^[a-z0-9]+(-[a-z0-9]+)*$/.test(trimmed);
             const isReserved = ['admin', 'api', 'settings', 'auth', 'dashboard', 'profile', 'events', 'teams'].includes(trimmed);
-            
+
             if (trimmed.length >= 3 && trimmed.length <= 100 && isValidPattern && !isReserved) {
                 validatedSlug = trimmed;
             } else {
-                 return NextResponse.json(
+                return NextResponse.json(
                     { error: 'Invalid custom slug. Use 3-100 characters, lowercase letters, numbers, and hyphens. No reserved words.' },
                     { status: 400 }
                 );
@@ -216,7 +216,7 @@ export async function POST(request: NextRequest) {
                 if (!validatedSlug && startDate) {
                     slugBase = `${title}-${startDate}`;
                 }
-                
+
                 // Fixed: Removed the undefined 'dbSession' argument
                 const slug = await generateUniqueSlug(Event, slugBase, 'slug', false, '');
 
@@ -262,7 +262,7 @@ export async function POST(request: NextRequest) {
             .lean();
 
         revalidatePath('/', 'layout');
-        revalidateTag('events', 'default');
+        revalidateTag('events', 'max');
 
         return NextResponse.json(
             { event: populatedEvent },

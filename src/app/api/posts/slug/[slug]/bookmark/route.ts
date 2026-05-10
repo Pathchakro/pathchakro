@@ -74,7 +74,7 @@ export async function POST(
         console.log('User saved with bookmarks:', user.savedPosts.length);
 
         // Revalidate cache
-        revalidateTag(`bookmarks-${userId}`, 'default');
+        revalidateTag(`bookmarks-${userId}`, 'max');
         revalidatePath('/', 'layout');
 
         return NextResponse.json({

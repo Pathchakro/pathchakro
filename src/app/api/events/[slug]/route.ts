@@ -97,16 +97,16 @@ export async function PUT(
         } = body;
 
         const updateData: any = {};
-        
+
         // Precise field presence checks to support falsy values (empty string, null)
         if (newSlug !== undefined || title !== undefined) {
             if (title !== undefined) updateData.title = title;
-            
+
             // Prefer non-empty newSlug if provided, else non-empty title if provided, otherwise fall back to current title
-            const slugBase = (typeof newSlug === 'string' && newSlug.trim()) 
-                ? newSlug 
+            const slugBase = (typeof newSlug === 'string' && newSlug.trim())
+                ? newSlug
                 : (typeof title === 'string' && title.trim() ? title : event.title);
-                
+
             updateData.slug = await generateUniqueSlug(Event, slugBase, 'slug', true, event._id.toString());
         }
 
@@ -114,7 +114,7 @@ export async function PUT(
         if (eventType !== undefined) updateData.eventType = eventType;
         if (location !== undefined) updateData.location = location;
         if (meetingLink !== undefined) updateData.meetingLink = meetingLink;
-        
+
         if (startDate !== undefined || startTime !== undefined) {
             const currentEvent = await Event.findById(event._id);
             const currentStart = new Date(currentEvent.startTime);
@@ -122,7 +122,7 @@ export async function PUT(
             const t = startTime || currentStart.toTimeString().slice(0, 5);
             updateData.startTime = new Date(`${d}T${t}`);
         }
-        
+
         if (banner !== undefined) updateData.banner = banner;
         if (recordingLink !== undefined) updateData.recordingLink = recordingLink;
 
@@ -133,7 +133,7 @@ export async function PUT(
         );
 
         revalidatePath('/', 'layout');
-        revalidateTag('events', 'default');
+        revalidateTag('events', 'max');
 
         return NextResponse.json({ event: updatedEvent });
     } catch (error: any) {
@@ -179,7 +179,7 @@ export async function DELETE(
         await Event.findByIdAndDelete(event._id);
 
         revalidatePath('/', 'layout');
-        revalidateTag('events', 'default');
+        revalidateTag('events', 'max');
 
         return NextResponse.json({ message: 'Event deleted successfully' });
     } catch (error: any) {

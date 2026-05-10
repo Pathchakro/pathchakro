@@ -152,7 +152,7 @@ export async function POST(request: NextRequest) {
             // Revalidate cache
             revalidatePath('/books');
             revalidatePath(`/books/${slug}`);
-            revalidateTag('books', 'default');
+            revalidateTag('books', 'max');
         }
 
         return NextResponse.json({ book }, { status: 201 });

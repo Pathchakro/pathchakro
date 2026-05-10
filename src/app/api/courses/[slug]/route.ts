@@ -69,7 +69,7 @@ export async function DELETE(
         await Course.findByIdAndDelete(course._id);
 
         revalidatePath('/', 'layout');
-        revalidateTag('courses', 'default');
+        revalidateTag('courses', 'max');
 
         return NextResponse.json({ message: 'Course deleted successfully' });
     } catch (error) {
@@ -141,7 +141,7 @@ export async function PUT(
         );
 
         revalidatePath('/', 'layout');
-        revalidateTag('courses', 'default');
+        revalidateTag('courses', 'max');
 
         return NextResponse.json(updatedCourse);
     } catch (error) {

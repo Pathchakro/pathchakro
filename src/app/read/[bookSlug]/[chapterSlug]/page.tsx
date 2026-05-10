@@ -56,7 +56,7 @@ export async function generateMetadata({ params }: ReaderPageProps): Promise<Met
             description,
             images,
             type: 'article',
-            publishedTime: chapter.createdAt,
+            publishedTime: new Date(chapter.createdAt).toISOString(),
             authors: project.author?.name ? [project.author.name] : [],
         }
     };

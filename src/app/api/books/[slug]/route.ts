@@ -134,8 +134,8 @@ export async function PATCH(
         revalidatePath('/books');
         revalidatePath(`/books/${slug}`);
         revalidatePath(`/books/${params.slug}`);
-        revalidateTag('books', 'default');
-        
+        revalidateTag('books', 'max');
+
         return NextResponse.json({
             book: updatedBook,
             message: 'Book updated successfully'
@@ -186,7 +186,7 @@ export async function DELETE(
 
         // Check ownership or admin role
         const isOwner = book.addedBy && book.addedBy.toString() === session.user.id;
-        const isAdmin = session.user.role === 'admin' || (session.user as any).role === 'super-admin'; 
+        const isAdmin = session.user.role === 'admin' || (session.user as any).role === 'super-admin';
 
         if (!isOwner && !isAdmin) {
             return NextResponse.json(
@@ -201,7 +201,7 @@ export async function DELETE(
         revalidatePath('/books', 'page');
         revalidatePath(`/books/${slug}`, 'page');
         revalidatePath(`/books/${params.slug}`, 'page');
-        revalidateTag('books', 'default');
+        revalidateTag('books', 'max');
 
         return NextResponse.json({ message: 'Book deleted successfully' });
 
