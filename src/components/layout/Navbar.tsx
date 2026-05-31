@@ -183,10 +183,6 @@ export function Navbar() {
                                                 <User className="h-4 w-4" />
                                                 <span className="text-sm">My Profile</span>
                                             </Link>
-                                            <Link href="/settings" className="flex items-center gap-2 px-4 py-2 hover:bg-muted" onClick={() => setIsUserMenuOpen(false)}>
-                                                <Settings className="h-4 w-4" />
-                                                <span className="text-sm">Settings</span>
-                                            </Link>
                                             <hr className="my-2" />
                                             <button
                                                 className="flex items-center gap-2 px-4 py-2 hover:bg-muted w-full text-left text-red-500"

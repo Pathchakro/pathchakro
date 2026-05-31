@@ -22,7 +22,10 @@ export async function GET(req: NextRequest) {
 
         if (upcomingParam === 'true') {
             filter = {
-                classStartDate: { $gte: new Date() },
+                $or: [
+                    { classStartDate: { $gte: new Date() } },
+                    { lastDateRegistration: { $gte: new Date() } }
+                ],
                 privacy: 'public' // Only show public courses in the upcoming section
             };
             sort = { classStartDate: 1 }; // Show the nearest course first

@@ -32,11 +32,16 @@ export async function POST(request: NextRequest) {
         // Hash password
         const hashedPassword = await bcrypt.hash(password, 12);
 
+        // Generate unique username
+        const { generateUniqueSlug } = await import('@/lib/slug-utils');
+        const generatedUsername = await generateUniqueSlug(User, name, 'username');
+
         // Create new user
         const user = await User.create({
             name,
             email: email.toLowerCase(),
             password: hashedPassword,
+            username: generatedUsername,
             profileType: profileType || 'Regular',
             university: university || '',
             thana,

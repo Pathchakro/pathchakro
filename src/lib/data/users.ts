@@ -2,15 +2,22 @@ import { unstable_cache } from 'next/cache';
 import dbConnect from '@/lib/mongodb';
 import User from '@/models/User';
 import Review from '@/models/Review';
+import mongoose from 'mongoose';
 
 /**
  * Fetch a single user by username (internal logic)
  */
 async function getUserByUsername(username: string) {
     await dbConnect();
-    const user = await User.findOne({ username })
+    let user = await User.findOne({ username })
         .select('-password -email')
         .lean();
+    
+    if (!user && mongoose.Types.ObjectId.isValid(username)) {
+        user = await User.findById(username)
+            .select('-password -email')
+            .lean();
+    }
     
     if (!user) return null;
 

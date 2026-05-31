@@ -139,10 +139,6 @@ export function MobileTopNavbar() {
                                     <User className="mr-2 h-3.5 w-3.5" />
                                     <span>My Profile</span>
                                 </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => router.push('/settings')} className="text-xs">
-                                    <Settings className="mr-2 h-3.5 w-3.5" />
-                                    <span>Settings</span>
-                                </DropdownMenuItem>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem 
                                     onClick={() => signOut()}

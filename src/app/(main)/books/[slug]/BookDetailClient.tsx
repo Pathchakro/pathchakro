@@ -175,16 +175,42 @@ export default function BookDetailClient({ initialBook, sessionUser }: BookDetai
                 fetch(`/api/books/pdfs/${pdfId}/download`, { method: 'PUT' }).catch(console.error);
             }
             
-            // 4. Trigger download
-            const a = document.createElement('a');
-            a.href = fileUrl;
-            a.download = filename;
-            document.body.appendChild(a); // Append for better browser support
-            a.click();
-            document.body.removeChild(a);
+            // 4. Download file as blob (to bypass cross-origin restrictions on download attribute)
+            toast.loading("Downloading PDF...", { id: "pdf-download" });
+            
+            try {
+                const response = await fetch(fileUrl);
+                if (!response.ok) throw new Error("Failed to fetch file from server");
+                
+                const blob = await response.blob();
+                const blobUrl = URL.createObjectURL(blob);
+                
+                // Trigger download using blob URL
+                const a = document.createElement('a');
+                a.href = blobUrl;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                
+                // Revoke object URL after click to release memory
+                setTimeout(() => URL.revokeObjectURL(blobUrl), 100);
+                toast.success("Download started successfully", { id: "pdf-download" });
+            } catch (fetchError) {
+                console.warn("CORS or fetch issue. Falling back to direct window download:", fetchError);
+                // Fallback: trigger a direct download in a new tab if CORS prevents fetching the blob
+                const a = document.createElement('a');
+                a.href = fileUrl;
+                a.target = "_blank";
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                toast.success("Opening PDF link...", { id: "pdf-download" });
+            }
         } catch (error) {
             console.error('Download error:', error);
-            toast.error("Failed to start download");
+            toast.error("Failed to start download", { id: "pdf-download" });
         }
     };
 
@@ -224,47 +250,28 @@ export default function BookDetailClient({ initialBook, sessionUser }: BookDetai
                 <ArrowLeft className="h-4 w-4" /> Back to Books
             </Link>
 
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
                 <div className="md:col-span-1">
-                    <div className="bg-card rounded-3xl overflow-hidden border-2 sticky top-4 shadow-sm">
-                        <div className="relative aspect-[2/3] bg-muted/30 flex items-center justify-center p-6">
-                            <div className="relative w-full h-full shadow-xl rounded-xl overflow-hidden">
+                    <div className="bg-card rounded-none overflow-hidden border-2 sticky top-4 shadow-sm">
+                        <div className="relative aspect-[2/3] bg-muted/30 flex items-center justify-center">
+                            <div className="relative w-full h-full shadow-xl overflow-hidden">
                                 <BookCover src={book.coverImage} alt={book.title} objectFit="cover" />
                             </div>
-                        </div>
-                        <div className="p-6 space-y-4 bg-muted/5">
-                            <div className="flex items-center justify-center py-4 border-y -mx-6 px-6">
-                                <BookStatusButtons
-                                    bookId={book._id}
-                                    initialStatus={libraryItem?.status}
-                                    onStatusChange={(s: any) => setLibraryItem((p: any) => p ? { ...p, status: s } : null)}
-                                    showLoginModal={() => setShowLoginModal(true)}
-                                />
-                            </div>
-                            {book.pdfUrl ? (
-                                <Button onClick={() => handleDownloadPDF(book.pdfUrl!, book.pdfId)} className="w-full h-12 rounded-xl font-bold" variant="default">
-                                    <Download className="h-4 w-4 mr-2" /> Download PDF
-                                </Button>
-                            ) : (
-                                <Button variant="outline" className="w-full h-12 rounded-xl border-dashed font-bold" onClick={() => toast.info("PDF not available for this book")}>
-                                    No PDF Available
-                                </Button>
-                            )}
                         </div>
                     </div>
                 </div>
 
-                <div className="md:col-span-3">
-                    <div className="bg-card rounded-[2rem] overflow-hidden border-2 p-8 md:p-12 relative h-full shadow-sm">
+                <div className="md:col-span-2">
+                    <div className="relative h-full py-2 md:py-4">
                         {(sessionUser?.id === book.addedBy || sessionUser?.role === 'admin') && (
-                            <div className="absolute top-8 right-8">
+                            <div className="absolute top-2 right-2 md:top-4 md:right-4">
                                 <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
                                         <Button variant="ghost" size="icon" className="rounded-full h-10 w-10 hover:bg-muted">
                                             <MoreVertical className="h-5 w-5" />
                                         </Button>
                                     </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end" className="rounded-xl p-2 min-w-[140px]">
+                                    <DropdownMenuContent align="end" className="rounded-none p-2 min-w-[140px]">
                                         <DropdownMenuItem asChild>
                                             <Link href={`/books/${book.slug}/edit`} className="flex items-center gap-2 p-2 cursor-pointer">
                                                 <Edit className="h-4 w-4" /> Edit
@@ -278,10 +285,10 @@ export default function BookDetailClient({ initialBook, sessionUser }: BookDetai
                             </div>
                         )}
 
-                        <h1 className="text-4xl md:text-5xl font-black mb-4 pr-12 tracking-tight">{book.title}</h1>
-                        <p className="text-xl font-medium text-muted-foreground mb-6">by <span className="text-foreground">{book.author}</span></p>
+                        <h1 className="text-2xl md:text-3xl font-black mb-1 pr-12 tracking-tight">{book.title}</h1>
+                        <p className="text-base font-medium text-muted-foreground mb-3">by <span className="text-foreground">{book.author}</span></p>
 
-                        <div className="flex items-center gap-3 mb-8">
+                        <div className="flex items-center gap-3 mb-4">
                             <div className="flex items-center bg-yellow-50 px-3 py-1 rounded-full">
                                 {[1, 2, 3, 4, 5].map((s) => (
                                     <Star key={s} className={`h-4 w-4 ${s <= (book.averageRating || 0) ? 'text-yellow-500 fill-current' : 'text-gray-200'}`} />
@@ -293,7 +300,7 @@ export default function BookDetailClient({ initialBook, sessionUser }: BookDetai
                             </span>
                         </div>
 
-                        <div className="flex flex-wrap gap-2 mb-8">
+                        <div className="flex flex-wrap gap-2 mb-4">
                             {book.category?.map((cat: string, idx: number) => (
                                 <span key={idx} className="px-4 py-1.5 bg-primary/5 text-primary border border-primary/10 rounded-full text-xs font-black uppercase tracking-wider">
                                     {cat}
@@ -301,23 +308,39 @@ export default function BookDetailClient({ initialBook, sessionUser }: BookDetai
                             ))}
                         </div>
 
-                        <div className="flex flex-wrap gap-4 items-center">
-                            <Button variant="outline" onClick={() => handleToggleLibrary(libraryItem ? 'remove' : 'add')} className={`rounded-2xl h-12 px-6 font-bold gap-2 transition-all ${libraryItem ? "text-purple-600 bg-purple-50 border-purple-200" : ""}`}>
-                                <Library className="h-5 w-5" /> {libraryItem ? "In Library" : "Add to Library"}
+                        <div className="mb-4">
+                            <BookStatusButtons
+                                bookId={book._id}
+                                initialStatus={libraryItem?.status}
+                                onStatusChange={(s: any) => setLibraryItem((p: any) => p ? { ...p, status: s } : null)}
+                                showLoginModal={() => setShowLoginModal(true)}
+                            />
+                        </div>
+
+                        <div className="flex flex-wrap gap-3 items-center">
+                            <Button variant="outline" onClick={() => handleToggleLibrary(libraryItem ? 'remove' : 'add')} className={`rounded-none h-10 px-4 text-xs font-bold gap-1.5 transition-all ${libraryItem ? "text-purple-600 bg-purple-50 border-purple-200" : ""}`}>
+                                <Library className="h-4 w-4" /> {libraryItem ? "In Library" : "Add to Library"}
                             </Button>
+
+                            {book.pdfUrl ? (
+                                <Button onClick={() => handleDownloadPDF(book.pdfUrl!, book.pdfId)} className="rounded-none h-10 px-4 text-xs font-bold gap-1.5" variant="default">
+                                    <Download className="h-4 w-4" /> Download PDF
+                                </Button>
+                            ) : (
+                                <Button variant="outline" className="rounded-none h-10 px-4 border-dashed text-xs font-bold text-muted-foreground" onClick={() => toast.info("PDF not available for this book")}>
+                                    No PDF Available
+                                </Button>
+                            )}
 
                             {book.buyingLink && (
                                 <Link href={book.buyingLink} target="_blank">
-                                    <Button className="bg-orange-600 hover:bg-orange-700 rounded-2xl h-12 px-8 font-bold shadow-lg shadow-orange-600/20"><ShoppingCart className="h-5 w-5 mr-2" /> Buy This Book</Button>
+                                    <Button className="bg-orange-600 hover:bg-orange-700 rounded-none h-10 px-5 text-xs font-bold shadow-sm"><ShoppingCart className="h-4 w-4 mr-1.5" /> Buy This Book</Button>
                                 </Link>
                             )}
                         </div>
 
-                        <div className="mt-12 space-y-4">
-                            <h3 className="text-xl font-black flex items-center gap-2">
-                                <BookOpen className="h-5 w-5 text-primary" /> About this book
-                            </h3>
-                            <p className="text-lg text-muted-foreground leading-relaxed font-medium">
+                        <div className="mt-6">
+                            <p className="text-base text-muted-foreground leading-relaxed font-medium">
                                 {book.description}
                             </p>
                         </div>
@@ -325,13 +348,13 @@ export default function BookDetailClient({ initialBook, sessionUser }: BookDetai
                 </div>
             </div>
 
-            <div className="mt-20">
-                <div className="flex items-center justify-between mb-10 border-b-2 pb-6">
-                    <h2 className="text-3xl font-black flex items-center gap-3">
-                        <Users className="h-8 w-8 text-indigo-500" /> Reviews ({reviews.length})
+            <div className="mt-12">
+                <div className="flex items-center justify-between mb-6 border-b pb-4">
+                    <h2 className="text-lg md:text-xl font-bold flex items-center gap-2 tracking-tight">
+                        <Users className="h-5 w-5 text-indigo-500" /> Reviews ({reviews.length})
                     </h2>
-                    <Button onClick={() => sessionUser ? setIsReviewDialogOpen(true) : setShowLoginModal(true)} className="rounded-2xl h-12 font-bold gap-2 shadow-lg shadow-primary/20 transition-transform hover:scale-105 active:scale-95">
-                        <Plus className="h-5 w-5" /> Write a Review
+                    <Button onClick={() => sessionUser ? setIsReviewDialogOpen(true) : setShowLoginModal(true)} className="rounded-none h-9 px-4 text-xs font-bold gap-1.5 transition-transform hover:scale-[1.02] active:scale-95" variant="default">
+                        <Plus className="h-3.5 w-3.5" /> Write a Review
                     </Button>
                 </div>
                 {reviews.length > 0 ? (
@@ -350,7 +373,7 @@ export default function BookDetailClient({ initialBook, sessionUser }: BookDetai
                         </div>
                     </div>
                 ) : (
-                    <div className="text-center py-24 bg-muted/20 border-2 border-dashed rounded-[3rem]">
+                    <div className="text-center py-24 bg-muted/20 border-2 border-dashed rounded-none">
                         <div className="h-20 w-20 bg-muted rounded-full flex items-center justify-center mx-auto mb-6">
                             <FileText className="h-10 w-10 text-muted-foreground opacity-30" />
                         </div>

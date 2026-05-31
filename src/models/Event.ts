@@ -147,12 +147,6 @@ EventSchema.index({ team: 1, privacy: 1, status: 1, startTime: 1 });
 EventSchema.index({ organizer: 1, createdAt: -1 });
 
 // Prevent overwrite warning in development
-if (process.env.NODE_ENV === 'development') {
-    if (models.Event) {
-        delete models.Event;
-    }
-}
-
 const Event = models.Event || model<IEvent>('Event', EventSchema);
 
 export default Event;

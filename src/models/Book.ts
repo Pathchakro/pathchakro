@@ -77,11 +77,7 @@ BookSchema.index({ title: 'text', author: 'text' });
 BookSchema.index({ category: 1 });
 BookSchema.index({ averageRating: -1 });
 
-// Force fresh model in development to pick up schema changes
-if (process.env.NODE_ENV === 'development' && mongoose.models.Book) {
-    delete mongoose.models.Book;
-}
-
+// Prevent overwrite warning in development
 const Book: Model<IBook> = mongoose.models.Book || mongoose.model<IBook>('Book', BookSchema);
 
 export default Book;

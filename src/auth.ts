@@ -53,10 +53,13 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
                 const existingUser = await User.findOne({ email: user.email });
 
                 if (!existingUser) {
+                    const { generateUniqueSlug } = await import('@/lib/slug-utils');
+                    const username = await generateUniqueSlug(User, user.name as string, 'username');
                     await User.create({
                         name: user.name as string,
                         email: user.email as string,
                         image: user.image as string,
+                        username,
                         isEmailVerified: true,
                     });
                 }
@@ -68,6 +71,12 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             if (user) {
                 await dbConnect();
                 const dbUser = await User.findOne({ email: user.email });
+                if (dbUser) {
+                    token.id = dbUser._id.toString();
+                }
+            } else if (!token.id && token.email) {
+                await dbConnect();
+                const dbUser = await User.findOne({ email: token.email });
                 if (dbUser) {
                     token.id = dbUser._id.toString();
                 }

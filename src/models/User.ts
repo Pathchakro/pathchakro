@@ -193,12 +193,6 @@ UserSchema.index({ thana: 1 });
 UserSchema.index({ university: 1 });
 
 // Prevent overwrite warning in development
-if (process.env.NODE_ENV === 'development') {
-    if (mongoose.models.User) {
-        delete mongoose.models.User;
-    }
-}
-
 const User: Model<IUser> = mongoose.models.User || mongoose.model<IUser>('User', UserSchema);
 
 export default User;
