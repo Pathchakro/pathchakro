@@ -4,12 +4,12 @@ import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { 
-    Select, 
-    SelectContent, 
-    SelectItem, 
-    SelectTrigger, 
-    SelectValue 
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue
 } from '@/components/ui/select-radix';
 import { Users, Search, Plus, MapPin, GraduationCap, Star, ArrowRight } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -49,7 +49,7 @@ export default function TeamsClient({ initialTeams }: TeamsClientProps) {
         if (searchQuery) params.set('q', searchQuery); else params.delete('q');
         if (typeFilter !== 'all') params.set('type', typeFilter); else params.delete('type');
         if (activeTab !== 'all') params.set('filter', activeTab); else params.delete('filter');
-        
+
         const queryString = params.toString();
         router.push(`/teams${queryString ? `?${queryString}` : ''}`);
     }, [searchQuery, typeFilter, activeTab, router, searchParams]);
@@ -66,8 +66,8 @@ export default function TeamsClient({ initialTeams }: TeamsClientProps) {
             <div className="space-y-8">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                     <div>
-                        <h1 className="text-5xl font-black bg-clip-text text-transparent bg-gradient-to-r from-primary via-purple-600 to-indigo-600 leading-tight">Teams & Groups</h1>
-                        <p className="text-muted-foreground font-medium mt-1">Join communities and connect with like-minded individuals</p>
+                        <h1 className="text-2xl">Teams & Groups</h1>
+
                     </div>
                     {session && (
                         <Button asChild size="lg" className="rounded-2xl font-black shadow-lg hover:shadow-xl transition-all">
@@ -90,11 +90,11 @@ export default function TeamsClient({ initialTeams }: TeamsClientProps) {
                         <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div className="relative group">
                                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
-                                <Input 
-                                    placeholder="Search by name..." 
-                                    value={searchQuery} 
-                                    onChange={(e) => setSearchQuery(e.target.value)} 
-                                    className="pl-12 h-12 rounded-2xl border-2 focus-visible:ring-primary font-bold shadow-inner bg-muted/20" 
+                                <Input
+                                    placeholder="Search by name..."
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    className="pl-12 h-12 rounded-2xl border-2 focus-visible:ring-primary font-bold shadow-inner bg-muted/20"
                                 />
                             </div>
                             <Select value={typeFilter} onValueChange={setTypeFilter}>

@@ -53,7 +53,7 @@ export default function MarketplaceClient({ initialProducts }: { initialProducts
         if (searchQuery) params.set('search', searchQuery); else params.delete('search');
         if (minPrice) params.set('minPrice', minPrice); else params.delete('minPrice');
         if (maxPrice) params.set('maxPrice', maxPrice); else params.delete('maxPrice');
-        
+
         // Use replace to avoid history bloat
         router.replace(`/marketplace?${params.toString()}`);
     }, [categoryFilter, conditionFilter, searchQuery, minPrice, maxPrice, searchParams, router]);
@@ -82,8 +82,8 @@ export default function MarketplaceClient({ initialProducts }: { initialProducts
             <div className="mb-8">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
                     <div>
-                        <h1 className="text-4xl font-black tracking-tight">Marketplace</h1>
-                        <p className="text-muted-foreground font-medium mt-1">Discover pre-owned and new academic resources at great prices.</p>
+                        <h1 className="text-2xl">Marketplace</h1>
+
                     </div>
                     <Link href="/marketplace/sell">
                         <Button className="rounded-2xl h-12 px-6 font-bold shadow-lg shadow-primary/20 transition-all hover:scale-105 active:scale-95 gap-2">
@@ -96,15 +96,15 @@ export default function MarketplaceClient({ initialProducts }: { initialProducts
                     <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
                         <div className="md:col-span-2 relative group">
                             <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground group-focus-within:text-primary transition-colors" />
-                            <Input 
-                                value={searchQuery} 
-                                onChange={(e) => setSearchQuery(e.target.value)} 
-                                placeholder="What are you looking for?" 
-                                className="pl-12 h-12 bg-muted/30 border-0 rounded-2xl font-medium focus:ring-2 focus:ring-primary/20 transition-all" 
+                            <Input
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                placeholder="What are you looking for?"
+                                className="pl-12 h-12 bg-muted/30 border-0 rounded-2xl font-medium focus:ring-2 focus:ring-primary/20 transition-all"
                             />
                         </div>
-                        <Select 
-                            value={categoryFilter} 
+                        <Select
+                            value={categoryFilter}
                             onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setCategoryFilter(e.target.value)}
                             className="h-12 bg-muted/30 border-0 rounded-2xl font-bold"
                         >
@@ -116,8 +116,8 @@ export default function MarketplaceClient({ initialProducts }: { initialProducts
                             <option value="bag">Bags</option>
                             <option value="other">Other</option>
                         </Select>
-                        <Select 
-                            value={conditionFilter} 
+                        <Select
+                            value={conditionFilter}
                             onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setConditionFilter(e.target.value)}
                             className="h-12 bg-muted/30 border-0 rounded-2xl font-bold"
                         >
@@ -127,19 +127,19 @@ export default function MarketplaceClient({ initialProducts }: { initialProducts
                             <option value="refurbished">Refurbished</option>
                         </Select>
                         <div className="flex gap-2">
-                            <Input 
-                                type="number" 
-                                value={minPrice} 
-                                onChange={(e) => handlePriceInput(e.target.value, setMinPrice)} 
-                                placeholder="Min ৳" 
-                                className="h-12 bg-muted/30 border-0 rounded-2xl font-bold text-center" 
+                            <Input
+                                type="number"
+                                value={minPrice}
+                                onChange={(e) => handlePriceInput(e.target.value, setMinPrice)}
+                                placeholder="Min ৳"
+                                className="h-12 bg-muted/30 border-0 rounded-2xl font-bold text-center"
                             />
-                            <Input 
-                                type="number" 
-                                value={maxPrice} 
-                                onChange={(e) => handlePriceInput(e.target.value, setMaxPrice)} 
-                                placeholder="Max ৳" 
-                                className="h-12 bg-muted/30 border-0 rounded-2xl font-bold text-center" 
+                            <Input
+                                type="number"
+                                value={maxPrice}
+                                onChange={(e) => handlePriceInput(e.target.value, setMaxPrice)}
+                                placeholder="Max ৳"
+                                className="h-12 bg-muted/30 border-0 rounded-2xl font-bold text-center"
                             />
                         </div>
                     </div>

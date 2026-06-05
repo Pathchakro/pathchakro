@@ -4,12 +4,12 @@ import { useState, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { 
-    Select, 
-    SelectContent, 
-    SelectItem, 
-    SelectTrigger, 
-    SelectValue 
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue
 } from '@/components/ui/select-radix';
 import { MapPin, DollarSign, Users, Plus, Search, Heart, Calendar, ArrowRight } from 'lucide-react';
 import { formatDate, extractPlainText } from '@/lib/utils';
@@ -46,7 +46,7 @@ export default function ToursClient({ initialTours }: { initialTours: Tour[] }) 
     const router = useRouter();
     const searchParams = useSearchParams();
     const { data: session } = useSession();
-    
+
     const [destinationFilter, setDestinationFilter] = useState(searchParams.get('destination') || '');
     const [statusFilter, setStatusFilter] = useState(searchParams.get('status') || 'all');
     const [showUpcoming, setShowUpcoming] = useState(searchParams.get('upcoming') === 'true');
@@ -76,16 +76,16 @@ export default function ToursClient({ initialTours }: { initialTours: Tour[] }) 
         const params = new URLSearchParams(searchParams.toString());
         if (destinationFilter) params.set('destination', destinationFilter);
         else params.delete('destination');
-        
+
         if (statusFilter !== 'all') params.set('status', statusFilter);
         else params.delete('status');
-        
+
         if (showUpcoming) params.set('upcoming', 'true');
         else params.delete('upcoming');
-        
+
         if (activeTab !== 'all') params.set('filter', activeTab);
         else params.delete('filter');
-        
+
         router.push(`/tours?${params.toString()}`);
     };
 
@@ -136,8 +136,8 @@ export default function ToursClient({ initialTours }: { initialTours: Tour[] }) 
             <div className="space-y-8">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                     <div>
-                        <h1 className="text-5xl font-black bg-clip-text text-transparent bg-gradient-to-r from-primary to-blue-600 leading-tight">Tours & Trips</h1>
-                        <p className="text-muted-foreground font-medium mt-1">Plan and join educational tours across the country</p>
+                        <h1 className="text-2xl">Tours & Trips</h1>
+
                     </div>
                     <Link href="/tours/create">
                         <Button size="lg" className="rounded-2xl font-black shadow-lg hover:shadow-xl transition-all" onClick={(e) => {
@@ -216,8 +216,8 @@ export default function ToursClient({ initialTours }: { initialTours: Tour[] }) 
                     {initialTours.map((tour) => (
                         <div key={tour._id} className="group relative bg-card border-2 rounded-3xl overflow-hidden hover:shadow-2xl hover:border-primary/20 transition-all duration-500 animate-in fade-in slide-in-from-bottom-8">
                             {session?.user && (
-                                <button 
-                                    onClick={(e) => toggleBookmark(e, tour._id)} 
+                                <button
+                                    onClick={(e) => toggleBookmark(e, tour._id)}
                                     className="absolute top-4 right-4 z-20 p-3 bg-background/60 backdrop-blur-md rounded-2xl shadow-lg hover:bg-background hover:scale-110 transition-all border-2"
                                     aria-label={savedTourIds.includes(tour._id) ? "Remove from wishlist" : "Add to wishlist"}
                                     aria-pressed={savedTourIds.includes(tour._id)}
@@ -225,7 +225,7 @@ export default function ToursClient({ initialTours }: { initialTours: Tour[] }) 
                                     <Heart className={`h-5 w-5 transition-colors ${savedTourIds.includes(tour._id) ? 'fill-red-500 text-red-500' : 'text-muted-foreground'}`} />
                                 </button>
                             )}
-                            
+
                             <div className="relative overflow-hidden">
                                 <ImageSlider images={tour.images && tour.images.length > 0 ? tour.images : (tour.bannerUrl ? [tour.bannerUrl] : [])} title={tour.title} aspectRatio="aspect-video" />
                                 <div className="absolute top-4 left-4 z-10 flex gap-2">
@@ -248,7 +248,7 @@ export default function ToursClient({ initialTours }: { initialTours: Tour[] }) 
                                 </div>
 
                                 <h3 className="text-2xl font-black mb-2 leading-tight group-hover:text-primary transition-colors line-clamp-1">{tour.title}</h3>
-                                
+
                                 <div className="flex items-center gap-1 text-sm font-bold text-muted-foreground mb-4">
                                     <MapPin className="h-4 w-4 text-red-500" />
                                     {tour.destination}

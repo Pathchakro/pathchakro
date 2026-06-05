@@ -50,7 +50,7 @@ export default function EventsClient({ initialData }: { initialData: { events: E
     const { data: session } = useSession();
     const router = useRouter();
     const searchParams = useSearchParams();
-    
+
     const [events, setEvents] = useState<Event[]>(initialData.events);
     const [loading, setLoading] = useState(false);
     const [statusFilter, setStatusFilter] = useState(searchParams.get('status') || '');
@@ -73,18 +73,18 @@ export default function EventsClient({ initialData }: { initialData: { events: E
         setEvents(initialData.events);
         setStatusFilter(searchParams.get('status') || '');
         setShowUpcoming(searchParams.get('upcoming') === 'true');
-        
+
         // Only sync search query from URL if user is not actively typing
         if (!isUserTypingRef.current) {
             setSearchQuery(searchParams.get('q') || '');
         }
-        
+
         setCurrentPage(Number.parseInt(searchParams.get('page') || '1', 10) || 1);
         setTotalPages(initialData.pagination.totalPages);
         setTotalEvents(initialData.pagination.totalEvents);
         setLimit(initialData.pagination.limit);
         setLoading(false);
-        
+
         // Reset typing ref after sync
         isUserTypingRef.current = false;
     }, [initialData, searchParams]);
@@ -101,13 +101,13 @@ export default function EventsClient({ initialData }: { initialData: { events: E
         const params = new URLSearchParams(searchParams.toString());
         if (searchQuery) params.set('q', searchQuery);
         else params.delete('q');
-        
+
         if (statusFilter) params.set('status', statusFilter);
         else params.delete('status');
-        
+
         if (showUpcoming) params.set('upcoming', 'true');
         else params.delete('upcoming');
-        
+
         params.set('page', '1');
         router.push(`/events?${params.toString()}`);
     }, [searchQuery, statusFilter, showUpcoming, searchParams, router]);
@@ -143,8 +143,8 @@ export default function EventsClient({ initialData }: { initialData: { events: E
             <div className="mb-8">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
                     <div>
-                        <h1 className="text-4xl font-black tracking-tight">Events</h1>
-                        <p className="text-muted-foreground font-medium mt-1">Discover and join educational meetups and workshops.</p>
+                        <h1 className="text-2xl">Events</h1>
+
                     </div>
                     <Link href="/events/create" onClick={handleCreateEventClick}>
                         <Button className="rounded-2xl h-12 px-6 font-bold shadow-lg shadow-primary/20 transition-all hover:scale-105 active:scale-95 gap-2">
@@ -200,7 +200,7 @@ export default function EventsClient({ initialData }: { initialData: { events: E
             {/* Events List */}
             {loading ? (
                 <div className="flex justify-center py-20">
-                     <LoadingSpinner />
+                    <LoadingSpinner />
                 </div>
             ) : events.length === 0 ? (
                 <div className="text-center py-24 bg-card border-2 border-dashed rounded-[3rem]">
@@ -221,9 +221,9 @@ export default function EventsClient({ initialData }: { initialData: { events: E
                 <div className="space-y-12">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         {events.map((event) => (
-                            <EventCard 
-                                key={event._id} 
-                                event={event} 
+                            <EventCard
+                                key={event._id}
+                                event={event}
                                 onDelete={handleDelete}
                             />
                         ))}

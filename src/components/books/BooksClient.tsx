@@ -27,7 +27,7 @@ export default function BooksClient({ initialBooks, pagination }: BooksClientPro
     const { data: session } = useSession();
     const router = useRouter();
     const searchParams = useSearchParams();
-    
+
     const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
     const [categoryFilter, setCategoryFilter] = useState(searchParams.get('category') || '');
     const [libraryMap, setLibraryMap] = useState<Record<string, { status: string; isOwned: boolean }>>({});
@@ -64,10 +64,10 @@ export default function BooksClient({ initialBooks, pagination }: BooksClientPro
         const params = new URLSearchParams(searchParams.toString());
         if (searchQuery) params.set('q', searchQuery);
         else params.delete('q');
-        
+
         if (categoryFilter) params.set('category', categoryFilter);
         else params.delete('category');
-        
+
         params.set('page', '1');
         router.push(`/books?${params.toString()}`);
     }, [searchQuery, categoryFilter, searchParams, router]);
@@ -90,7 +90,7 @@ export default function BooksClient({ initialBooks, pagination }: BooksClientPro
         const timer = setTimeout(() => {
             const currentQ = searchParams.get('q') || '';
             const currentCat = searchParams.get('category') || '';
-            
+
             if (searchQuery !== currentQ || categoryFilter !== currentCat) {
                 handleSearch();
             }
@@ -166,11 +166,10 @@ export default function BooksClient({ initialBooks, pagination }: BooksClientPro
             <div className="mb-10">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
                     <div>
-                        <h1 className="text-4xl font-bold flex items-center gap-3">
-                            <Book className="h-10 w-10 text-primary" />
+                        <h1 className="text-2xl">
                             Book Library
                         </h1>
-                        <p className="text-muted-foreground mt-1">Discover, review, and track your reading journey</p>
+
                     </div>
                     <Link href="/books/add">
                         <Button className="h-11 rounded-xl gap-2 shadow-lg hover:shadow-xl transition-all" onClick={(e) => {

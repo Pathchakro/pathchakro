@@ -28,7 +28,7 @@ export default function CoursesClient({ initialCourses }: { initialCourses: Cour
     const { data: session } = useSession();
     const router = useRouter();
     const searchParams = useSearchParams();
-    
+
     const [search, setSearch] = useState(searchParams.get('q') || '');
     const [activeTab, setActiveTab] = useState(searchParams.get('filter') || 'all');
     const [savedCourseIds, setSavedCourseIds] = useState<string[]>([]);
@@ -43,7 +43,7 @@ export default function CoursesClient({ initialCourses }: { initialCourses: Cour
     const fetchMyBookmarks = async () => {
         try {
             const userRes = await fetch(`/api/users/${session?.user?.id}`);
-            
+
             // Robust response check before parsing JSON
             if (!userRes.ok) {
                 console.error('Failed to load bookmarks, server responded with status:', userRes.status);
@@ -51,7 +51,7 @@ export default function CoursesClient({ initialCourses }: { initialCourses: Cour
             }
 
             const userData = await userRes.json();
-            
+
             if (userData.user?.savedCourses) {
                 setSavedCourseIds(userData.user.savedCourses.map((c: any) => typeof c === 'string' ? c : c._id));
             }
@@ -90,8 +90,8 @@ export default function CoursesClient({ initialCourses }: { initialCourses: Cour
         <div className="max-w-4xl mx-auto py-8 px-4 space-y-8">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Browse Courses</h1>
-                    <p className="text-muted-foreground mt-1">Explore our latest courses and workshops.</p>
+                    <h1 className="text-2xl">Browse Courses</h1>
+
                 </div>
                 <div className="flex items-center gap-3 w-full md:w-auto">
                     <div className="relative w-full md:w-64">

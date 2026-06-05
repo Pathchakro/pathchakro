@@ -49,9 +49,9 @@ export default function BloodBankClient({ initialDonors }: { initialDonors: User
         const params = new URLSearchParams(searchParams.toString());
         if (value && value !== 'all') params.set(key, value);
         else params.delete(key);
-        
+
         if (key === 'district') params.delete('thana'); // Reset thana when district changes
-        
+
         router.push(`/blood-bank?${params.toString()}`);
     };
 
@@ -94,8 +94,8 @@ export default function BloodBankClient({ initialDonors }: { initialDonors: User
         <div className="container py-8 max-w-7xl mx-auto space-y-8">
             <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Blood Bank</h1>
-                    <p className="text-muted-foreground mt-1">Find willing blood donors in your area.</p>
+                    <h1 className="text-2xl">Blood Bank</h1>
+
                 </div>
             </div>
 

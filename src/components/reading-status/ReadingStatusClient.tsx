@@ -19,7 +19,7 @@ const UserListModal = ({ isOpen, onClose, title, users, bookTitle }: { isOpen: b
             <DialogContent className="max-w-md max-h-[80vh] overflow-hidden flex flex-col rounded-[2rem] border-2">
                 <DialogHeader className="pb-4 border-b-2">
                     <DialogTitle className="flex items-center gap-3 text-2xl font-black">
-                        <Users className="h-6 w-6 text-primary" /> 
+                        <Users className="h-6 w-6 text-primary" />
                         {title}
                     </DialogTitle>
                     <p className="text-sm font-bold text-muted-foreground uppercase tracking-wider">{bookTitle} ({users.length})</p>
@@ -66,7 +66,7 @@ export default function ReadingStatusClient({ initialStats, initialSummary, from
         params.set('from', dateRange.from);
         params.set('to', dateRange.to);
         if (statusFilter) params.set('status', statusFilter); else params.delete('status');
-        
+
         const newUrl = `/reading-status?${params.toString()}`;
         if (window.location.search !== `?${params.toString()}`) {
             router.push(newUrl);
@@ -89,16 +89,16 @@ export default function ReadingStatusClient({ initialStats, initialSummary, from
         const completed = book.completed ?? 0;
         const wantToRead = book.wantToRead ?? 0;
 
-        const matchesSearch = !searchQuery || 
-            title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+        const matchesSearch = !searchQuery ||
+            title.toLowerCase().includes(searchQuery.toLowerCase()) ||
             author.toLowerCase().includes(searchQuery.toLowerCase());
-            
+
         const matchesStatus = !statusFilter || (
-            statusFilter === 'reading' ? reading > 0 : 
-            statusFilter === 'completed' ? completed > 0 : 
-            wantToRead > 0
+            statusFilter === 'reading' ? reading > 0 :
+                statusFilter === 'completed' ? completed > 0 :
+                    wantToRead > 0
         );
-        
+
         return matchesSearch && matchesStatus;
     });
 
@@ -108,10 +108,10 @@ export default function ReadingStatusClient({ initialStats, initialSummary, from
         <div className="max-w-7xl mx-auto p-4 pb-20 space-y-10">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div>
-                    <h1 className="text-4xl font-black tracking-tight flex items-center gap-3">
-                        <BarChart3 className="h-10 w-10 text-indigo-500" /> Reading Trends
+                    <h1 className="text-2xl">
+                        Reading Trends
                     </h1>
-                    <p className="text-muted-foreground font-medium mt-1">Real-time statistics of community reading activity and progress.</p>
+
                 </div>
                 <div className="flex flex-wrap items-center gap-3 bg-muted/50 p-2.5 rounded-[1.5rem] border-2 shadow-sm">
                     <CalendarIcon className="h-4 w-4 text-primary ml-2" />
@@ -151,15 +151,15 @@ export default function ReadingStatusClient({ initialStats, initialSummary, from
                     <div className="flex flex-col md:flex-row gap-4 w-full md:w-auto">
                         <div className="relative group flex-1 md:w-72">
                             <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
-                            <Input 
-                                placeholder="Search title or author..." 
-                                value={searchQuery} 
-                                onChange={(e) => setSearchQuery(e.target.value)} 
-                                className="pl-11 h-12 rounded-2xl border-2 font-medium focus:ring-primary/20" 
+                            <Input
+                                placeholder="Search title or author..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="pl-11 h-12 rounded-2xl border-2 font-medium focus:ring-primary/20"
                             />
                         </div>
-                        <Select 
-                            value={statusFilter} 
+                        <Select
+                            value={statusFilter}
                             onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setStatusFilter(e.target.value)}
                             className="h-12 w-full md:w-44 rounded-2xl border-2 font-black bg-white"
                         >
@@ -215,24 +215,24 @@ export default function ReadingStatusClient({ initialStats, initialSummary, from
                             )}
                         </TableBody>
                     </Table>
-                    
+
                     {filteredStats.length > pageSize && (
                         <div className="p-8 border-t-2 bg-muted/5 flex justify-center">
-                            <Pagination 
-                                currentPage={currentPage} 
-                                totalPages={Math.ceil(filteredStats.length / pageSize)} 
-                                onPageChange={setCurrentPage} 
+                            <Pagination
+                                currentPage={currentPage}
+                                totalPages={Math.ceil(filteredStats.length / pageSize)}
+                                onPageChange={setCurrentPage}
                             />
                         </div>
                     )}
                 </CardContent>
             </Card>
-            <UserListModal 
-                isOpen={modalConfig.isOpen} 
-                onClose={() => setModalConfig(p => ({ ...p, isOpen: false }))} 
-                title={modalConfig.title} 
-                users={modalConfig.users} 
-                bookTitle={modalConfig.bookTitle} 
+            <UserListModal
+                isOpen={modalConfig.isOpen}
+                onClose={() => setModalConfig(p => ({ ...p, isOpen: false }))}
+                title={modalConfig.title}
+                users={modalConfig.users}
+                bookTitle={modalConfig.bookTitle}
             />
         </div>
     );
