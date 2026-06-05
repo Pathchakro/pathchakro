@@ -17,51 +17,6 @@ export default function EditEventPage({ params }: Props) {
     const router = useRouter();
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
-    const [uploadingBanner, setUploadingBanner] = useState(false);
-    const [initialData, setInitialData] = useState<any>(null);
-    const [fetchError, setFetchError] = useState(false);
-    const [slug, setSlug] = useState<string>('');
-
-    useEffect(() => {
-        const resolveParams = async () => {
-            const resolvedParams = await params;
-            setSlug(resolvedParams.slug);
-            fetchEvent(resolvedParams.slug);
-        };
-        resolveParams();
-    }, [params]);
-
-
-    const fetchEvent = async (eventSlug: string) => {
-        try {
-            setFetchError(false);
-            const response = await fetch(`/api/events/${eventSlug}`);
-
-            if (!response.ok) {
-                throw new Error('Failed to fetch event');
-            }
-
-            const data = await response.json();
-
-            if (data.event) {
-                setInitialData(data.event);
-            } else {
-                setFetchError(true);
-                toast.error('Event not found');
-                router.push('/events');
-            }
-        } catch (error) {
-            console.error('Error fetching event:', error);
-            setFetchError(true);
-
-interface Props {
-    params: Promise<{ slug: string }>;
-}
-
-export default function EditEventPage({ params }: Props) {
-    const router = useRouter();
-    const [isLoading, setIsLoading] = useState(true);
-    const [isSaving, setIsSaving] = useState(false);
     const [initialData, setInitialData] = useState<any>(null);
     const [fetchError, setFetchError] = useState(false);
     const [slug, setSlug] = useState<string>('');
