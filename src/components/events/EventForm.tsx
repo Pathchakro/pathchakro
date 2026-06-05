@@ -337,7 +337,7 @@ export function EventForm({ initialData, onSubmit, isLoading, mode }: EventFormP
                             disabled={isLoading}
                             className="flex-1"
                         >
-                            {isLoading ? (uploadingBanner ? 'Uploading Banner...' : (mode === 'create' ? 'Creating...' : 'Updating...')) : (mode === 'create' ? 'Create Event' : 'Update Event')}
+                            {isLoading ? (mode === 'create' ? 'Creating...' : 'Updating...') : (mode === 'create' ? 'Create Event' : 'Update Event')}
                         </Button>
                     </div>
                 </form>
