@@ -185,7 +185,7 @@ export default function NewWritingProjectPage() {
                             <ImageUploader
                                 onUpload={(url) => setValue('coverImage', url)}
                                 currentImage={coverImage}
-                                variant="cover"
+                                variant="book"
                             />
                         </div>
 

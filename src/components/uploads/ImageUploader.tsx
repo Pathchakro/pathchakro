@@ -7,7 +7,7 @@ import Image from 'next/image';
 interface ImageUploaderProps {
     onUpload: (url: string) => void;
     currentImage?: string;
-    variant?: 'avatar' | 'cover' | 'post';
+    variant?: 'avatar' | 'cover' | 'post' | 'book';
     disabled?: boolean;
     className?: string;
 }
@@ -97,6 +97,8 @@ export function ImageUploader({
                 return 'h-52 w-full rounded-2xl';
             case 'post':
                 return 'h-64 w-full rounded-2xl';
+            case 'book':
+                return 'h-64 w-44 rounded-xl shadow-md border-2';
             default:
                 return 'h-32 w-32 rounded-full';
         }
@@ -137,7 +139,7 @@ export function ImageUploader({
                         {!isUploading && (
                             <button
                                 onClick={handleRemove}
-                                className="absolute top-3 right-3 h-8 w-8 rounded-full bg-black/60 hover:bg-red-600 text-white flex items-center justify-center backdrop-blur-md shadow-md hover:shadow-red-500/20 active:scale-95 transition-all duration-200 opacity-0 group-hover/image:opacity-100 translate-y-[-4px] group-hover/image:translate-y-0 z-20"
+                                className="absolute top-3 right-3 h-8 w-8 rounded-full bg-black/60 hover:bg-red-600 text-white flex items-center justify-center backdrop-blur-md shadow-md hover:shadow-red-500/20 active:scale-95 transition-all duration-200 z-20"
                                 title="Remove Image"
                             >
                                 <X className="h-4 w-4" />
@@ -150,7 +152,7 @@ export function ImageUploader({
                             <Upload className="h-5 w-5 text-muted-foreground group-hover:text-purple-500 transition-colors" />
                         </div>
                         <span className="text-sm font-medium text-foreground/80 group-hover:text-purple-600 transition-colors">
-                            {variant === 'avatar' ? 'Upload Photo' : 'Upload Cover Image'}
+                            {variant === 'avatar' ? 'Upload Photo' : (variant === 'book' ? 'Upload Book Cover' : 'Upload Cover Image')}
                         </span>
                         <span className="text-xs text-muted-foreground/70 mt-1 max-w-[200px]">
                             Drag & drop or click to browse

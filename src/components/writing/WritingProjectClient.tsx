@@ -286,7 +286,7 @@ export default function WritingProjectClient({ initialProject }: { initialProjec
                                 <ImageUploader 
                                     currentImage={editCoverImage} 
                                     onUpload={setEditCoverImage} 
-                                    variant="cover"
+                                    variant="book"
                                 />
                             </div>
                             <div className="col-span-2 space-y-4">

@@ -324,7 +324,7 @@ export default function EditBookPage() {
                                 <ImageUploader
                                     onUpload={(url) => setValue('coverImage', url)}
                                     currentImage={coverImage}
-                                    variant="cover"
+                                    variant="book"
                                     disabled={isFieldDisabled('coverImage')}
                                 />
                             </div>
