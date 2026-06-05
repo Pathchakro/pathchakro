@@ -53,47 +53,66 @@ export default function EditEventPage({ params }: Props) {
         } catch (error) {
             console.error('Error fetching event:', error);
             setFetchError(true);
+
+interface Props {
+    params: Promise<{ slug: string }>;
+}
+
+export default function EditEventPage({ params }: Props) {
+    const router = useRouter();
+    const [isLoading, setIsLoading] = useState(true);
+    const [isSaving, setIsSaving] = useState(false);
+    const [initialData, setInitialData] = useState<any>(null);
+    const [fetchError, setFetchError] = useState(false);
+    const [slug, setSlug] = useState<string>('');
+
+    useEffect(() => {
+        const resolveParams = async () => {
+            const resolvedParams = await params;
+            setSlug(resolvedParams.slug);
+            fetchEvent(resolvedParams.slug);
+        };
+        resolveParams();
+    }, [params]);
+
+
+    const fetchEvent = async (eventSlug: string) => {
+        try {
+            setFetchError(false);
+            const response = await fetch(`/api/events/${eventSlug}`);
+
+            if (!response.ok) {
+                throw new Error('Failed to fetch event');
+            }
+
+            const data = await response.json();
+
+            if (data.event) {
+                setInitialData(data.event);
+            } else {
+                setFetchError(true);
+                toast.error('Event not found');
+                router.push('/events');
+            }
+        } catch (error) {
+            console.error('Error fetching event:', error);
+            setFetchError(true);
             toast.error('Failed to load event details');
         } finally {
             setIsLoading(false);
         }
     };
 
-    const onSubmit = async (data: EventData, bannerFile: File | null) => {
+    const onSubmit = async (data: EventData) => {
         setIsSaving(true);
 
         try {
-            let bannerUrl = initialData.banner;
-
-            if (bannerFile) {
-                setUploadingBanner(true);
-                const formData = new FormData();
-                formData.append('file', bannerFile);
-
-                const uploadResponse = await fetch('/api/upload/image', {
-                    method: 'POST',
-                    body: formData,
-                });
-
-                const uploadResult = await uploadResponse.json();
-
-                if (!uploadResponse.ok) {
-                    throw new Error(uploadResult.error || 'Failed to upload banner');
-                }
-
-                bannerUrl = uploadResult.displayUrl || uploadResult.url;
-                setUploadingBanner(false);
-            }
-
             const response = await fetch(`/api/events/${slug}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({
-                    ...data,
-                    banner: bannerUrl || undefined,
-                }),
+                body: JSON.stringify(data),
             });
 
             const result = await response.json();
@@ -110,7 +129,6 @@ export default function EditEventPage({ params }: Props) {
             toast.error(err.message || 'An error occurred. Please try again.');
         } finally {
             setIsSaving(false);
-            setUploadingBanner(false);
         }
     };
 
@@ -153,7 +171,6 @@ export default function EditEventPage({ params }: Props) {
                 initialData={initialData}
                 onSubmit={onSubmit}
                 isLoading={isSaving}
-                uploadingBanner={uploadingBanner}
                 mode="edit"
             />
         </div>

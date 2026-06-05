@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import { useAuthProtection } from '@/hooks/useAuthProtection';
 import LoadingSpinner from '@/components/ui/Loading';
 import Link from 'next/link';
+import { ImageUploader } from '@/components/uploads/ImageUploader';
 import { slugify } from '@/lib/utils';
 
 interface Review {
@@ -254,34 +255,12 @@ export default function EditReviewPage() {
 
                     <div className="space-y-2">
                         <Label htmlFor="image" className="font-black text-xs uppercase tracking-widest text-muted-foreground ml-1">Review Image (Optional)</Label>
-                        <div className="flex flex-col gap-3">
-                            {imageUrl ? (
-                                <div className="relative w-full h-64 bg-muted rounded-3xl overflow-hidden border-2 shadow-inner group">
-                                    <Image src={imageUrl} alt="Review attachment" fill className="object-contain" />
-                                    <Button
-                                        type="button"
-                                        variant="destructive"
-                                        size="sm"
-                                        className="absolute top-3 right-3 h-10 w-10 rounded-2xl shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
-                                        onClick={() => setImageUrl('')}
-                                    >
-                                        <X className="h-5 w-5" />
-                                    </Button>
-                                </div>
-                            ) : (
-                                <div className="flex items-center gap-3">
-                                    <Input
-                                        id="image"
-                                        type="file"
-                                        accept="image/*"
-                                        onChange={handleImageUpload}
-                                        disabled={isUploadingImage}
-                                        className="h-12 rounded-2xl border-2 cursor-pointer bg-muted/10 font-bold"
-                                    />
-                                    {isUploadingImage && <Loader2 className="h-5 w-5 animate-spin text-primary" />}
-                                </div>
-                            )}
-                        </div>
+                        <ImageUploader
+                            onUpload={(url) => setImageUrl(url)}
+                            currentImage={imageUrl}
+                            variant="cover"
+                            disabled={isUploadingImage}
+                        />
                     </div>
 
                     <div className="flex gap-4 pt-8">

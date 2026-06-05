@@ -1,10 +1,15 @@
 import { unstable_cache } from 'next/cache';
 import { cache } from 'react';
 import dbConnect from '@/lib/mongodb';
+import Post from '@/models/Post';
 import Review from '@/models/Review';
-import WritingProject from '@/models/WritingProject';
+import Event from '@/models/Event';
+import Course from '@/models/Course';
+import Tour from '@/models/Tour';
 import Book from '@/models/Book';
+import WritingProject from '@/models/WritingProject';
 import User from '@/models/User';
+import mongoose from 'mongoose';
 
 /**
  * Deterministic serialization of query objects for stable cache keys.
@@ -21,6 +26,11 @@ const stableStringify = (obj: any): string => {
 const fetchUnifiedFeed = async (query: { limit?: number; cursor?: string }) => {
     await dbConnect();
 
+    // Force Book model registration check
+    if (!mongoose.models.Book) {
+        const _ = Book.schema;
+    }
+
     const { limit = 10, cursor } = query;
     const filter: any = {};
 
@@ -32,29 +42,108 @@ const fetchUnifiedFeed = async (query: { limit?: number; cursor?: string }) => {
     }
 
     // Overfetch from each source to ensure merged pagination doesn't skip items.
-    // We fetch 2x the requested limit to account for overlapping time windows.
+    // We fetch limit * 2 items from each.
     const overfetchLimit = limit * 2;
 
-    const [reviews, projects] = await Promise.all([
-        Review.find(filter)
-            .populate('book', 'title author coverImage slug')
-            .populate('user', 'name image rankTier')
+    const [posts, reviews, events, courses, tours, books] = await Promise.all([
+        Post.find(filter)
             .sort({ createdAt: -1 })
             .limit(overfetchLimit)
+            .populate('author', 'name image rankTier')
             .lean(),
-        WritingProject.find({ ...filter, visibility: 'public', status: 'published' })
-            .populate('author', 'name image username rankTier')
+        Review.find(filter)
             .sort({ createdAt: -1 })
             .limit(overfetchLimit)
-            .lean()
+            .populate('user', 'name image rankTier')
+            .populate('book', 'title author coverImage slug')
+            .lean(),
+        Event.find(filter)
+            .sort({ createdAt: -1 })
+            .limit(overfetchLimit)
+            .populate('organizer', 'name image')
+            .populate('team', 'name')
+            .populate('roles.speakers.user', 'name image')
+            .populate('listeners.user', 'name image')
+            .lean(),
+        Course.find(filter)
+            .sort({ createdAt: -1 })
+            .limit(overfetchLimit)
+            .populate('instructor', 'name image')
+            .lean(),
+        Tour.find(filter)
+            .sort({ createdAt: -1 })
+            .limit(overfetchLimit)
+            .populate('organizer', 'name image')
+            .lean(),
+        WritingProject.aggregate([
+            { $match: { visibility: 'public' } },
+            { $unwind: '$chapters' },
+            {
+                $match: {
+                    'chapters.visibility': 'public',
+                    'chapters.status': 'published',
+                    ...(cursor ? { 'chapters.createdAt': { $lt: new Date(cursor) } } : {})
+                }
+            },
+            { $sort: { 'chapters.createdAt': -1 } },
+            { $limit: overfetchLimit },
+            {
+                $lookup: {
+                    from: 'users',
+                    localField: 'author',
+                    foreignField: '_id',
+                    as: 'authorDetails'
+                }
+            },
+            {
+                $unwind: {
+                    path: '$authorDetails',
+                    preserveNullAndEmptyArrays: true
+                }
+            },
+            {
+                $project: {
+                    _id: '$chapters._id',
+                    type: 'chapter',
+                    bookId: '$_id',
+                    title: '$title',
+                    slug: '$slug',
+                    coverImage: '$coverImage',
+                    author: {
+                        _id: { $ifNull: ['$authorDetails._id', '$author'] },
+                        name: { $ifNull: ['$authorDetails.name', 'Unknown Author'] },
+                        image: { $ifNull: ['$authorDetails.image', null] },
+                        rankTier: { $ifNull: ['$authorDetails.rankTier', null] }
+                    },
+                    chapterTitle: '$chapters.title',
+                    chapterNumber: '$chapters.chapterNumber',
+                    chapterSlug: '$chapters.slug',
+                    createdAt: '$chapters.createdAt',
+                    category: '$category',
+                    totalWords: '$totalWords',
+                    totalChapters: '$totalChapters'
+                }
+            }
+        ]),
     ]);
+
+    // Tag them with types
+    const typedPosts = posts.map(p => ({ ...p, type: 'post' }));
+    const typedReviews = reviews.map(r => ({ ...r, type: 'review' }));
+    const typedEvents = events.map(e => ({ ...e, type: 'event' }));
+    const typedCourses = courses.map(c => ({ ...c, type: 'course' }));
+    const typedTours = tours.map(t => ({ ...t, type: 'tour' }));
+    const chapterItems = books;
 
     // Combine, sort by createdAt globally, and slice to the requested limit.
     const allItems = [
-        ...reviews.map((r: any) => ({ ...r, type: 'review' })),
-        ...projects.map((p: any) => ({ ...p, type: 'writing_project' }))
-    ]
-        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        ...typedPosts,
+        ...typedReviews,
+        ...typedEvents,
+        ...typedCourses,
+        ...typedTours,
+        ...chapterItems,
+    ].sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
     const items = allItems.slice(0, limit);
 

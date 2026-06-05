@@ -9,12 +9,13 @@ import { slugify } from '@/lib/utils';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Calendar, Image as ImageIcon, X } from 'lucide-react';
+import { Calendar, X } from 'lucide-react';
 import { z } from 'zod';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import NovelEditor from '@/components/editor/NovelEditor';
+import { ImageUploader } from '@/components/uploads/ImageUploader';
 
 const eventSchema = z.object({
     title: z.string().min(5, 'Title must be at least 5 characters'),
@@ -49,17 +50,14 @@ export interface EventData {
 
 interface EventFormProps {
     initialData?: Partial<EventData>;
-    onSubmit: (data: EventData, bannerFile: File | null) => Promise<void>;
+    onSubmit: (data: EventData) => Promise<void>;
     isLoading: boolean;
-    uploadingBanner: boolean;
     mode: 'create' | 'edit';
 }
 
-export function EventForm({ initialData, onSubmit, isLoading, uploadingBanner, mode }: EventFormProps) {
+export function EventForm({ initialData, onSubmit, isLoading, mode }: EventFormProps) {
     const router = useRouter();
-    const [bannerFile, setBannerFile] = useState<File | null>(null);
-    const [previewUrl, setPreviewUrl] = useState<string | null>(initialData?.banner || null);
-    const [isDragging, setIsDragging] = useState(false);
+    const [bannerUrl, setBannerUrl] = useState<string | null>(initialData?.banner || null);
     const [isSlugModified, setIsSlugModified] = useState(mode === 'edit' && !!initialData?.slug);
 
     const getInitialDateInfo = () => {
@@ -129,60 +127,9 @@ export function EventForm({ initialData, onSubmit, isLoading, uploadingBanner, m
                 }
             }
             if (initialData.slug) setValue('slug', initialData.slug);
+            if (initialData.banner) setBannerUrl(initialData.banner);
         }
     }, [initialData, setValue]);
-
-    useEffect(() => {
-        return () => {
-            if (previewUrl && previewUrl.startsWith('blob:')) {
-                URL.revokeObjectURL(previewUrl);
-            }
-        };
-    }, [previewUrl]);
-
-    const processFile = (file: File) => {
-        if (file) {
-            if (file.size > 5 * 1024 * 1024) {
-                toast.error('File size too large. Max 5MB allowed.');
-                return;
-            }
-            setBannerFile(file);
-            const url = URL.createObjectURL(file);
-            setPreviewUrl(url);
-        }
-    };
-
-    const handleBannerChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (file) processFile(file);
-    };
-
-    const handleDragOver = (e: React.DragEvent) => {
-        e.preventDefault();
-        e.stopPropagation();
-        setIsDragging(true);
-    };
-
-    const handleDragLeave = (e: React.DragEvent) => {
-        e.preventDefault();
-        e.stopPropagation();
-        setIsDragging(false);
-    };
-
-    const handleDrop = (e: React.DragEvent) => {
-        e.preventDefault();
-        e.stopPropagation();
-        setIsDragging(false);
-        const file = e.dataTransfer.files?.[0];
-        if (file) processFile(file);
-    };
-
-    const removeBanner = () => {
-        setBannerFile(null);
-        setPreviewUrl(null);
-        const fileInput = document.getElementById('banner') as HTMLInputElement;
-        if (fileInput) fileInput.value = '';
-    };
 
     const onFormSubmit = (values: EventFormValues) => {
         const data: EventData = {
@@ -195,9 +142,10 @@ export function EventForm({ initialData, onSubmit, isLoading, uploadingBanner, m
             startTime: values.startTime,
             recordingLink: values.recordingLink,
             slug: values.slug,
+            banner: bannerUrl || undefined,
         };
 
-        onSubmit(data, bannerFile);
+        onSubmit(data);
     };
 
     const onErrors = (errors: FieldErrors<EventFormValues>) => {
@@ -227,62 +175,10 @@ export function EventForm({ initialData, onSubmit, isLoading, uploadingBanner, m
 
                     <div className="space-y-4">
                         <Label htmlFor="banner">Event Banner (Optional)</Label>
-
-                        {previewUrl ? (
-                            <div className="relative group rounded-lg overflow-hidden border bg-muted aspect-[1200/630] max-h-[300px]">
-                                <Image
-                                    src={previewUrl}
-                                    alt="Banner Preview"
-                                    fill
-                                    className="object-cover"
-                                />
-                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                                    <Button
-                                        type="button"
-                                        variant="secondary"
-                                        size="sm"
-                                        onClick={() => document.getElementById('banner')?.click()}
-                                    >
-                                        Change Image
-                                    </Button>
-                                    <Button
-                                        type="button"
-                                        variant="destructive"
-                                        size="sm"
-                                        onClick={removeBanner}
-                                    >
-                                        <X className="h-4 w-4 mr-2" />
-                                        Remove
-                                    </Button>
-                                </div>
-                            </div>
-                        ) : (
-                            <div
-                                onClick={() => document.getElementById('banner')?.click()}
-                                onDragOver={handleDragOver}
-                                onDragLeave={handleDragLeave}
-                                onDrop={handleDrop}
-                                className={`border-2 border-dashed rounded-lg p-8 flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors ${isDragging
-                                        ? 'border-primary bg-primary/5'
-                                        : 'hover:bg-accent/50'
-                                    }`}
-                            >
-                                <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                                    <ImageIcon className="h-5 w-5 text-primary" />
-                                </div>
-                                <div className="text-sm text-center">
-                                    <span className="font-semibold text-primary">Click to upload</span> or drag and drop
-                                    <p className="text-xs text-muted-foreground mt-1">Recommended size: 1200x630px (Open Graph standard)</p>
-                                </div>
-                            </div>
-                        )}
-
-                        <Input
-                            id="banner"
-                            type="file"
-                            accept="image/*"
-                            className="hidden"
-                            onChange={handleBannerChange}
+                        <ImageUploader
+                            onUpload={(url) => setBannerUrl(url)}
+                            currentImage={bannerUrl || undefined}
+                            variant="cover"
                             disabled={isLoading}
                         />
                     </div>

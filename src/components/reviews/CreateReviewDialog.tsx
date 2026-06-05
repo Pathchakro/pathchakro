@@ -11,6 +11,7 @@ import NovelEditor from '@/components/editor/NovelEditor';
 import { BookSearch } from '@/components/books/BookSearch';
 import { toast } from 'sonner';
 import { useAuthProtection } from '@/hooks/useAuthProtection';
+import { ImageUploader } from '@/components/uploads/ImageUploader';
 import { ProfileCompletionModal } from '@/components/auth/ProfileCompletionModal';
 import { LoginModal } from '@/components/auth/LoginModal';
 import { slugify } from '@/lib/utils';
@@ -354,41 +355,12 @@ export function CreateReviewDialog({ open, onOpenChange, initialBook }: CreateRe
 
                             <div className="space-y-2">
                                 <Label htmlFor="image" className="font-black text-xs uppercase tracking-widest text-muted-foreground ml-1">Review Image (Optional)</Label>
-                                <div className="flex flex-col gap-3">
-                                    {imageUrl ? (
-                                        <div className="relative w-full h-56 bg-muted rounded-3xl overflow-hidden border-2 shadow-inner group">
-                                            <Image src={imageUrl} alt="Review attachment" fill className="object-cover" />
-                                            <Button
-                                                type="button"
-                                                variant="destructive"
-                                                size="sm"
-                                                className="absolute top-3 right-3 h-10 w-10 rounded-2xl shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
-                                                onClick={() => setImageUrl('')}
-                                            >
-                                                <X className="h-5 w-5" />
-                                            </Button>
-                                        </div>
-                                    ) : (
-                                        <div className="bg-muted/10 p-4 rounded-2xl border-2 border-dashed flex flex-col items-center gap-3">
-                                            <div className="h-12 w-12 rounded-xl bg-primary/5 flex items-center justify-center">
-                                                <ImageIcon className="h-6 w-6 text-primary/40" />
-                                            </div>
-                                            <div className="text-center">
-                                                <Label htmlFor="image" className="cursor-pointer font-black text-primary hover:underline">Upload photo</Label>
-                                                <p className="text-[10px] text-muted-foreground font-medium">PNG, JPG up to 5MB</p>
-                                            </div>
-                                            <Input
-                                                id="image"
-                                                type="file"
-                                                accept="image/*"
-                                                onChange={handleImageUpload}
-                                                disabled={isUploadingImage}
-                                                className="hidden"
-                                            />
-                                            {isUploadingImage && <Loader2 className="h-5 w-5 animate-spin text-primary mt-2" />}
-                                        </div>
-                                    )}
-                                </div>
+                                <ImageUploader
+                                    onUpload={(url) => setImageUrl(url)}
+                                    currentImage={imageUrl}
+                                    variant="cover"
+                                    disabled={isUploadingImage}
+                                />
                             </div>
 
                             <div className="flex gap-4 pt-4 sticky bottom-0 bg-background/80 backdrop-blur-md pb-2">

@@ -65,10 +65,12 @@ export function CreatePostDialog({ open, onOpenChange }: CreatePostDialogProps) 
         }
     }, [title, isSlugModified]);
 
-    // Set default category when loaded
-    if (!category && categories.length > 0) {
-        setCategory(categories[0]);
-    }
+    useEffect(() => {
+        if (!category && categories.length > 0) {
+            setCategory(categories[0]);
+        }
+    }, [categories, category]);
+
     const [isUploading, setIsUploading] = useState(false);
 
     const fileInputRef = useRef<HTMLInputElement>(null);

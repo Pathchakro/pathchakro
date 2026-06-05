@@ -441,6 +441,7 @@ export default function HomeContent({
                                 case 'tour':
                                     return <TourCard key={item._id} tour={item} />;
                                 case 'book':
+                                case 'chapter':
                                     return <WritingProjectCard key={item._id} project={item} />;
                                 default:
                                     return null;

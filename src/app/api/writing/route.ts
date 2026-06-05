@@ -3,7 +3,9 @@ import { revalidatePath } from 'next/cache';
 import { auth } from '@/auth';
 import dbConnect from '@/lib/mongodb';
 import WritingProject from '@/models/WritingProject';
+import User from '@/models/User';
 import { generateUniqueSlug } from '@/lib/slug-utils';
+import { slugify as createChapterSlug } from '@/lib/utils';
 
 export async function GET(request: NextRequest) {
     try {
@@ -119,6 +121,7 @@ export async function POST(request: NextRequest) {
             initialChapters.push({
                 chapterNumber: 1,
                 title: requestBody.chapterName,
+                slug: createChapterSlug(requestBody.chapterName) || 'chapter-1',
                 content: '',
                 wordCount: 0,
                 status: 'draft',

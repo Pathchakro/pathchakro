@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent } from '@/components/ui/card';
 import { useAccessControl } from '@/hooks/useAccessControl';
 import LoadingSpinner from '@/components/ui/Loading';
+import { ImageUploader } from '@/components/uploads/ImageUploader';
 
 const NovelEditor = dynamic(() => import('@/components/editor/NovelEditor'), { ssr: false });
 
@@ -240,22 +241,12 @@ export default function EditCoursePage() {
 
                         <div className="space-y-2">
                             <Label className="font-bold">Banner Image</Label>
-                            <div className="flex items-center gap-4">
-                                {banner && (
-                                    <div className="relative h-20 w-32 rounded-2xl overflow-hidden border-2 shadow-sm animate-in fade-in zoom-in-95 duration-200">
-                                        <Image src={banner} alt="Banner" fill className="object-cover" />
-                                    </div>
-                                )}
-                                <div className="flex-1">
-                                    <Input
-                                        type="file"
-                                        accept="image/*"
-                                        onChange={(e) => e.target.files?.[0] && handleBannerUpload(e.target.files[0])}
-                                        disabled={uploading}
-                                        className="h-12 rounded-xl"
-                                    />
-                                </div>
-                            </div>
+                            <ImageUploader
+                                onUpload={(url) => setBanner(url)}
+                                currentImage={banner}
+                                variant="cover"
+                                disabled={uploading}
+                            />
                         </div>
                     </CardContent>
                 </Card>

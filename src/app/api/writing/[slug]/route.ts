@@ -3,6 +3,7 @@ import { revalidatePath } from 'next/cache';
 import { auth } from '@/auth';
 import dbConnect from '@/lib/mongodb';
 import WritingProject from '@/models/WritingProject';
+import User from '@/models/User';
 import { generateUniqueSlug } from '@/lib/slug-utils';
 
 export async function GET(

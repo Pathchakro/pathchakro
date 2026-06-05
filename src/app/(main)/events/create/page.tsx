@@ -14,44 +14,17 @@ import AuthGuard from '@/components/auth/AuthGuard';
 export default function CreateEventPage() {
     const router = useRouter();
     const [isLoading, setIsLoading] = useState(false);
-    const [uploadingBanner, setUploadingBanner] = useState(false);
 
-    const onSubmit = async (data: EventData, bannerFile: File | null) => {
+    const onSubmit = async (data: EventData) => {
         setIsLoading(true);
 
         try {
-            let bannerUrl = '';
-
-            if (bannerFile) {
-                setUploadingBanner(true);
-                const formData = new FormData();
-                formData.append('file', bannerFile);
-
-                const uploadResponse = await fetch('/api/upload/image', {
-                    method: 'POST',
-                    body: formData,
-                });
-
-                const uploadResult = await uploadResponse.json();
-
-                if (!uploadResponse.ok) {
-                    throw new Error(uploadResult.error || 'Failed to upload banner');
-                }
-
-                bannerUrl = uploadResult.displayUrl || uploadResult.url;
-                toast.success('Banner image uploaded successfully!');
-                setUploadingBanner(false);
-            }
-
             const response = await fetch('/api/events', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({
-                    ...data,
-                    banner: bannerUrl || undefined,
-                }),
+                body: JSON.stringify(data),
             });
 
             const result = await response.json();
@@ -68,7 +41,6 @@ export default function CreateEventPage() {
             toast.error(error.message || 'An error occurred. Please try again.');
         } finally {
             setIsLoading(false);
-            setUploadingBanner(false);
         }
     };
 
@@ -83,7 +55,6 @@ export default function CreateEventPage() {
                 <EventForm
                     onSubmit={onSubmit}
                     isLoading={isLoading}
-                    uploadingBanner={uploadingBanner}
                     mode="create"
                 />
             </div>
