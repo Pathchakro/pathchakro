@@ -267,9 +267,9 @@ export async function DELETE(
         // Keeping it consistent with previous code
         await Book.findByIdAndUpdate(result.book, { copies: count });
 
-        revalidateTag('library');
-        revalidateTag(`library-${session.user.id}`);
-        revalidateTag('books');
+        revalidateTag('library', 'max');
+        revalidateTag(`library-${session.user.id}`, 'max');
+        revalidateTag('books', 'max');
 
         return NextResponse.json({
             message: 'Book removed from library',
