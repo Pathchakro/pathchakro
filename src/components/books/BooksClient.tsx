@@ -166,7 +166,7 @@ export default function BooksClient({ initialBooks, pagination }: BooksClientPro
             <div className="mb-10">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
                     <div>
-                        <h1 className="text-2xl">
+                        <h1 className="text-3xl font-bold">
                             Book Library
                         </h1>
 

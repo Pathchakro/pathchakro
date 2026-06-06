@@ -5,7 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useSession } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
-import { Star, Download, Upload, Library, Edit, PenLine, Heart, Trash2, BookOpen, CheckCircle, Box, MoreVertical, ShoppingCart } from 'lucide-react';
+import { Star, Download, Upload, Library, Edit, PenLine, Heart, Trash2, BookOpen, CheckCircle, Box, MoreVertical, ShoppingCart, Users } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { toast } from 'sonner';
 import { BookCover } from './books/BookCover';
@@ -16,6 +16,8 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 export interface BookItem {
     _id: string;
@@ -68,6 +70,42 @@ export function BookCard({
     const [isLibraryOwned, setIsLibraryOwned] = useState(isOwned);
     const [localCopies, setLocalCopies] = useState(book.copies || 0);
     const [localCompletedCount, setLocalCompletedCount] = useState(book.completedCount || 0);
+
+    const [modalConfig, setModalConfig] = useState<{
+        isOpen: boolean;
+        title: string;
+        users: any[];
+        loading: boolean;
+    }>({
+        isOpen: false,
+        title: '',
+        users: [],
+        loading: false
+    });
+
+    const handleFetchUsers = async (type: 'available' | 'completed') => {
+        setModalConfig({
+            isOpen: true,
+            title: type === 'available' ? 'Book Providers' : 'Completed Readers',
+            users: [],
+            loading: true
+        });
+
+        try {
+            const query = type === 'available' ? 'isOwned=true' : 'status=completed';
+            const res = await fetch(`/api/books/${book._id}/users?${query}`);
+            if (!res.ok) throw new Error('Failed to fetch');
+            const data = await res.json();
+            setModalConfig(prev => ({
+                ...prev,
+                users: data.users || [],
+                loading: false
+            }));
+        } catch (error) {
+            toast.error('Failed to load user list');
+            setModalConfig(prev => ({ ...prev, isOpen: false, loading: false }));
+        }
+    };
 
     useEffect(() => {
         setCurrentStatus(status);
@@ -382,15 +420,23 @@ export function BookCard({
                         )}
                     </div>
 
-                    <div className="flex items-center gap-4 mb-4 text-sm text-muted-foreground">
-                        <div className="flex items-center gap-1">
-                            <Box className="h-4 w-4" />
+                    <div className="flex items-center gap-4 mb-4 text-sm text-muted-foreground select-none">
+                        <button
+                            type="button"
+                            onClick={() => handleFetchUsers('available')}
+                            className="flex items-center gap-1 hover:text-primary transition-colors cursor-pointer group/avail"
+                        >
+                            <Box className="h-4 w-4 group-hover/avail:scale-110 transition-transform" />
                             <span>Available: {localCopies}</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                            <CheckCircle className="h-4 w-4" />
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => handleFetchUsers('completed')}
+                            className="flex items-center gap-1 hover:text-primary transition-colors cursor-pointer group/comp"
+                        >
+                            <CheckCircle className="h-4 w-4 group-hover/comp:scale-110 transition-transform" />
                             <span>Completed: {localCompletedCount}</span>
-                        </div>
+                        </button>
                     </div>
 
                     {book.description && (
@@ -496,14 +542,55 @@ export function BookCard({
                     )}
 
                     <div className="flex items-center ml-auto border-l pl-2">
-                        <BookStatusButtons 
-                            bookId={book._id} 
-                            initialStatus={currentStatus} 
+                        <BookStatusButtons
+                            bookId={book._id}
+                            initialStatus={currentStatus}
                             onStatusChange={handleStatusUpdate}
                         />
                     </div>
                 </div>
             </div>
+
+            <Dialog open={modalConfig.isOpen} onOpenChange={(open) => setModalConfig(p => ({ ...p, isOpen: open }))}>
+                <DialogContent className="max-w-md max-h-[80vh] overflow-hidden flex flex-col rounded-[2rem] border-2">
+                    <DialogHeader className="pb-4 border-b-2">
+                        <DialogTitle className="flex items-center gap-3 text-2xl font-black">
+                            <Users className="h-6 w-6 text-primary" />
+                            {modalConfig.title}
+                        </DialogTitle>
+                        <p className="text-sm font-bold text-muted-foreground uppercase tracking-wider">{book.title} ({modalConfig.users.length})</p>
+                    </DialogHeader>
+                    <div className="flex-1 overflow-y-auto py-6 custom-scrollbar">
+                        {modalConfig.loading ? (
+                            <div className="flex justify-center py-12">
+                                <div className="h-8 w-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                            </div>
+                        ) : modalConfig.users.length === 0 ? (
+                            <div className="text-center py-12 text-muted-foreground font-bold">No users found.</div>
+                        ) : (
+                            <div className="space-y-4">
+                                {modalConfig.users.map((user) => (
+                                    <Link
+                                        href={`/profile/${user.username || user._id}`}
+                                        key={user._id}
+                                        onClick={() => setModalConfig(p => ({ ...p, isOpen: false }))}
+                                        className="flex items-center gap-4 p-3 rounded-2xl border-2 hover:bg-muted/50 hover:border-primary/20 transition-all group"
+                                    >
+                                        <Avatar className="h-12 w-12 border-2 group-hover:border-primary transition-colors">
+                                            <AvatarImage src={user.image} />
+                                            <AvatarFallback className="font-black">{(user.name?.[0] || '?').toUpperCase()}</AvatarFallback>
+                                        </Avatar>
+                                        <div className="overflow-hidden">
+                                            <div className="font-black truncate group-hover:text-primary transition-colors">{user.name}</div>
+                                            <div className="text-xs font-bold text-muted-foreground truncate uppercase tracking-widest">@{user.username || 'user'}</div>
+                                        </div>
+                                    </Link>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

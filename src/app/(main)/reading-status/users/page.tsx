@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import {
     Table,
     TableBody,
@@ -20,6 +20,7 @@ import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import LoadingSpinner from '@/components/ui/Loading';
 import { Pagination } from '@/components/ui/Pagination';
+import { useSearchParams } from 'next/navigation';
 
 interface ActiveBook {
     _id: string;
@@ -41,13 +42,22 @@ interface UserStat {
     isIdle: boolean;
 }
 
-export default function UserReadingStatusPage() {
+function UserReadingStatusContent() {
+    const searchParams = useSearchParams();
+    const paramFilter = searchParams.get('filter');
+
     const [users, setUsers] = useState<UserStat[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
-    const [filter, setFilter] = useState('all'); // all, active, idle
+    const [filter, setFilter] = useState(paramFilter || 'all'); // all, active, idle
     const [currentPage, setCurrentPage] = useState(1);
     const pageSize = 10;
+
+    useEffect(() => {
+        if (paramFilter) {
+            setFilter(paramFilter);
+        }
+    }, [paramFilter]);
 
     useEffect(() => {
         fetchUsers();
@@ -249,5 +259,13 @@ export default function UserReadingStatusPage() {
                 </CardContent>
             </Card>
         </div>
+    );
+}
+
+export default function UserReadingStatusPage() {
+    return (
+        <Suspense fallback={<LoadingSpinner />}>
+            <UserReadingStatusContent />
+        </Suspense>
     );
 }

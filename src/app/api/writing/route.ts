@@ -6,6 +6,7 @@ import WritingProject from '@/models/WritingProject';
 import User from '@/models/User';
 import { generateUniqueSlug } from '@/lib/slug-utils';
 import { slugify as createChapterSlug } from '@/lib/utils';
+import mongoose from 'mongoose';
 
 export async function GET(request: NextRequest) {
     try {
@@ -23,6 +24,11 @@ export async function GET(request: NextRequest) {
         const onlyMine = searchParams.get('mine') === 'true';
 
         await dbConnect();
+
+        // Force User registration to prevent MissingSchemaError
+        if (!mongoose.models.User) {
+            const _ = User.schema;
+        }
 
         let filter: any = {};
 
@@ -89,6 +95,11 @@ export async function POST(request: NextRequest) {
         }
 
         await dbConnect();
+
+        // Force User registration to prevent MissingSchemaError
+        if (!mongoose.models.User) {
+            const _ = User.schema;
+        }
 
         // Robust customSlug validation and sanitization
         let validatedSlug = undefined;

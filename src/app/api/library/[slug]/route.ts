@@ -3,6 +3,7 @@ import { auth } from '@/auth';
 import dbConnect from '@/lib/mongodb';
 import UserLibrary from '@/models/UserLibrary';
 import Book from '@/models/Book';
+import { revalidateTag } from 'next/cache';
 
 export async function GET(
     request: NextRequest,
@@ -192,6 +193,10 @@ export async function PUT(
 
         await libraryItem.save();
 
+        revalidateTag('library');
+        revalidateTag(`library-${session.user.id}`);
+        revalidateTag('books');
+
         return NextResponse.json({
             library: libraryItem,
             message: 'Library item updated',
@@ -261,6 +266,10 @@ export async function DELETE(
         // Dynamic import to avoid circular dependency if any? (Though Book is imported at top)
         // Keeping it consistent with previous code
         await Book.findByIdAndUpdate(result.book, { copies: count });
+
+        revalidateTag('library');
+        revalidateTag(`library-${session.user.id}`);
+        revalidateTag('books');
 
         return NextResponse.json({
             message: 'Book removed from library',

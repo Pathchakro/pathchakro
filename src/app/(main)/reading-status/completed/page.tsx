@@ -117,6 +117,7 @@ const getRelativeDate = (dateString: string) => {
 
 function CompletedLeaderboardContent() {
     const router = useRouter();
+    const searchParams = useSearchParams();
 
     const [leaderboard, setLeaderboard] = useState<UserStat[]>([]);
     const [idleUsers, setIdleUsers] = useState<IdleUser[]>([]);
@@ -136,11 +137,23 @@ function CompletedLeaderboardContent() {
         books: []
     });
 
+    const paramFrom = searchParams.get('from');
+    const paramTo = searchParams.get('to');
+
     // Date Range State (Default: Current Month)
     const [dateRange, setDateRange] = useState({
-        from: format(startOfMonth(new Date()), 'yyyy-MM-dd'),
-        to: format(endOfMonth(new Date()), 'yyyy-MM-dd'),
+        from: paramFrom || format(startOfMonth(new Date()), 'yyyy-MM-dd'),
+        to: paramTo || format(endOfMonth(new Date()), 'yyyy-MM-dd'),
     });
+
+    useEffect(() => {
+        if (paramFrom || paramTo) {
+            setDateRange({
+                from: paramFrom || format(startOfMonth(new Date()), 'yyyy-MM-dd'),
+                to: paramTo || format(endOfMonth(new Date()), 'yyyy-MM-dd'),
+            });
+        }
+    }, [paramFrom, paramTo]);
 
     useEffect(() => {
         fetchLeaderboard();

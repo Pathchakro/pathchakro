@@ -85,9 +85,9 @@ export default function ReadingStatusClient({ initialStats, initialSummary, from
     const filteredStats = initialStats.filter(book => {
         const title = book.title ?? '';
         const author = book.author ?? '';
-        const reading = book.reading ?? 0;
-        const completed = book.completed ?? 0;
-        const wantToRead = book.wantToRead ?? 0;
+        const reading = book.stats?.reading ?? 0;
+        const completed = book.stats?.completed ?? 0;
+        const wantToRead = book.stats?.wantToRead ?? 0;
 
         const matchesSearch = !searchQuery ||
             title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -122,24 +122,30 @@ export default function ReadingStatusClient({ initialStats, initialSummary, from
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <Card className="rounded-[2rem] border-2 shadow-sm overflow-hidden group hover:border-blue-200 transition-colors">
-                    <CardContent className="pt-6 flex items-center gap-5">
-                        <div className="p-4 bg-blue-50 text-blue-600 rounded-2xl group-hover:scale-110 transition-transform"><Users className="h-8 w-8" /></div>
-                        <div><p className="text-xs font-black text-muted-foreground uppercase tracking-widest mb-1">Total Readers</p><h3 className="text-3xl font-black">{initialSummary.totalReaders}</h3></div>
-                    </CardContent>
-                </Card>
-                <Card className="rounded-[2rem] border-2 shadow-sm overflow-hidden group hover:border-purple-200 transition-colors">
-                    <CardContent className="pt-6 flex items-center gap-5">
-                        <div className="p-4 bg-purple-50 text-purple-600 rounded-2xl group-hover:scale-110 transition-transform"><BookOpen className="h-8 w-8" /></div>
-                        <div><p className="text-xs font-black text-muted-foreground uppercase tracking-widest mb-1">Active Books</p><h3 className="text-3xl font-black">{initialSummary.activeBooks}</h3></div>
-                    </CardContent>
-                </Card>
-                <Card className="rounded-[2rem] border-2 shadow-sm overflow-hidden group hover:border-green-200 transition-colors">
-                    <CardContent className="pt-6 flex items-center gap-5">
-                        <div className="p-4 bg-green-50 text-green-600 rounded-2xl group-hover:scale-110 transition-transform"><CheckCircle className="h-8 w-8" /></div>
-                        <div><p className="text-xs font-black text-muted-foreground uppercase tracking-widest mb-1">Range Completed</p><h3 className="text-3xl font-black">{initialSummary.rangeCompleted}</h3></div>
-                    </CardContent>
-                </Card>
+                <Link href="/reading-status/users" className="block">
+                    <Card className="rounded-[2rem] border-2 shadow-sm overflow-hidden group hover:border-blue-200 hover:shadow-md transition-all cursor-pointer">
+                        <CardContent className="pt-6 flex items-center gap-5">
+                            <div className="p-4 bg-blue-50 text-blue-600 rounded-2xl group-hover:scale-110 transition-transform"><Users className="h-8 w-8" /></div>
+                            <div><p className="text-xs font-black text-muted-foreground uppercase tracking-widest mb-1">Total Readers</p><h3 className="text-3xl font-black">{initialSummary.totalReaders}</h3></div>
+                        </CardContent>
+                    </Card>
+                </Link>
+                <Link href="/reading-status/users?filter=active" className="block">
+                    <Card className="rounded-[2rem] border-2 shadow-sm overflow-hidden group hover:border-purple-200 hover:shadow-md transition-all cursor-pointer">
+                        <CardContent className="pt-6 flex items-center gap-5">
+                            <div className="p-4 bg-purple-50 text-purple-600 rounded-2xl group-hover:scale-110 transition-transform"><BookOpen className="h-8 w-8" /></div>
+                            <div><p className="text-xs font-black text-muted-foreground uppercase tracking-widest mb-1">Active Books</p><h3 className="text-3xl font-black">{initialSummary.activeReading ?? 0}</h3></div>
+                        </CardContent>
+                    </Card>
+                </Link>
+                <Link href={`/reading-status/completed?from=${dateRange.from}&to=${dateRange.to}`} className="block">
+                    <Card className="rounded-[2rem] border-2 shadow-sm overflow-hidden group hover:border-green-200 hover:shadow-md transition-all cursor-pointer">
+                        <CardContent className="pt-6 flex items-center gap-5">
+                            <div className="p-4 bg-green-50 text-green-600 rounded-2xl group-hover:scale-110 transition-transform"><CheckCircle className="h-8 w-8" /></div>
+                            <div><p className="text-xs font-black text-muted-foreground uppercase tracking-widest mb-1">Range Completed</p><h3 className="text-3xl font-black">{initialSummary.rangeCompleted}</h3></div>
+                        </CardContent>
+                    </Card>
+                </Link>
             </div>
 
             <Card className="rounded-[2.5rem] border-2 shadow-sm overflow-hidden">
@@ -196,19 +202,44 @@ export default function ReadingStatusClient({ initialStats, initialSummary, from
                                             </div>
                                         </TableCell>
                                         <TableCell className="text-center">
-                                            <Badge variant={book.copies > 0 ? "default" : "secondary"} className="rounded-lg font-black uppercase tracking-tighter px-3">
+                                            <Badge 
+                                                variant={book.copies > 0 ? "default" : "secondary"} 
+                                                className="rounded-lg font-black uppercase tracking-tighter px-3 cursor-pointer hover:scale-105 active:scale-95 transition-transform"
+                                                onClick={() => setModalConfig({
+                                                    isOpen: true,
+                                                    title: 'Book Providers',
+                                                    bookTitle: book.title,
+                                                    users: book.owners || []
+                                                })}
+                                            >
                                                 {book.copies ?? 0} available
                                             </Badge>
                                         </TableCell>
                                         <TableCell className="text-center">
-                                            <span className="inline-flex items-center justify-center h-10 w-10 rounded-xl bg-blue-50 text-blue-600 font-black text-lg border border-blue-100">
-                                                {book.reading ?? 0}
-                                            </span>
+                                            <button 
+                                                onClick={() => setModalConfig({
+                                                    isOpen: true,
+                                                    title: 'Currently Reading',
+                                                    bookTitle: book.title,
+                                                    users: book.readingUsers || []
+                                                })}
+                                                className="inline-flex items-center justify-center h-10 w-10 rounded-xl bg-blue-50 text-blue-600 font-black text-lg border border-blue-100 cursor-pointer hover:scale-105 active:scale-95 hover:bg-blue-100 transition-all"
+                                            >
+                                                {book.stats?.reading ?? 0}
+                                            </button>
                                         </TableCell>
                                         <TableCell className="text-center">
-                                            <span className="inline-flex items-center justify-center h-10 w-10 rounded-xl bg-green-50 text-green-600 font-black text-lg border border-green-100">
-                                                {book.completed ?? 0}
-                                            </span>
+                                            <button 
+                                                onClick={() => setModalConfig({
+                                                    isOpen: true,
+                                                    title: 'Completed Readers',
+                                                    bookTitle: book.title,
+                                                    users: book.completedUsers || []
+                                                })}
+                                                className="inline-flex items-center justify-center h-10 w-10 rounded-xl bg-green-50 text-green-600 font-black text-lg border border-green-100 cursor-pointer hover:scale-105 active:scale-95 hover:bg-green-100 transition-all"
+                                            >
+                                                {book.stats?.completed ?? 0}
+                                            </button>
                                         </TableCell>
                                     </TableRow>
                                 ))

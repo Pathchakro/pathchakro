@@ -5,6 +5,8 @@ import UserLibrary from '@/models/UserLibrary';
 import Book from '@/models/Book';
 import Review from '@/models/Review';
 
+import User from '@/models/User';
+
 /**
  * Persistent data fetching function wrapped in unstable_cache
  */
@@ -25,9 +27,10 @@ const getReadingStatusData = (from: string, to: string) => unstable_cache(
             Book.aggregate([
                 { $project: { title: 1, author: 1, coverImage: 1, slug: 1, copies: 1 } }
             ]),
-            UserLibrary.aggregate([
-                { $project: { book: 1, status: 1, completedReading: 1, user: 1 } }
-            ]),
+            UserLibrary.find()
+                .select('book status completedReading user isOwned')
+                .populate('user', 'name image username')
+                .lean(),
             Review.aggregate([
                 { $project: { book: 1, user: 1 } }
             ])
@@ -61,6 +64,7 @@ const getReadingStatusData = (from: string, to: string) => unstable_cache(
             const reading = bookLibrary.filter((i: any) => i.status === 'reading');
             const completed = bookLibrary.filter((i: any) => i.status === 'completed');
             const wantToRead = bookLibrary.filter((i: any) => i.status === 'want-to-read');
+            const owners = bookLibrary.filter((i: any) => i.isOwned === true);
             
             // Fixed: Use completedReading for range filter
             const rangeCompleted = completed.filter((i: any) => {
@@ -91,7 +95,10 @@ const getReadingStatusData = (from: string, to: string) => unstable_cache(
                     vocalReaders,
                     silentReaders,
                     totalInteractions: bookLibrary.length + bookReviews.length
-                }
+                },
+                readingUsers: reading.map((i: any) => i.user).filter(Boolean),
+                completedUsers: completed.map((i: any) => i.user).filter(Boolean),
+                owners: owners.map((i: any) => i.user).filter(Boolean)
             };
         });
 

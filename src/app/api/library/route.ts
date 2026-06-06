@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic';
 import { auth } from '@/auth';
 import dbConnect from '@/lib/mongodb';
 import UserLibrary from '@/models/UserLibrary';
+import { revalidateTag } from 'next/cache';
 
 export async function GET(request: NextRequest) {
     try {
@@ -104,24 +105,33 @@ export async function POST(request: NextRequest) {
 
         await dbConnect();
 
-        // Update fields based on what's provided
-        const updateData: any = {
-            $setOnInsert: { addedAt: new Date() }
-        };
-
-        if (status !== undefined) updateData.status = status;
-        if (isOwned !== undefined) updateData.isOwned = isOwned;
-
-        // Handle reading dates logic if status changes
-        if (status === 'reading') {
-            updateData.startedReading = new Date();
-        } else if (status === 'completed') {
-            updateData.completedReading = new Date();
-        }
-
         // Check previous state for availability update
         const existingItem = await UserLibrary.findOne({ user: session.user.id, book: bookId });
         const wasOwned = existingItem?.isOwned || false;
+
+        // Update fields based on what's provided
+        const updateData: any = {
+            $set: {},
+            $setOnInsert: { addedAt: new Date() }
+        };
+
+        if (status !== undefined) updateData.$set.status = status;
+        if (isOwned !== undefined) updateData.$set.isOwned = isOwned;
+
+        // Handle reading dates logic if status changes
+        if (status === 'reading') {
+            if (!existingItem?.startedReading) {
+                updateData.$set.startedReading = new Date();
+            }
+        } else if (status === 'completed') {
+            if (!existingItem?.completedReading) {
+                updateData.$set.completedReading = new Date();
+            }
+        }
+
+        if (Object.keys(updateData.$set).length === 0) {
+            delete updateData.$set;
+        }
 
         const libraryItem = await UserLibrary.findOneAndUpdate(
             { user: session.user.id, book: bookId },
@@ -150,6 +160,10 @@ export async function POST(request: NextRequest) {
                 await Book.findByIdAndUpdate(bookId, { $inc: { completedCount: -1 } });
             }
         }
+
+        revalidateTag('library', 'max');
+        revalidateTag(`library-${session.user.id}`, 'max');
+        revalidateTag('books', 'max');
 
         return NextResponse.json(
             { library: libraryItem, message: 'Library updated successfully' },
@@ -220,6 +234,10 @@ export async function DELETE(request: NextRequest) {
 
             // Commit all changes atomically
             await dbSession.commitTransaction();
+
+            revalidateTag('library', 'max');
+            revalidateTag(`library-${session.user.id}`, 'max');
+            revalidateTag('books', 'max');
 
             return NextResponse.json(
                 { library: null, message: 'Removed from library successfully' },

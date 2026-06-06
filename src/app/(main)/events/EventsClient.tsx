@@ -143,7 +143,7 @@ export default function EventsClient({ initialData }: { initialData: { events: E
             <div className="mb-8">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
                     <div>
-                        <h1 className="text-2xl">Events</h1>
+                        <h1 className="text-3xl font-bold">Events</h1>
 
                     </div>
                     <Link href="/events/create" onClick={handleCreateEventClick}>

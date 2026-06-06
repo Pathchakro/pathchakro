@@ -5,6 +5,7 @@ import dbConnect from '@/lib/mongodb';
 import WritingProject from '@/models/WritingProject';
 import User from '@/models/User';
 import { generateUniqueSlug } from '@/lib/slug-utils';
+import mongoose from 'mongoose';
 
 export async function GET(
     request: NextRequest,
@@ -15,6 +16,11 @@ export async function GET(
         const session = await auth();
 
         await dbConnect();
+
+        // Force User registration to prevent MissingSchemaError
+        if (!mongoose.models.User) {
+            const _ = User.schema;
+        }
 
         const slug = params.slug;
         const query = (slug.match(/^[0-9a-fA-F]{24}$/))
