@@ -193,9 +193,9 @@ export async function PUT(
 
         await libraryItem.save();
 
-        revalidateTag('library');
-        revalidateTag(`library-${session.user.id}`);
-        revalidateTag('books');
+        revalidateTag('library', 'max');
+        revalidateTag(`library-${session.user.id}`, 'max');
+        revalidateTag('books', 'max');
 
         return NextResponse.json({
             library: libraryItem,
