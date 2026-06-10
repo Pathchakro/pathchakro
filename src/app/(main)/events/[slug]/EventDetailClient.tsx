@@ -310,7 +310,7 @@ export default function EventDetailClient({ slug, initialData }: { slug: string;
                         src={event.banner || "/OG_pathchakro.png"}
                         alt={event.title}
                         fill
-                        className="object-cover"
+                        className="object-contain bg-muted"
                         priority
                     />
                     <div className="absolute bottom-1 right-1 lg:bottom-3 lg:right-3 flex items-center gap-2">

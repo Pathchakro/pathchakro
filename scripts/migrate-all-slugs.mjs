@@ -75,7 +75,7 @@ async function migrateCollection(db, config) {
     let updatedCount = 0;
     for (const doc of docs) {
         const oldSlug = doc.slug;
-        
+
         // Build base text for slug
         let baseTextParts = config.slugBaseFields.map(field => {
             if (field === config.dateField && doc[field]) {
@@ -86,10 +86,10 @@ async function migrateCollection(db, config) {
 
         const baseText = baseTextParts.join(' ');
         const newBaseSlug = createSlug(baseText);
-        
+
         let finalSlug = newBaseSlug;
         let counter = 1;
-        
+
         // Uniqueness check
         while (true) {
             const existing = await collection.findOne({ slug: finalSlug, _id: { $ne: doc._id } });

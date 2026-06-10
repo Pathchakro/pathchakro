@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import Swal from 'sweetalert2';
 import { Button } from '@/components/ui/button';
@@ -20,6 +20,10 @@ export default function LibraryClient({ initialLibrary, initialGlobalBooks }: { 
     const [categoryFilter, setCategoryFilter] = useState('');
     const [authorFilter, setAuthorFilter] = useState('');
     const [statusTab, setStatusTab] = useState('all');
+
+    useEffect(() => {
+        setLibrary(initialLibrary);
+    }, [initialLibrary]);
 
     const handleRemoveBook = async (itemId: string) => {
         const result = await Swal.fire({
@@ -47,6 +51,13 @@ export default function LibraryClient({ initialLibrary, initialGlobalBooks }: { 
             });
             if (res.ok) router.refresh();
         } catch (error) { toast.error("Error updating status"); }
+    };
+
+    const handleLocalStatusUpdate = (bookId: string, newStatus: string) => {
+        setLibrary(prev => prev.map(item => 
+            item.book?._id === bookId ? { ...item, status: newStatus } : item
+        ));
+        router.refresh();
     };
 
     const addBookToLibrary = async (bookId: string, status?: string) => {
@@ -131,7 +142,7 @@ export default function LibraryClient({ initialLibrary, initialGlobalBooks }: { 
                                 book={item.book}
                                 status={item.status}
                                 isOwned={item.isOwned}
-                                onUpdateStatus={(bookId, status) => isInLibrary ? handleUpdateStatus(item._id, status) : addBookToLibrary(bookId, status)}
+                                onUpdateStatus={handleLocalStatusUpdate}
                                 onAddToLibrary={() => addBookToLibrary(item.book._id)}
                                 onRemoveFromLibrary={() => handleRemoveBook(item._id)}
                                 showRemoveOption={isInLibrary}

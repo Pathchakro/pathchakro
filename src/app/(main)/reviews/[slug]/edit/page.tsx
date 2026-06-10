@@ -54,6 +54,15 @@ export default function EditReviewPage() {
     const [isSaving, setIsSaving] = useState(false);
     const [isUploadingImage, setIsUploadingImage] = useState(false);
 
+    const parsedInitialContent = useMemo(() => {
+        if (!content) return undefined;
+        try {
+            return JSON.parse(content);
+        } catch (e) {
+            return undefined;
+        }
+    }, [content]);
+
     useEffect(() => {
         const fetchReview = async () => {
             try {
@@ -240,14 +249,7 @@ export default function EditReviewPage() {
                         <Label htmlFor="content" className="font-black text-xs uppercase tracking-widest text-muted-foreground ml-1">Your Review *</Label>
                         <div className="rounded-2xl border-2 overflow-hidden shadow-sm focus-within:ring-2 focus-within:ring-primary">
                             <NovelEditor
-                                initialValue={useMemo(() => {
-                                    if (!content) return undefined;
-                                    try {
-                                        return JSON.parse(content);
-                                    } catch (e) {
-                                        return undefined;
-                                    }
-                                }, [content])}
+                                initialValue={parsedInitialContent}
                                 onChange={(val) => setContent(val)}
                             />
                         </div>

@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { BookStatusButtons } from '@/components/books/BookStatusButtons';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Trash2, Star, ArrowLeft, Download, ShoppingCart, FileText, Plus, Library, MoreVertical, Edit, BookOpen, Users } from 'lucide-react';
+import { Trash2, Star, ArrowLeft, Download, ShoppingCart, FileText, Plus, Library, MoreVertical, Edit, BookOpen, Users, Upload } from 'lucide-react';
 import Link from 'next/link';
 import { BookCover } from '@/components/books/BookCover';
 import { toast } from 'sonner';
@@ -128,7 +128,7 @@ export default function BookDetailClient({ initialBook, sessionUser }: BookDetai
             const response = await fetch(url, {
                 method: isAdd ? 'POST' : 'DELETE',
                 headers: isAdd ? { 'Content-Type': 'application/json' } : undefined,
-                body: isAdd ? JSON.stringify({ bookId: book._id }) : undefined,
+                body: isAdd ? JSON.stringify({ bookId: book._id, isOwned: true }) : undefined,
             });
             const data = await response.json();
             if (response.ok) {
@@ -244,8 +244,86 @@ export default function BookDetailClient({ initialBook, sessionUser }: BookDetai
         setReviews(prev => prev.filter(r => r._id !== deletedId));
     };
 
+    const [isUploading, setIsUploading] = useState(false);
+
+    const handleUploadClick = () => {
+        if (!sessionUser) {
+            setShowLoginModal(true);
+            return;
+        }
+        const fileInput = document.getElementById(`pdf-upload-${book._id}`) as HTMLInputElement;
+        if (fileInput) {
+            fileInput.click();
+        }
+    };
+
+    const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        if (file.type !== 'application/pdf') {
+            toast.error('Please select a PDF file');
+            return;
+        }
+
+        setIsUploading(true);
+        toast.loading("Uploading PDF...", { id: "pdf-upload" });
+
+        try {
+            // 1. Upload to Cloudinary
+            const formData = new FormData();
+            formData.append('file', file);
+
+            const uploadRes = await fetch('/api/upload/pdf', {
+                method: 'POST',
+                body: formData,
+            });
+
+            if (!uploadRes.ok) {
+                const error = await uploadRes.json();
+                throw new Error(error.error || 'Failed to upload PDF');
+            }
+
+            const uploadData = await uploadRes.json();
+            const newPdfUrl = uploadData.url;
+
+            // 2. Update Book record
+            const updateRes = await fetch(`/api/books/${book._id}`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ pdfUrl: newPdfUrl }),
+            });
+
+            if (!updateRes.ok) {
+                throw new Error('Failed to update book record');
+            }
+
+            setBook(prev => ({ ...prev, pdfUrl: newPdfUrl }));
+            toast.success("PDF uploaded successfully!", { id: "pdf-upload" });
+            router.refresh();
+
+        } catch (error: any) {
+            console.error('Upload failed:', error);
+            toast.error(error.message || 'Failed to upload PDF. Please try again.', { id: "pdf-upload" });
+        } finally {
+            setIsUploading(false);
+            e.target.value = '';
+        }
+    };
+
     return (
         <div className="max-w-7xl mx-auto p-4 pb-20">
+            {/* Hidden File Input for Upload */}
+            <input
+                type="file"
+                id={`pdf-upload-${book._id}`}
+                className="hidden"
+                accept="application/pdf"
+                onChange={handleFileChange}
+            />
+
             <Link href="/books" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-4">
                 <ArrowLeft className="h-4 w-4" /> Back to Books
             </Link>
@@ -327,8 +405,22 @@ export default function BookDetailClient({ initialBook, sessionUser }: BookDetai
                                     <Download className="h-4 w-4" /> Download PDF
                                 </Button>
                             ) : (
-                                <Button variant="outline" className="rounded-none h-10 px-4 border-dashed text-xs font-bold text-muted-foreground" onClick={() => toast.info("PDF not available for this book")}>
-                                    No PDF Available
+                                <Button
+                                    variant="outline"
+                                    className="rounded-none h-10 px-4 border-dashed text-xs font-bold text-muted-foreground gap-1.5"
+                                    onClick={handleUploadClick}
+                                    disabled={isUploading}
+                                >
+                                    {isUploading ? (
+                                        <>
+                                            <div className="h-4 w-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                                            Uploading...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Upload className="h-4 w-4" /> Upload PDF
+                                        </>
+                                    )}
                                 </Button>
                             )}
 

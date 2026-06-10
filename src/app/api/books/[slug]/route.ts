@@ -103,9 +103,14 @@ export async function PATCH(
         ];
 
         const updateDoc: any = {};
+        const unsetDoc: any = {};
         allowedFields.forEach(field => {
             if (body[field] !== undefined) {
-                updateDoc[field] = body[field];
+                if (field === 'isbn' && (!body[field] || !body[field].trim())) {
+                    unsetDoc[field] = "";
+                } else {
+                    updateDoc[field] = field === 'isbn' ? body[field].trim() : body[field];
+                }
             }
         });
 
@@ -120,13 +125,18 @@ export async function PATCH(
             updateDoc.buyingLink = body.buyingLink;
         }
 
+        const updateQuery: any = {
+            $set: updateDoc,
+            $currentDate: { updatedAt: true }
+        };
+        if (Object.keys(unsetDoc).length > 0) {
+            updateQuery.$unset = unsetDoc;
+        }
+
         // 4. Perform the update
         const updatedBook = await Book.findByIdAndUpdate(
             book._id,
-            {
-                $set: updateDoc,
-                $currentDate: { updatedAt: true }
-            },
+            updateQuery,
             { new: true, runValidators: true, context: 'query' }
         );
 

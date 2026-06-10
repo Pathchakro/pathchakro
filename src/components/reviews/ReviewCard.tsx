@@ -179,8 +179,12 @@ export function ReviewCard({
                         <Link href={`/profile/${review.user.username || review.user._id}`} className="hover:underline">
                             <p className="font-semibold">{review.user?.name}</p>
                         </Link>
-                        <p className="text-sm text-muted-foreground">
-                            {formatDate(review.createdAt)} • Book Review
+                        <p className="text-sm text-muted-foreground flex items-center gap-1 flex-wrap font-medium">
+                            <span>{formatDate(review.createdAt)} • Book Review:</span>
+                            <Link href={`/books/${review.book.slug || review.book._id}`} className="font-bold text-foreground hover:text-primary hover:underline" title={review.book.title}>
+                                {review.book.title.length > 30 ? `${review.book.title.substring(0, 30)}...` : review.book.title}
+                            </Link>
+                            <span className="text-amber-500 font-bold ml-1">({review.rating} ★)</span>
                         </p>
                     </div>
                 </div>
@@ -306,68 +310,36 @@ export function ReviewCard({
                         )}
                     </div>
                 ) : (
-                    /* Feed Layout: Book on left, Title/Rating on right */
-                    <div className="flex gap-4">
-                        {!hideBook && (
-                            <Link
-                                href={`/books/${review.book.slug || review.book._id}`}
-                                className="w-24 h-32 bg-muted rounded-lg flex-shrink-0 flex items-center justify-center border hover:opacity-90 transition-opacity overflow-hidden"
-                            >
-                                {review.book.coverImage ? (
-                                    <div className="relative w-full h-full">
-                                        <Image
-                                            src={review.book.coverImage}
-                                            alt={review.book.title}
-                                            fill
-                                            className="object-cover"
-                                        />
-                                    </div>
-                                ) : (
-                                    <span className="text-4xl">📚</span>
-                                )}
+                    /* Feed Layout: Looks like PostCard */
+                    <div className="space-y-3">
+                        {review.title && (
+                            <Link href={`/reviews/${review.slug || review._id}`} className="block group">
+                                <h3 className="font-black text-xl group-hover:text-primary transition-colors leading-tight">
+                                    {review.title}
+                                </h3>
                             </Link>
                         )}
 
-                        <div className="flex-1 flex flex-col justify-center">
-                            {!hideBook && (
-                                <Link href={`/books/${review.book.slug || review.book._id}`} className="hover:text-primary transition-colors block w-fit">
-                                    <h3 className="font-bold text-lg leading-tight">{review.book.title}</h3>
-                                </Link>
-                            )}
-                            {!hideBook && <p className="text-sm text-muted-foreground mb-2">by {review.book.author}</p>}
-
-                            <div className="flex items-center gap-1 mb-2">
-                                {[1, 2, 3, 4, 5].map((star) => (
-                                    <Star
-                                        key={star}
-                                        className={`h-4 w-4 ${star <= review.rating
-                                            ? 'fill-yellow-400 text-yellow-400'
-                                            : 'text-gray-300'
-                                            }`}
-                                    />
-                                ))}
-                                <span className="text-sm text-muted-foreground ml-1">
-                                    {review.rating}/5
-                                </span>
+                        {review.content && (
+                            <div className="text-muted-foreground line-clamp-2">
+                                <div
+                                    className="prose prose-sm dark:prose-invert max-w-full text-sm leading-relaxed"
+                                    dangerouslySetInnerHTML={{ __html: generateHtml(review.content) }}
+                                />
                             </div>
+                        )}
 
-                            {review.title && (
-                                <Link href={`/reviews/${review.slug || review._id}`} className="block group mt-1">
-                                    <h4 className="font-bold text-base group-hover:text-primary transition-colors line-clamp-1">
-                                        {review.title}
-                                    </h4>
-                                </Link>
-                            )}
-
-                            {review.content && (
-                                <div className="mt-2 text-sm text-muted-foreground line-clamp-3">
-                                    <div
-                                        className="prose prose-sm dark:prose-invert max-w-full"
-                                        dangerouslySetInnerHTML={{ __html: generateHtml(review.content) }}
-                                    />
-                                </div>
-                            )}
-                        </div>
+                        {review.image && (
+                            <div className="mt-3 relative rounded-lg overflow-hidden bg-muted aspect-[1200/630] w-full border">
+                                <Image
+                                    src={review.image}
+                                    alt={review.title || 'Review image'}
+                                    fill
+                                    className="object-contain"
+                                    unoptimized
+                                />
+                            </div>
+                        )}
                     </div>
                 )}
 

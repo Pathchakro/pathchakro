@@ -36,12 +36,12 @@ const createSlug = (text) => {
     if (!text) return '';
     // Normalize Unicode and trim
     let processedText = text.toString().normalize('NFKC').trim();
-    
+
     const isNonAscii = /[^\x00-\x7F]/.test(processedText);
     if (isNonAscii) {
         processedText = transliterateBengali(processedText);
     }
-    
+
     return processedText.toLowerCase()
         .replace(/\s+/g, '-')
         .replace(/[^a-z0-9-]/g, '')
@@ -81,11 +81,11 @@ async function runMigration() {
         let skippedCount = 0;
 
         console.log('⚙️ Computing new slugs...');
-        
+
         for (const event of events) {
             const eventId = event._id.toString();
             const oldSlug = event.slug;
-            
+
             let dateStr = '';
             if (event.startTime) {
                 const startDate = new Date(event.startTime);
@@ -93,13 +93,13 @@ async function runMigration() {
                     dateStr = startDate.toISOString().split('T')[0];
                 }
             }
-            
+
             const combinedTitle = dateStr ? `${event.title}-${dateStr}` : event.title;
             const newBaseSlug = createSlug(combinedTitle);
-            
+
             let finalSlug = newBaseSlug;
             let counter = 1;
-            
+
             // In-memory uniqueness check
             while (slugMap.has(finalSlug) && slugMap.get(finalSlug) !== eventId) {
                 finalSlug = `${newBaseSlug}-${counter}`;
@@ -113,11 +113,11 @@ async function runMigration() {
                         update: { $set: { slug: finalSlug } }
                     }
                 });
-                
+
                 // Update in-memory map to reflect the change for subsequent checks
                 if (oldSlug) slugMap.delete(oldSlug);
                 slugMap.set(finalSlug, eventId);
-                
+
                 updatedCount++;
             } else {
                 skippedCount++;
@@ -133,7 +133,7 @@ async function runMigration() {
         console.log('\n🏁 Migration Summary:');
         console.log(`✅ Total Updated: ${updatedCount}`);
         console.log(`⏩ Total Skipped: ${skippedCount}`);
-        
+
         process.exit(0);
     } catch (error) {
         console.error('❌ Migration failed:', error);

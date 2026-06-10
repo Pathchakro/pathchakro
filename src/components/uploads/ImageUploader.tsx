@@ -94,7 +94,7 @@ export function ImageUploader({
             case 'avatar':
                 return 'h-32 w-32 rounded-full ring-4 ring-purple-500/10 hover:ring-purple-500/30';
             case 'cover':
-                return 'h-52 w-full rounded-2xl';
+                return 'aspect-[1200/630] w-full rounded-2xl';
             case 'post':
                 return 'h-64 w-full rounded-2xl';
             case 'book':
@@ -130,7 +130,7 @@ export function ImageUploader({
                             src={preview}
                             alt="Preview"
                             fill
-                            className="object-cover transition-transform duration-700 ease-out group-hover/image:scale-[1.04]"
+                            className={`${variant === 'cover' ? 'object-contain bg-muted' : 'object-cover'} transition-transform duration-700 ease-out group-hover/image:scale-[1.04]`}
                             unoptimized={preview.startsWith('data:')}
                         />
                         {/* Gradient shade overlay */}

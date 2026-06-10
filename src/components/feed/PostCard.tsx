@@ -320,7 +320,7 @@ export function PostCard({ initialPost, currentUserId, onDelete, initialIsBookma
                                         src={url}
                                         alt={`Slide ${index + 1}`}
                                         fill
-                                        className="object-contain bg-black/5"
+                                        className="object-contain bg-muted"
                                     />
                                 </div>
                             ))}

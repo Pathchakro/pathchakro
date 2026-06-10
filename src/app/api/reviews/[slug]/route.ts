@@ -183,9 +183,9 @@ export async function PATCH(
                 );
             }
             const trimmedContent = content.trim();
-            if (trimmedContent.length === 0 || trimmedContent.length > 5000) {
+            if (trimmedContent.length === 0 || trimmedContent.length > 50000) {
                 return NextResponse.json(
-                    { error: 'Content must be a non-empty string (max 5000 characters)' },
+                    { error: 'Content must be a non-empty string (max 50000 characters)' },
                     { status: 400 }
                 );
             }
