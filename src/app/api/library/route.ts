@@ -142,24 +142,10 @@ export async function POST(request: NextRequest) {
         // Logic for updating Book stats (copies and completedCount)
         const Book = (await import('@/models/Book')).default;
 
-        // 1. Copies logic
-        if (!existingItem && isOwned === true) {
-            await Book.findByIdAndUpdate(bookId, { $inc: { copies: 1 } });
-        } else if (existingItem && !wasOwned && isOwned === true) {
-            await Book.findByIdAndUpdate(bookId, { $inc: { copies: 1 } });
-        } else if (existingItem && wasOwned && isOwned === false) {
-            await Book.findByIdAndUpdate(bookId, { $inc: { copies: -1 } });
-        }
-
-        // 2. Completed count logic
-        const previousStatus = existingItem?.status || '';
-        if (status !== undefined && status !== previousStatus) {
-            if (status === 'completed') {
-                await Book.findByIdAndUpdate(bookId, { $inc: { completedCount: 1 } });
-            } else if (previousStatus === 'completed') {
-                await Book.findByIdAndUpdate(bookId, { $inc: { completedCount: -1 } });
-            }
-        }
+        // Recalculate copies and completedCount dynamically to prevent drift
+        const copiesCount = await UserLibrary.countDocuments({ book: bookId, isOwned: true });
+        const completedCount = await UserLibrary.countDocuments({ book: bookId, status: 'completed' });
+        await Book.findByIdAndUpdate(bookId, { copies: copiesCount, completedCount: completedCount });
 
         revalidateTag('library', 'max');
         revalidateTag(`library-${session.user.id}`, 'max');
@@ -212,22 +198,14 @@ export async function DELETE(request: NextRequest) {
                 { session: dbSession }
             );
 
-            if (deletedItem && deletedItem.isOwned) {
-                // Decrement copies ONLY if the deleted item was owned, within the same transaction
+            if (deletedItem) {
+                // Recalculate copies and completedCount dynamically within the session
+                const copiesCount = await UserLibrary.countDocuments({ book: bookId, isOwned: true }).session(dbSession);
+                const completedCount = await UserLibrary.countDocuments({ book: bookId, status: 'completed' }).session(dbSession);
                 const Book = (await import('@/models/Book')).default;
                 await Book.findByIdAndUpdate(
                     bookId,
-                    { $inc: { copies: -1 } },
-                    { session: dbSession }
-                );
-            }
-
-            if (deletedItem && deletedItem.status === 'completed') {
-                // Decrement completedCount if the deleted item was completed
-                const Book = (await import('@/models/Book')).default;
-                await Book.findByIdAndUpdate(
-                    bookId,
-                    { $inc: { completedCount: -1 } },
+                    { copies: copiesCount, completedCount: completedCount },
                     { session: dbSession }
                 );
             }

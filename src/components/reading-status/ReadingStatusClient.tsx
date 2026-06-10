@@ -54,7 +54,16 @@ export default function ReadingStatusClient({ initialStats, initialSummary, from
     const searchParams = useSearchParams();
 
     const [searchQuery, setSearchQuery] = useState('');
-    const [statusFilter, setStatusFilter] = useState(searchParams.get('status') || '');
+    const getInitialFilterSort = () => {
+        const status = searchParams.get('status') || '';
+        const sort = searchParams.get('sortBy') || 'availability';
+        if (status === 'reading') return 'reading';
+        if (status === 'completed') return 'completed';
+        if (sort === 'title') return 'title';
+        return 'availability';
+    };
+
+    const [filterSort, setFilterSort] = useState(getInitialFilterSort());
     const [dateRange, setDateRange] = useState({ from, to });
     const [currentPage, setCurrentPage] = useState(1);
     const pageSize = 10;
@@ -65,13 +74,26 @@ export default function ReadingStatusClient({ initialStats, initialSummary, from
         const params = new URLSearchParams(searchParams.toString());
         params.set('from', dateRange.from);
         params.set('to', dateRange.to);
-        if (statusFilter) params.set('status', statusFilter); else params.delete('status');
+
+        if (filterSort === 'reading') {
+            params.set('status', 'reading');
+            params.set('sortBy', 'reading');
+        } else if (filterSort === 'completed') {
+            params.set('status', 'completed');
+            params.set('sortBy', 'completed');
+        } else if (filterSort === 'title') {
+            params.delete('status');
+            params.set('sortBy', 'title');
+        } else {
+            params.delete('status');
+            params.set('sortBy', 'availability');
+        }
 
         const newUrl = `/reading-status?${params.toString()}`;
         if (window.location.search !== `?${params.toString()}`) {
             router.push(newUrl);
         }
-    }, [dateRange, statusFilter, searchParams, router]);
+    }, [dateRange, filterSort, searchParams, router]);
 
     useEffect(() => {
         handleFilterChange();
@@ -80,35 +102,50 @@ export default function ReadingStatusClient({ initialStats, initialSummary, from
     // Reset page when filters change
     useEffect(() => {
         setCurrentPage(1);
-    }, [searchQuery, statusFilter]);
+    }, [searchQuery, filterSort]);
 
     const filteredStats = initialStats.filter(book => {
         const title = book.title ?? '';
         const author = book.author ?? '';
         const reading = book.stats?.reading ?? 0;
         const completed = book.stats?.completed ?? 0;
-        const wantToRead = book.stats?.wantToRead ?? 0;
 
         const matchesSearch = !searchQuery ||
             title.toLowerCase().includes(searchQuery.toLowerCase()) ||
             author.toLowerCase().includes(searchQuery.toLowerCase());
 
-        const matchesStatus = !statusFilter || (
-            statusFilter === 'reading' ? reading > 0 :
-                statusFilter === 'completed' ? completed > 0 :
-                    wantToRead > 0
+        const matchesStatus = !filterSort || (
+            filterSort === 'reading' ? reading > 0 :
+                filterSort === 'completed' ? completed > 0 :
+                    true
         );
 
         return matchesSearch && matchesStatus;
     });
 
-    const paginatedStats = filteredStats.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+    const sortedStats = [...filteredStats].sort((a, b) => {
+        if (filterSort === 'availability') {
+            return (b.owners?.length ?? 0) - (a.owners?.length ?? 0);
+        }
+        if (filterSort === 'reading') {
+            return (b.stats?.reading ?? 0) - (a.stats?.reading ?? 0);
+        }
+        if (filterSort === 'completed') {
+            return (b.stats?.completed ?? 0) - (a.stats?.completed ?? 0);
+        }
+        if (filterSort === 'title') {
+            return (a.title || '').localeCompare(b.title || '');
+        }
+        return 0;
+    });
+
+    const paginatedStats = sortedStats.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
     return (
         <div className="max-w-7xl mx-auto p-4 pb-20 space-y-10">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div>
-                    <h1 className="text-2xl">
+                    <h1 className="text-3xl font-bold">
                         Reading Trends
                     </h1>
 
@@ -122,15 +159,15 @@ export default function ReadingStatusClient({ initialStats, initialSummary, from
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <Link href="/reading-status/users" className="block">
+                <Link href={`/reading-status/users?from=${dateRange.from}&to=${dateRange.to}`} className="block">
                     <Card className="rounded-[2rem] border-2 shadow-sm overflow-hidden group hover:border-blue-200 hover:shadow-md transition-all cursor-pointer">
                         <CardContent className="pt-6 flex items-center gap-5">
                             <div className="p-4 bg-blue-50 text-blue-600 rounded-2xl group-hover:scale-110 transition-transform"><Users className="h-8 w-8" /></div>
-                            <div><p className="text-xs font-black text-muted-foreground uppercase tracking-widest mb-1">Total Readers</p><h3 className="text-3xl font-black">{initialSummary.totalReaders}</h3></div>
+                            <div><p className="text-xs font-black text-muted-foreground uppercase tracking-widest mb-1">Active Readers</p><h3 className="text-3xl font-black">{initialSummary.totalReaders}</h3></div>
                         </CardContent>
                     </Card>
                 </Link>
-                <Link href="/reading-status/users?filter=active" className="block">
+                <Link href={`/reading-status/users?filter=active&from=${dateRange.from}&to=${dateRange.to}`} className="block">
                     <Card className="rounded-[2rem] border-2 shadow-sm overflow-hidden group hover:border-purple-200 hover:shadow-md transition-all cursor-pointer">
                         <CardContent className="pt-6 flex items-center gap-5">
                             <div className="p-4 bg-purple-50 text-purple-600 rounded-2xl group-hover:scale-110 transition-transform"><BookOpen className="h-8 w-8" /></div>
@@ -150,10 +187,7 @@ export default function ReadingStatusClient({ initialStats, initialSummary, from
 
             <Card className="rounded-[2.5rem] border-2 shadow-sm overflow-hidden">
                 <CardHeader className="flex flex-col md:flex-row items-center justify-between gap-6 p-8 border-b-2 bg-muted/5">
-                    <div className="flex items-center gap-3">
-                        <div className="p-2 bg-indigo-50 rounded-lg"><TrendingUp className="h-5 w-5 text-indigo-500" /></div>
-                        <CardTitle className="text-2xl font-black">Book Insights</CardTitle>
-                    </div>
+
                     <div className="flex flex-col md:flex-row gap-4 w-full md:w-auto">
                         <div className="relative group flex-1 md:w-72">
                             <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
@@ -165,13 +199,14 @@ export default function ReadingStatusClient({ initialStats, initialSummary, from
                             />
                         </div>
                         <Select
-                            value={statusFilter}
-                            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setStatusFilter(e.target.value)}
-                            className="h-12 w-full md:w-44 rounded-2xl border-2 font-black bg-white"
+                            value={filterSort}
+                            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setFilterSort(e.target.value)}
+                            className="h-12 w-full md:w-56 rounded-2xl border-2 font-black bg-white"
                         >
-                            <option value="">All Status</option>
+                            <option value="availability">Availability</option>
                             <option value="reading">Currently Reading</option>
                             <option value="completed">Completed</option>
+                            <option value="title">Title (A-Z)</option>
                         </Select>
                     </div>
                 </CardHeader>
@@ -202,8 +237,8 @@ export default function ReadingStatusClient({ initialStats, initialSummary, from
                                             </div>
                                         </TableCell>
                                         <TableCell className="text-center">
-                                            <Badge 
-                                                variant={book.copies > 0 ? "default" : "secondary"} 
+                                            <Badge
+                                                variant={(book.owners?.length ?? 0) > 0 ? "default" : "secondary"}
                                                 className="rounded-lg font-black uppercase tracking-tighter px-3 cursor-pointer hover:scale-105 active:scale-95 transition-transform"
                                                 onClick={() => setModalConfig({
                                                     isOpen: true,
@@ -212,11 +247,11 @@ export default function ReadingStatusClient({ initialStats, initialSummary, from
                                                     users: book.owners || []
                                                 })}
                                             >
-                                                {book.copies ?? 0} available
+                                                {book.owners?.length ?? 0} available
                                             </Badge>
                                         </TableCell>
                                         <TableCell className="text-center">
-                                            <button 
+                                            <button
                                                 onClick={() => setModalConfig({
                                                     isOpen: true,
                                                     title: 'Currently Reading',
@@ -229,7 +264,7 @@ export default function ReadingStatusClient({ initialStats, initialSummary, from
                                             </button>
                                         </TableCell>
                                         <TableCell className="text-center">
-                                            <button 
+                                            <button
                                                 onClick={() => setModalConfig({
                                                     isOpen: true,
                                                     title: 'Completed Readers',

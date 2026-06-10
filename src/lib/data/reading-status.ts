@@ -87,6 +87,7 @@ const getReadingStatusData = (from: string, to: string) => unstable_cache(
                 author: book.author,
                 coverImage: book.coverImage,
                 slug: book.slug,
+                copies: book.copies || 0,
                 stats: {
                     reading: reading.length,
                     completed: completed.length,
@@ -102,12 +103,20 @@ const getReadingStatusData = (from: string, to: string) => unstable_cache(
             };
         });
 
-        // Filter and count total unique readers safely
-        const totalReaders = new Set(
-            libraryItems
-                .filter((i: any) => i.user && (i.user._id || typeof i.user === 'string'))
-                .map((i: any) => (i.user._id || i.user).toString())
-        ).size;
+        // Filter and count total unique readers within the date range or currently reading
+        const activeReaderIds = new Set<string>();
+        libraryItems.forEach((i: any) => {
+            const userId = (i.user?._id || i.user)?.toString();
+            if (userId) {
+                const isReading = i.status === 'reading';
+                const compDate = i.completedReading ? new Date(i.completedReading) : null;
+                const isCompletedInRange = i.status === 'completed' && compDate && compDate >= fromDate && compDate <= toDate;
+                if (isReading || isCompletedInRange) {
+                    activeReaderIds.add(userId);
+                }
+            }
+        });
+        const totalReaders = activeReaderIds.size;
 
         const summary = {
             totalBooks: books.length,

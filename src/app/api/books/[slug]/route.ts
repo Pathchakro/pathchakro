@@ -87,10 +87,23 @@ export async function PATCH(
         // 2. Authorization check (Owner or Admin)
         const isOwner = book.addedBy && book.addedBy.toString() === session.user.id;
         const isAdmin = session.user.role === 'admin' || (session.user as any).role === 'super-admin';
+        const hasCustomCover = book.coverImage && book.coverImage.trim() && book.coverImage !== '/assets/demobook.webp';
 
-        if (!isOwner && !isAdmin) {
+        let canEdit = false;
+        if (hasCustomCover) {
+            canEdit = isAdmin;
+        } else {
+            const isUpdatingOnlyCover = Object.keys(body).length === 1 && body.coverImage !== undefined;
+            if (isUpdatingOnlyCover) {
+                canEdit = true;
+            } else {
+                canEdit = isOwner || isAdmin;
+            }
+        }
+
+        if (!canEdit) {
             return NextResponse.json(
-                { error: 'Forbidden: You can only update books you added' },
+                { error: 'Forbidden: You cannot modify this book' },
                 { status: 403 }
             );
         }
@@ -197,10 +210,18 @@ export async function DELETE(
         // Check ownership or admin role
         const isOwner = book.addedBy && book.addedBy.toString() === session.user.id;
         const isAdmin = session.user.role === 'admin' || (session.user as any).role === 'super-admin';
+        const hasCustomCover = book.coverImage && book.coverImage.trim() && book.coverImage !== '/assets/demobook.webp';
 
-        if (!isOwner && !isAdmin) {
+        let canDelete = false;
+        if (hasCustomCover) {
+            canDelete = isAdmin;
+        } else {
+            canDelete = isOwner || isAdmin;
+        }
+
+        if (!canDelete) {
             return NextResponse.json(
-                { error: 'Forbidden: You can only delete books you added' },
+                { error: 'Forbidden: You cannot delete this book' },
                 { status: 403 }
             );
         }

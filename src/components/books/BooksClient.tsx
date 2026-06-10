@@ -125,11 +125,17 @@ export default function BooksClient({ initialBooks, pagination }: BooksClientPro
 
     const handleRemoveFromLibrary = async (bookId: string) => {
         try {
-            const res = await fetch('/api/library', {
-                method: 'DELETE',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ bookId }),
-            });
+            const hasStatus = libraryMap[bookId]?.status;
+            const res = hasStatus
+                ? await fetch('/api/library', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ bookId, isOwned: false }),
+                })
+                : await fetch(`/api/library?bookId=${encodeURIComponent(bookId)}`, {
+                    method: 'DELETE',
+                });
+
             if (res.ok) {
                 toast.success("Removed from your library collection");
                 setLibraryMap(prev => ({

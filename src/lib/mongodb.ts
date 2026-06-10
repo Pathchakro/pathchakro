@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import dns from 'dns';
 
 const MONGODB_URI = process.env.MONGODB_URI || '';
 
@@ -31,6 +32,12 @@ async function dbConnect(): Promise<typeof mongoose> {
             bufferCommands: false,
             dbName: process.env.DB_NAME,
         };
+
+        try {
+            dns.setServers(['8.8.8.8', '1.1.1.1']);
+        } catch (e) {
+            console.warn('Failed to set DNS servers inside dbConnect:', e);
+        }
 
         mongoose.set('strictPopulate', false);
         cached.promise = mongoose.connect(MONGODB_URI, opts);

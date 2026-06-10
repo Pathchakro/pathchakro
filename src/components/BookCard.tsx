@@ -70,6 +70,8 @@ export function BookCard({
     const [isLibraryOwned, setIsLibraryOwned] = useState(isOwned);
     const [localCopies, setLocalCopies] = useState(book.copies || 0);
     const [localCompletedCount, setLocalCompletedCount] = useState(book.completedCount || 0);
+    const [localCoverImage, setLocalCoverImage] = useState(book.coverImage);
+    const [isUploadingCover, setIsUploadingCover] = useState(false);
 
     const [modalConfig, setModalConfig] = useState<{
         isOpen: boolean;
@@ -122,6 +124,10 @@ export function BookCard({
     useEffect(() => {
         setLocalCompletedCount(book.completedCount || 0);
     }, [book.completedCount]);
+
+    useEffect(() => {
+        setLocalCoverImage(book.coverImage);
+    }, [book.coverImage]);
 
     const handleStatusUpdate = (newStatus: string) => {
         if (!session) {
@@ -229,6 +235,73 @@ export function BookCard({
         }
     };
 
+    const handleCoverUploadClick = () => {
+        if (!session) {
+            toast.error('Please login to continue');
+            return;
+        }
+        const fileInput = document.getElementById(`cover-upload-${book._id}`) as HTMLInputElement;
+        if (fileInput) {
+            fileInput.click();
+        }
+    };
+
+    const handleCoverFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        if (!file.type.startsWith('image/')) {
+            toast.error('Please select an image file');
+            return;
+        }
+
+        setIsUploadingCover(true);
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+
+            const uploadRes = await fetch('/api/upload/image', {
+                method: 'POST',
+                body: formData,
+            });
+
+            if (!uploadRes.ok) {
+                const error = await uploadRes.json();
+                throw new Error(error.error || 'Failed to upload cover image');
+            }
+
+            const uploadData = await uploadRes.json();
+            const newCoverUrl = uploadData.url;
+
+            const updateRes = await fetch(`/api/books/${book._id}`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ coverImage: newCoverUrl }),
+            });
+
+            if (!updateRes.ok) {
+                const error = await updateRes.json();
+                throw new Error(error.error || 'Failed to update book record');
+            }
+
+            setLocalCoverImage(newCoverUrl);
+            toast.success('Cover image uploaded successfully!');
+        } catch (error: any) {
+            console.error('Cover upload failed:', error);
+            toast.error(error.message || 'Failed to upload cover. Please try again.');
+        } finally {
+            setIsUploadingCover(false);
+            e.target.value = '';
+        }
+    };
+
+    const isFallbackCover = !localCoverImage || localCoverImage.trim() === '' || localCoverImage === '/assets/demobook.webp';
+    const isAdmin = session?.user?.role === 'admin' || (session?.user as any)?.role === 'super-admin';
+    const isOwner = book.addedBy && (typeof book.addedBy === 'string' ? book.addedBy === session?.user?.id : book.addedBy._id === session?.user?.id);
+    const canEditOrDelete = isFallbackCover ? (isOwner || isAdmin) : isAdmin;
+
     const handleDownload = async (e: React.MouseEvent) => {
         e.preventDefault();
         if (!pdfUrl) return;
@@ -303,7 +376,7 @@ export function BookCard({
 
     return (
         <div className="bg-card border rounded-lg overflow-hidden hover:shadow-lg transition-shadow flex flex-col md:flex-row group w-full">
-            {/* Hidden File Input for Upload */}
+            {/* Hidden File Input for PDF Upload */}
             <input
                 type="file"
                 id={`pdf-upload-${book._id}`}
@@ -312,10 +385,30 @@ export function BookCard({
                 onChange={handleFileChange}
             />
 
+            {/* Hidden File Input for Cover Upload */}
+            <input
+                type="file"
+                id={`cover-upload-${book._id}`}
+                className="hidden"
+                accept="image/*"
+                onChange={handleCoverFileChange}
+            />
+
             {/* Book Cover */}
             <div className="relative w-full md:w-48 h-64 md:h-auto shrink-0 bg-muted p-4">
-                <div className="relative w-full h-full shadow-sm rounded-sm overflow-hidden">
-                    <BookCover src={book.coverImage} alt={book.title} />
+                <div className="relative w-full h-full shadow-sm rounded-sm overflow-hidden group/cover">
+                    <BookCover src={localCoverImage} alt={book.title} />
+                    {isFallbackCover && (
+                        <div 
+                            className="absolute inset-0 bg-black/60 opacity-0 group-hover/cover:opacity-100 transition-opacity flex flex-col items-center justify-center p-4 text-center cursor-pointer" 
+                            onClick={handleCoverUploadClick}
+                        >
+                            <Upload className="h-8 w-8 text-white mb-2 animate-bounce" />
+                            <span className="text-white text-xs font-bold">
+                                {isUploadingCover ? 'Uploading...' : 'Upload Cover'}
+                            </span>
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -363,13 +456,7 @@ export function BookCard({
                             </div>
                         </div>
                         {/* 3-Dot Menu for Owner/Admin */}
-                        {(
-                            (session?.user && (
-                                (book.addedBy && (typeof book.addedBy === 'string' ? book.addedBy === session.user.id : book.addedBy._id === session.user.id)) ||
-                                session.user.role === 'admin' ||
-                                (session.user as any).role === 'super-admin'
-                            ))
-                        ) && (
+                        {session?.user && canEditOrDelete && (
                                 <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
                                         <Button variant="ghost" size="icon" className="h-8 w-8 -mr-2 text-muted-foreground hover:text-foreground">

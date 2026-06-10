@@ -61,6 +61,7 @@ interface LibraryItem {
     _id: string;
     status: 'want-to-read' | 'reading' | 'completed';
     book: string;
+    isOwned?: boolean;
 }
 
 interface SessionUser {
@@ -124,16 +125,27 @@ export default function BookDetailClient({ initialBook, sessionUser }: BookDetai
         if (!sessionUser) { setShowLoginModal(true); return; }
         try {
             const isAdd = action === 'add';
-            const url = isAdd ? '/api/library' : `/api/library?bookId=${encodeURIComponent(book._id)}`;
-            const response = await fetch(url, {
-                method: isAdd ? 'POST' : 'DELETE',
-                headers: isAdd ? { 'Content-Type': 'application/json' } : undefined,
-                body: isAdd ? JSON.stringify({ bookId: book._id, isOwned: true }) : undefined,
-            });
+            const response = isAdd 
+                ? await fetch('/api/library', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ bookId: book._id, isOwned: true }),
+                })
+                : (libraryItem?.status
+                    ? await fetch('/api/library', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ bookId: book._id, isOwned: false }),
+                    })
+                    : await fetch(`/api/library?bookId=${encodeURIComponent(book._id)}`, {
+                        method: 'DELETE',
+                    })
+                );
+
             const data = await response.json();
             if (response.ok) {
                 toast.success(data.message || (isAdd ? 'Added to library' : 'Removed from library'));
-                setLibraryItem(isAdd ? data.library : null);
+                setLibraryItem(isAdd ? data.library : (libraryItem?.status ? data.library : null));
                 router.refresh();
             } else {
                 toast.error(data.error || 'Operation failed');
@@ -390,14 +402,14 @@ export default function BookDetailClient({ initialBook, sessionUser }: BookDetai
                             <BookStatusButtons
                                 bookId={book._id}
                                 initialStatus={libraryItem?.status}
-                                onStatusChange={(s: any) => setLibraryItem((p: any) => p ? { ...p, status: s } : null)}
+                                onStatusChange={(s: any) => setLibraryItem((p: any) => p ? { ...p, status: s } : { _id: '', status: s, book: book._id, isOwned: false })}
                                 showLoginModal={() => setShowLoginModal(true)}
                             />
                         </div>
 
                         <div className="flex flex-wrap gap-3 items-center">
-                            <Button variant="outline" onClick={() => handleToggleLibrary(libraryItem ? 'remove' : 'add')} className={`rounded-none h-10 px-4 text-xs font-bold gap-1.5 transition-all ${libraryItem ? "text-purple-600 bg-purple-50 border-purple-200" : ""}`}>
-                                <Library className="h-4 w-4" /> {libraryItem ? "In Library" : "Add to Library"}
+                            <Button variant="outline" onClick={() => handleToggleLibrary(libraryItem?.isOwned ? 'remove' : 'add')} className={`rounded-none h-10 px-4 text-xs font-bold gap-1.5 transition-all ${libraryItem?.isOwned ? "text-purple-600 bg-purple-50 border-purple-200" : ""}`}>
+                                <Library className="h-4 w-4" /> {libraryItem?.isOwned ? "In Library" : "Add to Library"}
                             </Button>
 
                             {book.pdfUrl ? (

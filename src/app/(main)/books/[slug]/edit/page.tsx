@@ -167,6 +167,13 @@ export default function EditBookPage() {
     const isFieldDisabled = (fieldName: string) => {
         if (isSubmitting) return true;
         
+        const hasCustomCover = bookData?.coverImage && bookData.coverImage.trim() && bookData.coverImage !== '/assets/demobook.webp';
+        const isAdmin = session?.user?.role === 'admin' || (session?.user as any)?.role === 'super-admin';
+        
+        if (hasCustomCover) {
+            return !isAdmin;
+        }
+        
         // Admins and owners can edit everything
         const isOwnerOrAdmin = session?.user && (
             (bookData?.addedBy && (typeof bookData.addedBy === 'string' ? bookData.addedBy === session.user.id : bookData.addedBy._id === session.user.id)) ||

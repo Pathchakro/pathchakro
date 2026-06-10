@@ -193,6 +193,11 @@ export async function PUT(
 
         await libraryItem.save();
 
+        // Recalculate copies and completedCount dynamically to prevent drift
+        const copiesCount = await UserLibrary.countDocuments({ book: libraryItem.book, isOwned: true });
+        const completedCount = await UserLibrary.countDocuments({ book: libraryItem.book, status: 'completed' });
+        await Book.findByIdAndUpdate(libraryItem.book, { copies: copiesCount, completedCount: completedCount });
+
         revalidateTag('library', 'max');
         revalidateTag(`library-${session.user.id}`, 'max');
         revalidateTag('books', 'max');
@@ -261,11 +266,10 @@ export async function DELETE(
             );
         }
 
-        // Recalculate copies for robustness
+        // Recalculate copies and completedCount for robustness
         const count = await UserLibrary.countDocuments({ book: result.book, isOwned: true });
-        // Dynamic import to avoid circular dependency if any? (Though Book is imported at top)
-        // Keeping it consistent with previous code
-        await Book.findByIdAndUpdate(result.book, { copies: count });
+        const completedCount = await UserLibrary.countDocuments({ book: result.book, status: 'completed' });
+        await Book.findByIdAndUpdate(result.book, { copies: count, completedCount: completedCount });
 
         revalidateTag('library', 'max');
         revalidateTag(`library-${session.user.id}`, 'max');

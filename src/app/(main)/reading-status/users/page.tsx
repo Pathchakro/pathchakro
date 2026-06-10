@@ -53,6 +53,9 @@ function UserReadingStatusContent() {
     const [currentPage, setCurrentPage] = useState(1);
     const pageSize = 10;
 
+    const fromParam = searchParams.get('from');
+    const toParam = searchParams.get('to');
+
     useEffect(() => {
         if (paramFilter) {
             setFilter(paramFilter);
@@ -61,7 +64,7 @@ function UserReadingStatusContent() {
 
     useEffect(() => {
         fetchUsers();
-    }, []);
+    }, [fromParam, toParam]);
 
     // Reset page when filters change
     useEffect(() => {
@@ -70,7 +73,11 @@ function UserReadingStatusContent() {
 
     const fetchUsers = async () => {
         try {
-            const res = await fetch('/api/reading-status/users');
+            const params = new URLSearchParams();
+            if (fromParam) params.set('from', fromParam);
+            if (toParam) params.set('to', toParam);
+            
+            const res = await fetch(`/api/reading-status/users?${params.toString()}`);
             const data = await res.json();
             if (data.users) {
                 setUsers(data.users);
