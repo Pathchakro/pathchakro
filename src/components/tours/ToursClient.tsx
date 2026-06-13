@@ -263,7 +263,7 @@ export default function ToursClient({ initialTours }: { initialTours: Tour[] }) 
                                         <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
                                             <Users className="h-4 w-4 text-primary" />
                                         </div>
-                                        <span className="text-sm font-black">{tour.participants.length} <span className="text-muted-foreground font-medium">Joined</span></span>
+                                        <span className="text-sm font-black">{tour.participants.filter((p: any) => p.status === 'confirmed').length} <span className="text-muted-foreground font-medium">Joined</span></span>
                                     </div>
                                     <div className="flex items-center gap-3">
                                         <div className="text-right hidden sm:block">

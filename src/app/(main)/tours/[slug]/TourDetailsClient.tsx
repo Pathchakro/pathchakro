@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { MapPin, Calendar, DollarSign, Users, Clock, ArrowLeft, CheckCircle, XCircle, AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
@@ -62,6 +63,7 @@ interface TourDetailsClientProps {
 }
 
 export default function TourDetailsClient({ initialTour, slug }: TourDetailsClientProps) {
+    const router = useRouter();
     const { data: session, status } = useSession();
     const [tour, setTour] = useState<Tour>(initialTour);
     const [isJoining, setIsJoining] = useState(false);
@@ -116,6 +118,7 @@ export default function TourDetailsClient({ initialTour, slug }: TourDetailsClie
             if (response.ok) {
                 toast.success(data.message);
                 fetchTourData();
+                router.push('/pay');
             } else {
                 toast.error(data.error);
             }
@@ -124,6 +127,30 @@ export default function TourDetailsClient({ initialTour, slug }: TourDetailsClie
             toast.error('Failed to join tour');
         } finally {
             setIsJoining(false);
+        }
+    };
+
+    const handleParticipantStatus = async (userId: string, status: 'confirmed' | 'declined') => {
+        try {
+            const response = await fetch(`/api/tours/${slug}/participants`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ userId, status }),
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                toast.success(data.message);
+                fetchTourData();
+            } else {
+                toast.error(data.error);
+            }
+        } catch (error) {
+            console.error('Error updating status:', error);
+            toast.error('Failed to update participant status');
         }
     };
 
@@ -157,6 +184,7 @@ export default function TourDetailsClient({ initialTour, slug }: TourDetailsClie
 
     const confirmedCount = tour.participants.filter(p => p.status === 'confirmed').length;
     const pendingCount = tour.participants.filter(p => p.status === 'pending').length;
+    const isOrganizer = session?.user?.id === tour.organizer._id;
 
     return (
         <div className="max-w-5xl mx-auto p-4">
@@ -466,6 +494,29 @@ export default function TourDetailsClient({ initialTour, slug }: TourDetailsClie
                                             }`}>
                                                 {participant.status}
                                             </span>
+                                            {isOrganizer && participant.user._id !== tour.organizer._id && (
+                                                <div className="flex gap-1 mt-1">
+                                                    {(participant.status === 'pending' || participant.status === 'declined') && (
+                                                        <Button
+                                                            size="sm"
+                                                            className="h-5 px-1.5 text-[9px] bg-green-600 hover:bg-green-700 text-white font-bold"
+                                                            onClick={() => handleParticipantStatus(participant.user._id, 'confirmed')}
+                                                        >
+                                                            Approve
+                                                        </Button>
+                                                    )}
+                                                    {participant.status === 'pending' && (
+                                                        <Button
+                                                            size="sm"
+                                                            variant="destructive"
+                                                            className="h-5 px-1.5 text-[9px] font-bold"
+                                                            onClick={() => handleParticipantStatus(participant.user._id, 'declined')}
+                                                        >
+                                                            Decline
+                                                        </Button>
+                                                    )}
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 ))}

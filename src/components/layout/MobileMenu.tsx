@@ -23,7 +23,7 @@ const QUICK_LINKS = [
     { icon: GraduationCap, label: 'Courses', href: '/courses' },
     { icon: ShoppingCart, label: 'Marketplace', href: '/marketplace' },
     { icon: Heart, label: 'Blood Bank', href: '/blood-bank' },
-    { icon: DollarSign, label: 'Fund Account', href: '/fund' },
+    { icon: DollarSign, label: 'Fund Account', href: '/pay' },
     { icon: Plane, label: 'Tour Planning', href: '/tours' },
     { icon: Users, label: 'Teams', href: '/teams' },
 ];

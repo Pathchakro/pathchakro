@@ -137,7 +137,7 @@ export function TourCard({ tour }: TourCardProps) {
                         </div>
                         <div className="flex items-center gap-1">
                             <Users className="h-4 w-4" />
-                            <span>{tour.participants.length} Going</span>
+                            <span>{tour.participants.filter((p: any) => p.status === 'confirmed').length} Going</span>
                         </div>
                     </div>
                 </Link>

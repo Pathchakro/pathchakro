@@ -7,7 +7,7 @@ export const metadata = {
     description: 'Support the community through donations or apply for project funding to drive impact.',
 };
 
-export default async function FundPage() {
+export default async function PayPage() {
     const session = await auth();
     const userId = session?.user?.id;
 
@@ -15,9 +15,9 @@ export default async function FundPage() {
     const stats = await getCachedFundStats(userId);
 
     return (
-        <FundClient 
-            initialStats={stats} 
-            session={session} 
+        <FundClient
+            initialStats={stats}
+            session={session}
         />
     );
 }
