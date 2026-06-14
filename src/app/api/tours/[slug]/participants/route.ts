@@ -75,9 +75,9 @@ export async function PATCH(
         }
 
         // Invalidate Next.js cache
-        revalidateTag('tours');
-        revalidateTag(`tour-${tour.slug}`);
-        revalidateTag(`tour-${tour._id}`);
+        revalidateTag('tours', 'max');
+        revalidateTag(`tour-${tour.slug}`, 'max');
+        revalidateTag(`tour-${tour._id}`, 'max');
         revalidatePath('/', 'layout');
 
         return NextResponse.json({
