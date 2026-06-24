@@ -29,7 +29,7 @@ export interface IUser {
     savedTours?: string[] | ITour[];
     savedCourses?: string[] | ICourse[];
     following?: string[] | IUser[];
-    role?: 'user' | 'admin';
+    role?: 'user' | 'admin' | 'super-admin';
     title?: string;
     location?: string;
     website?: string;

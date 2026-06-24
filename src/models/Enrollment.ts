@@ -1,8 +1,8 @@
 import mongoose, { Schema, Document, Model } from 'mongoose';
 
 export interface IEnrollment extends Document {
-    course: mongoose.Schema.Types.ObjectId;
-    student: mongoose.Schema.Types.ObjectId;
+    course: mongoose.Types.ObjectId | string;
+    student: mongoose.Types.ObjectId | string;
     paymentStatus: 'pending' | 'completed' | 'rejected';
     paymentDetails: {
         method: string;
@@ -11,6 +11,10 @@ export interface IEnrollment extends Document {
         proofUrl?: string;
     };
     amount: number;
+    name?: string;
+    phone?: string;
+    email?: string;
+    address?: string;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -30,7 +34,11 @@ const EnrollmentSchema: Schema<IEnrollment> = new Schema(
             mobileNumber: { type: String },
             proofUrl: { type: String }
         },
-        amount: { type: Number, required: true }
+        amount: { type: Number, required: true },
+        name: { type: String },
+        phone: { type: String },
+        email: { type: String },
+        address: { type: String }
     },
     { timestamps: true }
 );

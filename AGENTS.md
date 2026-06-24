@@ -6,6 +6,7 @@ Welcome, Agent! Please follow these guidelines and conventions when working on *
 - **Framework**: Next.js (App Router, using `src/app`)
 - **Language**: TypeScript
 - **Styling**: Tailwind CSS
+- **UI Library**: shadcn/ui
 - **Database**: MongoDB (Mongoose ORM)
 - **State Management**: Redux Toolkit (`@reduxjs/toolkit` and `react-redux`)
 - **Authentication**: NextAuth.js (`next-auth`)
@@ -19,6 +20,7 @@ Welcome, Agent! Please follow these guidelines and conventions when working on *
 - Retain existing code comments, formatting, and structures unless requested otherwise.
 
 ## 3. Best Practices
+- **UI & UX Design**: Always use shadcn/ui components (`src/components/ui/`) for building interfaces to maintain a modern, consistent, and interactive style.
 - **Performance**: Use React Server Components and data fetching with proper caching strategies.
 - **Responsiveness**: Design UI components mobile-first using Tailwind's responsive utilities.
 - **Accessibility (a11y)**: Use semantic HTML elements and proper ARIA labels.

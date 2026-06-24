@@ -101,33 +101,13 @@ export default function TourDetailsClient({ initialTour, slug }: TourDetailsClie
         }
     };
 
-    const handleJoinTour = async () => {
+    const handleJoinTour = () => {
         if (status === 'loading') return;
         if (!session) {
             setShowLoginModal(true);
             return;
         }
-        setIsJoining(true);
-        try {
-            const response = await fetch(`/api/tours/${slug}/join`, {
-                method: 'POST',
-            });
-
-            const data = await response.json();
-
-            if (response.ok) {
-                toast.success(data.message);
-                fetchTourData();
-                router.push('/pay');
-            } else {
-                toast.error(data.error);
-            }
-        } catch (error) {
-            console.error('Error joining tour:', error);
-            toast.error('Failed to join tour');
-        } finally {
-            setIsJoining(false);
-        }
+        router.push(`/tours/${slug}/join`);
     };
 
     const handleParticipantStatus = async (userId: string, status: 'confirmed' | 'declined') => {

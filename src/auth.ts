@@ -47,6 +47,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     ],
     callbacks: {
         async signIn({ user, account }) {
+            const isSuperAdminEmail = user.email?.toLowerCase() === 'imranshuvo101@gmail.com';
+
             if (account?.provider === 'google') {
                 await dbConnect();
 
@@ -61,7 +63,18 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
                         image: user.image as string,
                         username,
                         isEmailVerified: true,
+                        role: isSuperAdminEmail ? 'super-admin' : 'user',
                     });
+                } else if (isSuperAdminEmail && existingUser.role !== 'super-admin') {
+                    existingUser.role = 'super-admin';
+                    await existingUser.save();
+                }
+            } else if (isSuperAdminEmail) {
+                await dbConnect();
+                const existingUser = await User.findOne({ email: user.email });
+                if (existingUser && existingUser.role !== 'super-admin') {
+                    existingUser.role = 'super-admin';
+                    await existingUser.save();
                 }
             }
 

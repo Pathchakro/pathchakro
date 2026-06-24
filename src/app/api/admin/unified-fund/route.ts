@@ -70,13 +70,15 @@ export async function GET(req: NextRequest) {
                 source: e.course?.title || 'Unknown Course',
                 amount: e.amount,
                 user: {
-                    name: e.student?.name || 'Unknown',
-                    email: e.student?.email,
+                    name: e.name || e.student?.name || 'Unknown',
+                    email: e.email || e.student?.email,
+                    phone: e.phone,
                     image: e.student?.image
                 },
                 payment: {
                     method: e.paymentDetails?.method,
                     trxId: e.paymentDetails?.transactionId,
+                    mobileNumber: e.paymentDetails?.mobileNumber,
                     proof: e.paymentDetails?.proofUrl
                 },
                 status: e.paymentStatus, // 'pending' | 'completed' | 'rejected'
@@ -95,6 +97,7 @@ export async function GET(req: NextRequest) {
                 payment: {
                     method: b.paymentDetails?.method,
                     trxId: b.paymentDetails?.transactionId,
+                    mobileNumber: b.paymentDetails?.mobileNumber,
                     proof: b.paymentDetails?.proofUrl
                 },
                 status: b.paymentStatus,

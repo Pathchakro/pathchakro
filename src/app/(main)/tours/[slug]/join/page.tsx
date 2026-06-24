@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { toast } from 'sonner';
-import { User, CheckCircle2, ArrowRight, Smartphone, Copy, Globe, Wallet, Mail, MapPin, Loader2, ArrowLeft } from 'lucide-react';
+import { User, CheckCircle2, ArrowRight, Smartphone, Copy, Globe, Wallet, Mail, MapPin, Loader2, ArrowLeft, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -30,10 +30,11 @@ const formSchema = z.object({
   phone: z.string().trim().regex(BD_PHONE_REGEX, 'Invalid Bangladesh phone number').max(15, 'Phone number is too long'),
   email: z.string().trim().email('Invalid email address'),
   address: z.string().trim().optional(),
+  seats: z.number().min(1, 'At least 1 seat is required').max(10, 'Maximum 10 seats allowed'),
   paymentAmount: z.string().min(1, 'Amount is required'),
 });
 
-type EnrollFormData = z.infer<typeof formSchema>;
+type JoinFormData = z.infer<typeof formSchema>;
 
 const manualPaymentConfig: any = {
   bkash: { active: true, number: '01919011101', qrCode: '/PaymentQr.jpg', color: 'bg-[#d12053]/10 border-[#d12053]/30 text-[#d12053]', label: 'bKash' },
@@ -42,13 +43,13 @@ const manualPaymentConfig: any = {
   banglaQr: { active: true, qrCode: '/PaymentQr.jpg', color: 'bg-indigo-50 border-indigo-200 text-indigo-600', label: 'Bangla QR' }
 };
 
-export default function EnrollmentPage({ params }: { params: Promise<{ slug: string }> }) {
+export default function TourJoinPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = use(params);
   const router = useRouter();
   const { data: session, status } = useSession();
 
-  const [course, setCourse] = useState<any>(null);
-  const [courseLoading, setCourseLoading] = useState(true);
+  const [tour, setTour] = useState<any>(null);
+  const [tourLoading, setTourLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [selectedMethod, setSelectedMethod] = useState<any>(null);
@@ -64,17 +65,21 @@ export default function EnrollmentPage({ params }: { params: Promise<{ slug: str
     register,
     handleSubmit,
     setValue,
+    watch,
     formState: { errors },
-  } = useForm<EnrollFormData>({
+  } = useForm<JoinFormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: '',
       phone: '',
       email: '',
       address: '',
+      seats: 1,
       paymentAmount: '0',
     },
   });
+
+  const seatsCount = watch('seats');
 
   useEffect(() => {
     if (session?.user) {
@@ -84,40 +89,50 @@ export default function EnrollmentPage({ params }: { params: Promise<{ slug: str
   }, [session, setValue]);
 
   useEffect(() => {
-    async function fetchCourse() {
+    async function fetchTour() {
       try {
-        setCourseLoading(true);
-        const res = await fetch(`/api/courses/${slug}`);
-        if (!res.ok) throw new Error('Course not found');
+        setTourLoading(true);
+        const res = await fetch(`/api/tours/slug/${slug}`);
+        if (!res.ok) throw new Error('Tour not found');
         const data = await res.json();
-        setCourse(data);
-        setValue('paymentAmount', (data.fee || 0).toString());
+        // The API returns either { tour } or tour directly
+        const tourData = data.tour || data;
+        setTour(tourData);
+        setValue('paymentAmount', (tourData.budget || 0).toString());
       } catch (err) {
-        toast.error('Failed to load course details');
+        toast.error('Failed to load tour details');
       } finally {
-        setCourseLoading(false);
+        setTourLoading(false);
       }
     }
-    fetchCourse();
+    fetchTour();
   }, [slug, setValue]);
+
+  // Recalculate payment amount based on number of seats
+  useEffect(() => {
+    if (tour) {
+      const total = (tour.budget || 0) * (seatsCount || 1);
+      setValue('paymentAmount', total.toString());
+    }
+  }, [seatsCount, tour, setValue]);
 
   if (status === 'unauthenticated') {
     return (
       <div className="container max-w-md py-20 text-center space-y-4">
         <h2 className="text-2xl font-bold">Please Login to Continue</h2>
-        <p className="text-muted-foreground">You need to be logged in to enroll in courses.</p>
+        <p className="text-muted-foreground">You need to be logged in to join tours.</p>
         <Button onClick={() => setShowLoginModal(true)}>Log In</Button>
         <LoginModal 
           open={showLoginModal} 
           onOpenChange={setShowLoginModal}
-          title="Login to Enroll"
-          description="Sign in to enroll in this course and start your learning journey with Pathchakro."
+          title="Login to Join Tour"
+          description="Sign in to join this exciting tour with Pathchakro."
         />
       </div>
     );
   }
 
-  if (courseLoading) {
+  if (tourLoading) {
     return (
       <div className="flex h-64 items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -125,23 +140,24 @@ export default function EnrollmentPage({ params }: { params: Promise<{ slug: str
     );
   }
 
-  if (!course) {
+  if (!tour) {
     return (
       <div className="container py-20 text-center space-y-4">
-        <h2 className="text-2xl font-bold">Course Not Found</h2>
-        <Button asChild><Link href="/courses">Go back to Courses</Link></Button>
+        <h2 className="text-2xl font-bold">Tour Not Found</h2>
+        <Button asChild><Link href="/tours">Go back to Tours</Link></Button>
       </div>
     );
   }
 
-  const price = course.fee || 0;
+  const budget = tour.budget || 0;
+  const totalPrice = budget * seatsCount;
 
-  async function onSubmit(values: EnrollFormData) {
+  async function onSubmit(values: JoinFormData) {
     let methodValue = '';
     let verificationMobile = '';
     let verificationTrx = '';
 
-    if (price > 0) {
+    if (budget > 0) {
       if (!selectedMethod) {
         toast.error('দয়া করে পেমেন্ট মেথড সিলেক্ট করুন');
         return;
@@ -171,7 +187,7 @@ export default function EnrollmentPage({ params }: { params: Promise<{ slug: str
     const timeoutId = setTimeout(() => controller.abort(), 12000);
 
     try {
-      const response = await fetch(`/api/courses/${course.slug || course._id}/enroll`, {
+      const response = await fetch(`/api/tours/${tour.slug || tour._id}/join`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -182,6 +198,7 @@ export default function EnrollmentPage({ params }: { params: Promise<{ slug: str
           phone: values.phone,
           email: values.email,
           address: values.address || undefined,
+          seats: values.seats,
         }),
         signal: controller.signal
       });
@@ -193,9 +210,9 @@ export default function EnrollmentPage({ params }: { params: Promise<{ slug: str
       if (response.ok) {
         await Swal.fire({
           title: 'আবেদন জমা হয়েছে!',
-          text: price > 0 
-            ? `আপনার ${course.title} কোর্সে ভর্তির আবেদনটি সফলভাবে গৃহীত হয়েছে। আমরা দ্রুত পেমেন্ট ভেরিফাই করে আপনার সাথে যোগাযোগ করবো।`
-            : `আপনার ${course.title} কোর্সে ভর্তির আবেদনটি সফলভাবে সম্পন্ন হয়েছে।`,
+          text: budget > 0 
+            ? `আপনার ${tour.title} ট্যুরে বুকিং আবেদনটি সফলভাবে গৃহীত হয়েছে। আমরা দ্রুত পেমেন্ট ভেরিফাই করে আপনার সাথে যোগাযোগ করবো।`
+            : `আপনার ${tour.title} ট্যুর বুকিং সফলভাবে সম্পন্ন হয়েছে।`,
           icon: 'success',
           confirmButtonColor: 'var(--primary)',
           customClass: {
@@ -203,15 +220,15 @@ export default function EnrollmentPage({ params }: { params: Promise<{ slug: str
             confirmButton: 'rounded-xl font-bold px-6 py-3',
           }
         });
-        router.push(`/courses/${course.slug}`);
+        router.push(`/tours/${tour.slug}`);
       } else {
-        throw new Error(data.error || 'Failed to submit enrollment');
+        throw new Error(data.error || 'Failed to submit booking');
       }
     } catch (error: any) {
       if (error.name === 'AbortError') {
         toast.error('Request timed out. Please check your connection and try again.');
       } else {
-        toast.error(error.message || 'Error submitting enrollment. Please try again.');
+        toast.error(error.message || 'Error submitting booking. Please try again.');
       }
     } finally {
       setIsSubmitting(false);
@@ -221,14 +238,14 @@ export default function EnrollmentPage({ params }: { params: Promise<{ slug: str
   return (
     <div className="container max-w-2xl py-10 space-y-8">
       <Button variant="ghost" className="pl-0 hover:pl-2 transition-all" asChild>
-        <Link href={`/courses/${slug}`}>
-          <ArrowLeft className="mr-2 h-4 w-4" /> Back to Course
+        <Link href={`/tours/${slug}`}>
+          <ArrowLeft className="mr-2 h-4 w-4" /> Back to Tour
         </Link>
       </Button>
 
       <div className="space-y-2 text-center">
-        <h1 className="text-3xl font-black tracking-tighter uppercase">Secure Your Seat</h1>
-        <p className="text-muted-foreground text-sm">Register and complete your payment to enroll in "{course.title}"</p>
+        <h1 className="text-3xl font-black tracking-tighter uppercase">Book Tour Seats</h1>
+        <p className="text-muted-foreground text-sm">Register and complete your payment to join "{tour.title}"</p>
       </div>
 
       <div className="max-w-2xl mx-auto bg-card p-6 md:p-10 rounded-[2rem] border shadow-xl">
@@ -265,16 +282,31 @@ export default function EnrollmentPage({ params }: { params: Promise<{ slug: str
             {errors.address && <p className="text-xs text-red-500">{errors.address.message}</p>}
           </div>
 
-          <div className="space-y-2">
-            <Label className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2 text-muted-foreground">
-              <Wallet className="h-3.5 w-3.5" /> পেমেন্ট অ্যামাউন্ট (৳)
-            </Label>
-            <Input type="number" readOnly {...register('paymentAmount')} className="h-12 rounded-xl bg-muted border-muted font-black text-primary cursor-not-allowed" />
-            {errors.paymentAmount && <p className="text-xs text-red-500">{errors.paymentAmount.message}</p>}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2 text-muted-foreground">
+                <Users className="h-3.5 w-3.5" /> মোট সিট সংখ্যা
+              </Label>
+              <Input 
+                type="number" 
+                placeholder="1" 
+                {...register('seats', { valueAsNumber: true })} 
+                className="h-12 rounded-xl bg-muted/30 border-muted font-bold text-center" 
+              />
+              {errors.seats && <p className="text-xs text-red-500">{errors.seats.message}</p>}
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2 text-muted-foreground">
+                <Wallet className="h-3.5 w-3.5" /> মোট পেমেন্ট (৳)
+              </Label>
+              <Input type="number" readOnly {...register('paymentAmount')} className="h-12 rounded-xl bg-muted border-muted font-black text-primary cursor-not-allowed" />
+              {errors.paymentAmount && <p className="text-xs text-red-500">{errors.paymentAmount.message}</p>}
+            </div>
           </div>
 
-          {/* Payment Method Selector - Only display if price > 0 */}
-          {price > 0 && (
+          {/* Payment Method Selector - Only display if budget > 0 */}
+          {budget > 0 && (
             <div className="space-y-3">
               <label className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2 text-muted-foreground">
                 <Wallet className="h-3.5 w-3.5" /> পেমেন্ট মেথড সিলেক্ট করুন
@@ -391,7 +423,7 @@ export default function EnrollmentPage({ params }: { params: Promise<{ slug: str
                 ) : (
                   <p>২. উপরে দেওয়া <strong>Bangla QR</strong> কোডটি আপনার ব্যাংক বা পেমেন্ট অ্যাপ দিয়ে স্ক্যান করুন।</p>
                 )}
-                <p>৩. মোট পেমেন্ট অ্যামাউন্ট <strong>৳{price}</strong> সেন্ড মানি করুন।</p>
+                <p>৩. মোট পেমেন্ট অ্যামাউন্ট <strong>৳{totalPrice}</strong> সেন্ড মানি করুন।</p>
                 <p>৪. সফলভাবে টাকা পাঠানোর পর নিচের ট্যাব থেকে <strong>মোবাইল নম্বর</strong> অথবা <strong>TrxID</strong> যেকোনো একটি তথ্য দিয়ে পেমেন্ট নিশ্চিত করুন।</p>
               </div>
             </div>

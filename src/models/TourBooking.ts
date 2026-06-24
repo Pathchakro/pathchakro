@@ -1,8 +1,8 @@
 import mongoose, { Schema, Document, Model } from 'mongoose';
 
 export interface ITourBooking extends Document {
-    tour: mongoose.Schema.Types.ObjectId;
-    user: mongoose.Schema.Types.ObjectId; // The user who booked
+    tour: mongoose.Types.ObjectId | string;
+    user: mongoose.Types.ObjectId | string; // The user who booked
     amount: number;
     bookingStatus: 'pending' | 'confirmed' | 'cancelled';
     paymentStatus: 'pending' | 'completed' | 'failed' | 'refunded';
@@ -13,6 +13,10 @@ export interface ITourBooking extends Document {
         proofUrl?: string;
     };
     seats: number;
+    name?: string;
+    phone?: string;
+    email?: string;
+    address?: string;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -38,7 +42,11 @@ const TourBookingSchema: Schema<ITourBooking> = new Schema(
             mobileNumber: { type: String },
             proofUrl: { type: String }
         },
-        seats: { type: Number, default: 1 }
+        seats: { type: Number, default: 1 },
+        name: { type: String },
+        phone: { type: String },
+        email: { type: String },
+        address: { type: String }
     },
     { timestamps: true }
 );

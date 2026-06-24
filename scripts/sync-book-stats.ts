@@ -15,6 +15,21 @@ async function syncBookStats() {
         console.log('Connecting to database...');
         await dbConnect();
 
+        console.log('Cleaning up orphaned UserLibrary entries...');
+        const entries = await UserLibrary.find({});
+        const User = require('../src/models/User').default;
+        let deletedCount = 0;
+        for (const entry of entries) {
+            const user = await User.findById(entry.user);
+            if (!user) {
+                await UserLibrary.deleteOne({ _id: entry._id });
+                deletedCount++;
+            }
+        }
+        if (deletedCount > 0) {
+            console.log(`Deleted ${deletedCount} orphaned UserLibrary entries.`);
+        }
+
         console.log('Resetting stats for all books...');
         await Book.updateMany({}, { $set: { completedCount: 0, copies: 0 } });
 

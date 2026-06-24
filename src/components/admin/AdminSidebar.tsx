@@ -10,7 +10,8 @@ import {
     Plane,
     BookOpen,
     Library,
-    LogOut
+    LogOut,
+    Settings
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -24,6 +25,7 @@ const ADMIN_LINKS = [
     { icon: Plane, label: 'Manage Tours', href: '/admin/tours' },
     { icon: BookOpen, label: 'Manage Book', href: '/admin/books' },
     { icon: Library, label: 'Manage Library', href: '/admin/library' },
+    { icon: Settings, label: 'System Design', href: '/admin/system-design' },
 ];
 
 export function AdminSidebar() {

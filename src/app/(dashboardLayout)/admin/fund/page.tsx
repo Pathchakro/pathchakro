@@ -280,6 +280,7 @@ export default function AdminFundPage() {
                                                     <div className="flex flex-col">
                                                         <span className="font-medium text-sm">{t.user.name}</span>
                                                         <span className="text-xs text-muted-foreground">{t.user.email}</span>
+                                                        {t.user.phone && <span className="text-[11px] text-muted-foreground font-semibold">Ph: {t.user.phone}</span>}
                                                     </div>
                                                 </TableCell>
                                                 <TableCell>
@@ -293,8 +294,9 @@ export default function AdminFundPage() {
                                                 </TableCell>
                                                 <TableCell>
                                                     <div className="flex flex-col text-xs text-muted-foreground">
-                                                        <span className="capitalize">{t.payment.method}</span>
-                                                        <span className="font-mono">{t.payment.trxId || '-'}</span>
+                                                        <span className="capitalize font-semibold text-foreground">{t.payment.method}</span>
+                                                        {t.payment.trxId && <span className="font-mono text-[11px]">TrxID: {t.payment.trxId}</span>}
+                                                        {t.payment.mobileNumber && <span className="font-mono text-[11px]">Sender: {t.payment.mobileNumber}</span>}
                                                         {t.payment.proof && (
                                                             <a href={t.payment.proof} target="_blank" className="text-blue-500 hover:underline flex items-center gap-1 mt-1">
                                                                 <Eye className="h-3 w-3" /> Proof
