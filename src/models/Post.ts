@@ -54,6 +54,10 @@ const PostSchema = new Schema<IPost>(
             type: Number,
             default: 0,
         },
+        embedding: {
+            type: [Number],
+            default: undefined,
+        },
     },
     {
         timestamps: true,

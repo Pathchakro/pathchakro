@@ -17,6 +17,10 @@ const AuthorSchema = new mongoose.Schema({
         type: String,
         unique: true,
     },
+    embedding: {
+        type: [Number],
+        default: undefined,
+    },
 }, {
     timestamps: true,
 });

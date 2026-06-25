@@ -13,6 +13,7 @@ export interface ICourse extends Document {
     instructor: mongoose.Types.ObjectId;
     students: mongoose.Types.ObjectId[];
     privacy: 'public' | 'private';
+    embedding?: number[];
     createdAt: Date;
     updatedAt: Date;
 }
@@ -35,6 +36,10 @@ const CourseSchema: Schema<ICourse> = new Schema(
             enum: ['public', 'private'],
             default: 'public',
             index: true,
+        },
+        embedding: {
+            type: [Number],
+            default: undefined,
         },
     },
     { timestamps: true }

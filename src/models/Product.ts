@@ -16,6 +16,7 @@ export interface IProduct {
     tags: string[];
     location: string;
     views: number;
+    embedding?: number[];
     createdAt: Date;
 }
 
@@ -95,6 +96,10 @@ const ProductSchema = new Schema<IProduct>(
         views: {
             type: Number,
             default: 0,
+        },
+        embedding: {
+            type: [Number],
+            default: undefined,
         },
     },
     {

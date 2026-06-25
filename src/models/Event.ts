@@ -32,6 +32,7 @@ export interface IEvent {
 
     createdAt: Date;
     recordingLink?: string;
+    embedding?: number[];
 }
 
 const EventSchema = new Schema<IEvent>(
@@ -124,6 +125,10 @@ const EventSchema = new Schema<IEvent>(
                 },
             },
         ],
+        embedding: {
+            type: [Number],
+            default: undefined,
+        },
     },
     {
         timestamps: true,

@@ -12,6 +12,7 @@ export interface IBloodDonor {
     maxTravelDistance?: number; // in km
     medicallyEligible: boolean;
     notes?: string;
+    embedding?: number[];
     createdAt: Date;
 }
 
@@ -59,6 +60,10 @@ const BloodDonorSchema = new Schema<IBloodDonor>(
             default: true,
         },
         notes: String,
+        embedding: {
+            type: [Number],
+            default: undefined,
+        },
     },
     {
         timestamps: true,

@@ -66,6 +66,10 @@ const BookSchema = new Schema<IBook>(
             type: mongoose.Schema.Types.ObjectId as any,
             ref: 'User',
         },
+        embedding: {
+            type: [Number],
+            default: undefined,
+        },
     },
     {
         timestamps: true,

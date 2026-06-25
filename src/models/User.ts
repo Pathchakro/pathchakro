@@ -180,6 +180,10 @@ const UserSchema = new Schema<IUser>(
             },
             submittedAt: Date,
         },
+        embedding: {
+            type: [Number],
+            default: undefined,
+        },
     },
     {
         timestamps: true,

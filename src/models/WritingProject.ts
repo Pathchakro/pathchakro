@@ -29,6 +29,7 @@ export interface IWritingProject {
     forSale: boolean;
     salePrice?: number;
     saleType?: 'physical' | 'pdf' | 'both';
+    embedding?: number[];
     createdAt: Date;
     updatedAt: Date;
 }
@@ -136,6 +137,10 @@ const WritingProjectSchema = new Schema<IWritingProject>(
         saleType: {
             type: String,
             enum: ['physical', 'pdf', 'both'],
+        },
+        embedding: {
+            type: [Number],
+            default: undefined,
         },
     },
     {

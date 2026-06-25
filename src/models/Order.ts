@@ -11,6 +11,7 @@ export interface IOrder {
     buyerPhone: string;
     deliveryAddress: string;
     notes?: string;
+    embedding?: number[];
     createdAt: Date;
     completedAt?: Date;
 }
@@ -60,6 +61,10 @@ const OrderSchema = new Schema<IOrder>(
         },
         notes: String,
         completedAt: Date,
+        embedding: {
+            type: [Number],
+            default: undefined,
+        },
     },
     {
         timestamps: true,

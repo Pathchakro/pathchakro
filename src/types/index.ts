@@ -30,6 +30,7 @@ export interface IUser {
     savedCourses?: string[] | ICourse[];
     following?: string[] | IUser[];
     role?: 'user' | 'admin' | 'super-admin';
+    embedding?: number[];
     title?: string;
     location?: string;
     website?: string;
@@ -103,6 +104,7 @@ export interface IPost {
     likes: string[];
     comments: string[];
     shares: number;
+    embedding?: number[];
     createdAt: Date;
     updatedAt: Date;
 }
@@ -123,6 +125,7 @@ export interface IBook {
     completedCount?: number;
     buyingLink?: string;
     addedBy?: string | IUser;
+    embedding?: number[];
     createdAt: Date;
     updatedAt: Date;
 }
@@ -139,6 +142,7 @@ export interface IReview {
     videoUrl?: string;
     image?: string;
     helpful: number;
+    embedding?: number[];
     createdAt: Date;
     updatedAt: Date;
 }
@@ -163,6 +167,7 @@ export interface ITour {
     status: 'planning' | 'confirmed' | 'ongoing' | 'completed' | 'cancelled';
     privacy: 'public' | 'private' | 'team';
     team?: string | ITeam;
+    embedding?: number[];
     createdAt: Date;
     updatedAt: Date;
 }
@@ -181,6 +186,7 @@ export interface ICourse {
     instructor: string | IUser;
     students: string[] | IUser[]; // In model it's ObjectIds
     privacy: 'public' | 'private';
+    embedding?: number[];
     createdAt: Date;
     updatedAt: Date;
 }

@@ -49,13 +49,21 @@ Under the leadership of Shahadat Hossain, many others are working here:
 2.  Assist users with general questions about the platform (e.g., how to create a post, how to join a team).
 3.  Provide recommendations for books based on user queries (using your general knowledge).
 4.  Be polite, encouraging, and enthusiastic about reading.
+5.  **Important:** ALWAYS use the real-time database stats provided in the system context (under "Global Library Statistics" or "User's Personal Library Stats") to answer questions about the number of books, copies, user progress, or other platform statistics. Do NOT say you don't have access to real-time data or that you cannot tell the exact numbers when this information is provided in the context.
+6.  **Clickable Links for Books & Resources:** Whenever you suggest, recommend, or list any books, courses, tours, or other platform items, ALWAYS format their names as clickable Markdown links using the exact relative URL path provided in the system context (e.g. [বইয়ের নাম](/books/book-slug) or [Book Title](/books/book-slug)). Do not make up links; only use paths present in the context.
 
 Key Features to know about:
--   **Feed**: See posts, reviews, and updates from the community.
--   **Books**: Discover books, rate them, and add them to your library (Read, Currently Reading, Want to Read).
+-   **Feed/Posts**: See posts, reviews, and updates from the community, or publish own posts and articles.
+-   **Books & Library**: Discover books, rate them, write reviews, and manage your personal/community library (Read, Currently Reading, Want to Read).
+-   **Book Reviews**: Read detailed reviews of different books and write your own reviews.
+-   **Reading Status**: Log and track daily reading progress and status.
+-   **My Writings**: Save, draft, and publish your own writing and stories.
 -   **Teams**: Join groups based on interests, location, or institution to discuss books.
--   **Reviews**: Write and read detailed book reviews.
--   **Profile**: Track your reading stats and manage your library.
+-   **Pathchakro Events**: View and join upcoming events.
+-   **Courses**: Discover educational and skills development courses.
+-   **Marketplace**: Buy and sell books and related products.
+-   **Blood Bank (রক্তদান)**: Search for blood donors by blood group/location, and register as a blood donor. Link: [Blood Bank](/blood-donors).
+-   **Tour Planning**: Plan tours, view upcoming tours, and join them.
 -   **Weekly Online Pathchakro**:
     -   **When**: Every **Sunday, 9:00 PM - 11:00 PM**.
     -   **Who**: Open for everyone.
@@ -97,7 +105,7 @@ const getRandomClient = () => {
 };
 
 
-export const getChatResponse = async (message: string, history: ChatMessage[]): Promise<string> => {
+export const getChatResponse = async (message: string, history: ChatMessage[], context?: string): Promise<string> => {
     // Get a fresh client with a random key for each request
     const { client: ai, key: currentKey } = getRandomClient();
 
@@ -134,11 +142,15 @@ export const getChatResponse = async (message: string, history: ChatMessage[]): 
             parts: [{ text: message }]
         });
 
+        const systemInstruction = context
+            ? `${SYSTEM_INSTRUCTION}\n\n${context}`
+            : SYSTEM_INSTRUCTION;
+
         const response = await ai.models.generateContent({
             model,
             contents,
             config: {
-                systemInstruction: SYSTEM_INSTRUCTION,
+                systemInstruction,
             }
         });
 

@@ -29,6 +29,7 @@ export interface ITour {
     privacy: 'public' | 'private' | 'team';
     team?: mongoose.Types.ObjectId;
     status: 'planning' | 'confirmed' | 'ongoing' | 'completed' | 'cancelled';
+    embedding?: number[];
     createdAt: Date;
 }
 
@@ -133,6 +134,10 @@ const TourSchema = new Schema<ITour>(
             enum: ['planning', 'confirmed', 'ongoing', 'completed', 'cancelled'],
             default: 'planning',
             index: true,
+        },
+        embedding: {
+            type: [Number],
+            default: undefined,
         },
     },
     {
