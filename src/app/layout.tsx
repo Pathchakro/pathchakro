@@ -5,6 +5,8 @@ import { ReduxProvider } from "@/components/providers/ReduxProvider";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import { Toaster } from "@/components/ui/sonner";
 import { InstallPrompt } from "@/components/pwa/InstallPrompt";
+import dbConnect from "@/lib/mongodb";
+import SystemConfig from "@/models/SystemConfig";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -27,7 +29,18 @@ export const viewport: Viewport = {
   initialScale: 1,
 };
 
-export const metadata: Metadata = {
+// Helper function to extract content from HTML meta string if user inputs a full tag
+function extractMetaContent(metaInput: string | undefined): string | undefined {
+  if (!metaInput) return undefined;
+  const trimmed = metaInput.trim();
+  if (trimmed.startsWith("<meta") || trimmed.includes("content=")) {
+    const match = trimmed.match(/content=["']([^"']+)["']/i);
+    return match ? match[1] : undefined;
+  }
+  return trimmed;
+}
+
+const baseMetadata: Metadata = {
   metadataBase: new URL(process.env.NEXTAUTH_URL || "http://localhost:3000"),
   title: {
     default: "PathChakro - Social Learning & Book Lovers Platform",
@@ -75,11 +88,46 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export async function generateMetadata(): Promise<Metadata> {
+  let googleVerification: string | undefined;
+  let fbVerification: string | undefined;
+
+  try {
+    await dbConnect();
+    const config = await SystemConfig.findOne().sort({ updatedAt: -1 }).lean();
+    if (config) {
+      googleVerification = extractMetaContent(config.searchConsoleMeta);
+      fbVerification = extractMetaContent(config.facebookDomainVerification);
+    }
+  } catch (error) {
+    console.error("Error loading system config for layout metadata:", error);
+  }
+
+  return {
+    ...baseMetadata,
+    verification: {
+      google: googleVerification || undefined,
+    },
+    other: {
+      ...baseMetadata.other,
+      ...(fbVerification ? { "facebook-domain-verification": fbVerification } : {}),
+    },
+  };
+}
+
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  let config: any = null;
+  try {
+    await dbConnect();
+    config = await SystemConfig.findOne().sort({ updatedAt: -1 }).lean();
+  } catch (error) {
+    console.error("Error fetching system config in RootLayout:", error);
+  }
+
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "WebSite",
@@ -103,8 +151,78 @@ export default function RootLayout({
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
+        {/* Google Tag Manager */}
+        {config?.googleTagManagerId && (
+          <script
+            dangerouslySetInnerHTML={{
+              __html: `(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+              new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+              j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+              'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+              })(window,document,'script','dataLayer','${config.googleTagManagerId}');`,
+            }}
+          />
+        )}
+        {/* Google Analytics (gtag.js) */}
+        {config?.googleAnalyticsId && (
+          <>
+            <script async src={`https://www.googletagmanager.com/gtag/js?id=${config.googleAnalyticsId}`} />
+            <script
+              dangerouslySetInnerHTML={{
+                __html: `
+                  window.dataLayer = window.dataLayer || [];
+                  function gtag(){dataLayer.push(arguments);}
+                  gtag('js', new Date());
+                  gtag('config', '${config.googleAnalyticsId}');
+                `,
+              }}
+            />
+          </>
+        )}
+        {/* Meta Pixel (Facebook Pixel) */}
+        {config?.metaPixelId && (
+          <script
+            dangerouslySetInnerHTML={{
+              __html: `
+                !function(f,b,e,v,n,t,s)
+                {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+                n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+                if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+                n.queue=[];t=b.createElement(e);t.async=!0;
+                t.src=v;s=b.getElementsByTagName(e)[0];
+                s.parentNode.insertBefore(t,s)}(window, document,'script',
+                'https://connect.facebook.net/en_US/fbevents.js');
+                fbq('init', '${config.metaPixelId}');
+                fbq('track', 'PageView');
+              `,
+            }}
+          />
+        )}
       </head>
       <body className={`${inter.variable} ${dmSans.variable} ${notoSansBengali.variable} antialiased font-sans`} suppressHydrationWarning>
+        {/* Google Tag Manager (noscript) */}
+        {config?.googleTagManagerId && (
+          <noscript>
+            <iframe
+              src={`https://www.googletagmanager.com/ns.html?id=${config.googleTagManagerId}`}
+              height="0"
+              width="0"
+              style={{ display: "none", visibility: "hidden" }}
+            />
+          </noscript>
+        )}
+        {/* Meta Pixel (noscript) */}
+        {config?.metaPixelId && (
+          <noscript>
+            <img
+              height="1"
+              width="1"
+              style={{ display: "none" }}
+              src={`https://www.facebook.com/tr?id=${config.metaPixelId}&ev=PageView&noscript=1`}
+              alt=""
+            />
+          </noscript>
+        )}
         <ReduxProvider>
           <ThemeProvider
             attribute="class"
