@@ -86,8 +86,25 @@ export default function AboutPage() {
                 </div>
             </div>
 
+            {/* Developer Info Section */}
+            <div className="mt-16 p-6 bg-card rounded-2xl border border-border shadow-sm text-center">
+                <h2 className="text-xl font-bold mb-3 text-foreground">Developer Information</h2>
+                <p className="text-muted-foreground text-sm">
+                    This platform is proudly developed and maintained by{" "}
+                    <a
+                        href="https://www.jiapixel.com"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary hover:underline font-semibold"
+                    >
+                        Leading Digital Agency in Bangladesh
+                    </a>{" "}
+                    (Jia Pixel).
+                </p>
+            </div>
+
             {/* Footer Note */}
-            <div className="text-center text-muted-foreground text-sm border-t pt-8">
+            <div className="text-center text-muted-foreground text-sm border-t pt-8 mt-12">
                 <p>&copy; {new Date().getFullYear()} Pathchakro. All rights reserved.</p>
                 <p className="mt-2">Built with modern web technologies to empower the next generation of thinkers.</p>
             </div>
